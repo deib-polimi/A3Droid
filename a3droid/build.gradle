@@ -1,0 +1,65 @@
+apply plugin: 'com.android.library'
+//apply plugin: 'android-library'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+}
+
+dependencies {
+    compile project(':alljoyn_java')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+}
+
+// task to delete the old jar
+task deleteOldJar(type: Delete) {
+    delete 'release/A3Droid.jar'
+}
+
+// task to export contents as jar
+task exportJar(type: Copy) {
+    from('build/intermediates/bundles/release/')
+    into('release')
+    include('classes.jar')
+    // name the plugin
+    rename('classes.jar','A3Droid.jar')
+}
+
+exportJar.dependsOn(deleteOldJar, build)
+
+// task to delete the old jar
+task deleteOldProjectJar(type: Delete) {
+    delete '/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/A3Droid.jar'
+}
+
+// task to export contents as jar
+task exportJarToProject(type: Copy) {
+    from('build/intermediates/bundles/release/')
+    into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
+    include('classes.jar')
+    // name the plugin
+    rename('classes.jar','A3Droid.jar')
+}
+
+exportJarToProject.dependsOn(deleteOldProjectJar, build)
