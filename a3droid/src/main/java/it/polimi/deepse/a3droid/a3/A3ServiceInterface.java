@@ -9,7 +9,7 @@ public interface A3ServiceInterface {
 
     void sendToSupervisor(A3Message message) throws Exception;
 
-    void sendUnicast(A3Message message) throws Exception;
+    void sendUnicast(A3Message message, String address) throws Exception;
 
     void sendMultiCast(A3Message message) throws Exception;
 

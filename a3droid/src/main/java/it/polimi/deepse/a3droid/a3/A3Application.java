@@ -12,7 +12,7 @@ import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
  */
 public class A3Application extends Application {
 
-    private static final String TAG = "a3droid.A3Application";
+    protected static final String TAG = "a3droid.A3Application";
     public static String PACKAGE_NAME;
 
     @Override
@@ -47,7 +47,7 @@ public class A3Application extends Application {
     /**
      * The high-level module that caught the last AllJoyn error.
      */
-    private Module mModule = Module.NONE;
+    protected Module mModule = Module.NONE;
 
     /**
      * Enumeration of the high-level moudules in the system.  There is one
@@ -71,7 +71,7 @@ public class A3Application extends Application {
      * The string representing the last AllJoyn error that happened in the
      * AllJoyn Service.
      */
-    private String mErrorString = "ER_OK";
+    protected String mErrorString = "ER_OK";
 
     /**
      * The object we use in notifications to indicate that an AllJoyn error has
@@ -86,7 +86,7 @@ public class A3Application extends Application {
      * "join channel" dialog, whereupon she will choose one.  This will
      * eventually result in a joinSession call out from the AllJoyn Service
      */
-    private List<String> mChannels = new ArrayList<String>();
+    protected List<String> mChannels = new ArrayList<String>();
 
     /**
      * Set the status of the "host" channel.  The AllJoyn Service part of the
@@ -110,7 +110,7 @@ public class A3Application extends Application {
      * of detail probably isn't appropriate, but we want to do so for this
      * sample.
      */
-    private AlljoynBus.ServiceState mServiceState = AlljoynBus.ServiceState.IDLE;
+    protected AlljoynBus.ServiceState mServiceState = AlljoynBus.ServiceState.IDLE;
 
     /**
      * Set the status of the "use" channel.  The AllJoyn Service part of the
@@ -135,5 +135,33 @@ public class A3Application extends Application {
      * this kind of detail probably isn't appropriate, but we want to do so for
      * this sample.
      */
-    private AlljoynBus.ChannelState mChannelState = AlljoynBus.ChannelState.IDLE;
+    protected AlljoynBus.ChannelState mChannelState = AlljoynBus.ChannelState.IDLE;
+
+    /**
+     * Set the name part of the "host" channel.  Since we are going to "use" a
+     * channel that is implemented remotely and discovered through an AllJoyn
+     * FoundAdvertisedName, this must come from a list of advertised names.
+     * These names are our channels, and so we expect the GUI to choose from
+     * among the list of channels it retrieves from getFoundChannels().
+     *
+     * Since we are talking about user-level interactions here, we are talking
+     * about the final segment of a well-known name representing a channel at
+     * this point.
+     */
+    public synchronized void setGroupName(String name) {
+        groupName = name;
+        //notifyObservers(HOST_CHANNEL_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * Get the name part of the "use" channel.
+     */
+    public synchronized String getGroupName() {
+        return groupName;
+    }
+
+    /**
+     * The name of the "host" channel which the user has selected.
+     */
+    protected String groupName;
 }

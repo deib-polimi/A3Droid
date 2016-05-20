@@ -1,9 +1,80 @@
 package it.polimi.deepse.a3droid.a3;
 
+import android.app.Notification;
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.util.Log;
+
 /**
  * Created by seadev on 5/20/16.
  */
-public interface A3BusInterface {
+public abstract class A3BusInterface extends Service {
+
+    protected static final String TAG = "a3droid.a3.A3Bus";
+
+    /**
+     * We don't use the bindery to communiate between any client and this
+     * service so we return null.
+     */
+    public IBinder onBind(Intent intent) {
+        Log.i(TAG, "onBind()");
+        return null;
+    }
+
+    /**
+     * Our onCreate() method is called by the Android appliation framework
+     * when the service is first created.  We spin up a background thread
+     * to handle any long-lived requests (pretty much all AllJoyn calls that
+     * involve communication with remote processes) that need to be done and
+     * insinuate ourselves into the list of observers of the model so we can
+     * get event notifications.
+     */
+    public void onCreate() {
+        Log.i(TAG, "onCreate()");
+        //TODO Get Android application class, where application state is kept
+        a3Application = (A3Application)getApplication();
+        //a3Application.addObserver(this);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+        builder.setPriority(Notification.PRIORITY_MIN);
+
+
+        Log.i(TAG, "onCreate(): startForeground()");
+        startForeground(NOTIFICATION_ID, builder.build());
+    }
+
+    //protected static final int NOTIFICATION_ID = 0xdefaced;
+    protected static final int NOTIFICATION_ID   = 0xa3d701d;
+
+    /**
+     * A reference to a descendent of the Android Application class that is
+     * acting as the Model of our MVC-based application.
+     */
+    protected A3Application a3Application = null;
+
+    /**
+     * A reference to an A3Channel instance of this node, to which A3 methods are delegated when
+     * received as signals
+     */
+    protected A3Channel a3Channel = null;
+
+    /**
+     * The state of the AllJoyn bus attachment.
+     */
+    protected BusState mBusState = BusState.DISCONNECTED;
+
+    /**
+     * The state of the AllJoyn components responsible for hosting an chat channel.
+     */
+    protected ServiceState serviceState = ServiceState.IDLE;
+
+    /**
+     * The state of the AllJoyn components responsible for hosting an chat channel.
+     */
+    protected ChannelState channelState = ChannelState.IDLE;
+
 
     /**
      * Enumeration of the states of the AllJoyn bus attachment.  This
@@ -11,7 +82,7 @@ public interface A3BusInterface {
      * of preparing and tearing down the fundamental connection to the AllJoyn
      * bus.
      *
-     * This should really be a more private think, but for the sample we want
+     * This should really be a more protected think, but for the sample we want
      * to show the user the states we are running through.  Because we are
      * really making a data hiding exception, and because we trust ourselves,
      * we don't go to any effort to prevent the UI from changing our state out

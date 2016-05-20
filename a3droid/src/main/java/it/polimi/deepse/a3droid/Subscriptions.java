@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 /**
  * This class contains the logic and the data structures to manage subscriptions.
- * It resides both on A3Channel and on Service, but data structures are not shared by them.
+ * It resides both on A3ChannelInterface and on Service, but data structures are not shared by them.
  * 
  * Subscriptions are used to send multicast messages to the channels which are interested in them:
  * in order to receive a certain kind of message, the channel must subscribe to it.

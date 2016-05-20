@@ -392,7 +392,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 				firstConnection = true;
 			}
 		} catch (Exception ex) {
-			showOnScreen("EXCEPTION IN A3Channel.disconnect(): "
+			showOnScreen("EXCEPTION IN A3ChannelInterface.disconnect(): "
 					+ ex.getMessage());
 		}
 

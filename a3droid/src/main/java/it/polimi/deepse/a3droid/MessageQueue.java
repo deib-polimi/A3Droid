@@ -2,7 +2,7 @@ package it.polimi.deepse.a3droid;
 
 import java.util.ArrayList;
 
-/**This class resides on A3Channel and it is a queue where to store the messages to the supervisor.*/
+/**This class resides on A3ChannelInterface and it is a queue where to store the messages to the supervisor.*/
 public class MessageQueue {
 
 	/**The list of the messages to send.*/

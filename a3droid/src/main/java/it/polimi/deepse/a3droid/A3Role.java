@@ -97,7 +97,7 @@ public abstract class A3Role implements Runnable {
 	/**
 	 * The logic that must be executed when receiving an application message.
 	 * System messages, which doesn't depend on the application,
-	 * are filtered and managed in A3Channel or in A3SupervisorRole.
+	 * are filtered and managed in A3ChannelInterface or in A3SupervisorRole.
 	 * @param message The received message.
 	 */
 	public abstract void receiveApplicationMessage(A3Message message);

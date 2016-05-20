@@ -1,6 +1,6 @@
 package it.polimi.deepse.a3droid;
 
-/**This class is used in A3Channel and in Service, which implement the interface "TimerInterface".
+/**This class is used in A3ChannelInterface and in Service, which implement the interface "TimerInterface".
  * After a 2 seconds timeout, it calls TimerInterface.timerFired(int), to notify the timeout fired.
  * @author Francesco
  *

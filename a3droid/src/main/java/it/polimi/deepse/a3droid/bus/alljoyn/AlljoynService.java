@@ -19,7 +19,7 @@ class AlljoynService implements AlljoynServiceInterface, BusObject {
     }
 
     @Override
-    public void sendUnicast(A3Message message) throws BusException{
+    public void sendUnicast(A3Message message, String address) throws BusException{
 
     }
 
@@ -32,4 +32,15 @@ class AlljoynService implements AlljoynServiceInterface, BusObject {
     public void sendBroadcast(A3Message message) throws BusException{
 
     }
+
+
+    /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynChannel class**/
+    @Override
+    public void ReceiveUnicast(A3Message message) throws BusException {}
+
+    @Override
+    public void ReceiveMultiCast(A3Message message) throws BusException {}
+
+    @Override
+    public void ReceiveBroadcast(A3Message message) throws BusException {}
 }
