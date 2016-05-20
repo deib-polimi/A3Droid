@@ -117,7 +117,7 @@ public class Service extends HandlerThread implements BusObject,
 	/**
 	 * @param groupName
 	 *            The name published on the bus, which is the group name.
-	 * @param a3Channel
+	 * @param node
 	 *            The channel this Service belongs to.
 	 * @param inTransitionConditions
 	 *            If duplicated groups must be ignored or not (see class
@@ -168,6 +168,7 @@ public class Service extends HandlerThread implements BusObject,
 		if (status != Status.OK)
 			return null;
 
+		//TODO Understand the use of sessionless in the service
 		status = mBus.addMatch("sessionless='t'");
 
 		Mutable.ShortValue contactPort = new Mutable.ShortValue(
@@ -178,6 +179,7 @@ public class Service extends HandlerThread implements BusObject,
 		sessionOpts.proximity = SessionOpts.PROXIMITY_ANY;
 
 		sessionOpts.transports = SessionOpts.TRANSPORT_ANY;
+
 
 		status = mBus.bindSessionPort(contactPort, sessionOpts,
 				new SessionPortListener() {
@@ -261,7 +263,8 @@ public class Service extends HandlerThread implements BusObject,
 					sessionLessSignalEmitterInterface = sessionLessSignalEmitter
 							.getInterface(A3ServiceInterface.class);
 				} catch (Exception e) {
-					showOnScreen("ECCEZIONE: " + e.getLocalizedMessage());
+					status = mBus.releaseName(groupName);
+					showOnScreen("Exception: " + e.getLocalizedMessage());
 				}
 				showOnScreen("Group " + getGroupName() + " created.");
 			}
@@ -308,185 +311,186 @@ public class Service extends HandlerThread implements BusObject,
 
 				switch (msg.arg2) {
 
-				// A node called the sendToSupervisor(A3Message) method.
-				case SEND_TO_SUPERVISOR:
+					// A node called the sendToSupervisor(A3Message) method.
+					case SEND_TO_SUPERVISOR:
 
-					switch (object.reason) {
+						switch (object.reason) {
 
-					case Constants.SUBSCRIPTION:
-					case Constants.UNSUBSCRIPTION:
-						subscriptions.onMessage(object);
-						break;
+							case Constants.SUBSCRIPTION:
+							case Constants.UNSUBSCRIPTION:
+								subscriptions.onMessage(object);
+								break;
 
-					/*
-					 * If I receive them here, they are sent by parent groups to
-					 * the supervisor, but I need to transmit them broadcast.
-					 */
-					case Constants.MERGE:
-						isNotMerging = false;
-						sendToOtherGroup(new A3Message(Constants.WAIT_MERGE,
-								object.object + Constants.A3_SEPARATOR
-										+ getGroupName()), "wait");
-					case Constants.ADD_TO_HIERARCHY:
-					case Constants.REMOVE_FROM_HIERARCHY:
-					case Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION_REQUEST:
-					case Constants.WAIT_NEW_SUPERVISOR:
-					case Constants.WAIT_MERGE:
-						handleBroadcastMessage(object);
-						break;
+							/*
+							 * If I receive them here, they are sent by parent groups to
+							 * the supervisor, but I need to transmit them broadcast.
+							 */
+							case Constants.MERGE:
+								isNotMerging = false;
+								sendToOtherGroup(new A3Message(Constants.WAIT_MERGE,
+										object.object + Constants.A3_SEPARATOR
+												+ getGroupName()), "wait");
+							case Constants.ADD_TO_HIERARCHY:
+							case Constants.REMOVE_FROM_HIERARCHY:
+							case Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION_REQUEST:
+							case Constants.WAIT_NEW_SUPERVISOR:
+							case Constants.WAIT_MERGE:
+								handleBroadcastMessage(object);
+								break;
 
-					case Constants.SUPERVISOR_FITNESS_FUNCTION_REQUEST:
-						/*
-						 * If a supervisor election is ongoing, then this
-						 * message is accepted. Else
-						 */
-						if (!fitnessFunctionManager.onMessage(object)) {
-							if (supervisorId.equals(""))
-								setSupervisorId(object.senderAddress);
-							else
-								handleUnicastMessage(
-										new A3Message(Constants.NEW_SUPERVISOR,
-												supervisorId),
-										object.senderAddress);
-						}
-						break;
+							case Constants.SUPERVISOR_FITNESS_FUNCTION_REQUEST:
+								/*
+								 * If a supervisor election is ongoing, then this
+								 * message is accepted. Else
+								 */
+								if (!fitnessFunctionManager.onMessage(object)) {
+									if (supervisorId.equals(""))
+										setSupervisorId(object.senderAddress);
+									else
+										handleUnicastMessage(
+												new A3Message(Constants.NEW_SUPERVISOR,
+														supervisorId),
+												object.senderAddress);
+								}
+								break;
 
-					case Constants.SUPERVISOR_FITNESS_FUNCTION_REPLY:
+							case Constants.SUPERVISOR_FITNESS_FUNCTION_REPLY:
 
-						fitnessFunctionManager.onMessage(object);
-						break;
+								fitnessFunctionManager.onMessage(object);
+								break;
 
-					case Constants.SPLIT:
-						// Random split operation.
+							case Constants.SPLIT:
+								// Random split operation.
 
-						A3Message newGroupMessage = new A3Message(
-								Constants.NEW_SPLITTED_GROUP, "");
-						handleBroadcastMessage(newGroupMessage);
+								A3Message newGroupMessage = new A3Message(
+										Constants.NEW_SPLITTED_GROUP, "");
+								handleBroadcastMessage(newGroupMessage);
 
-						int nodesToTransfer = Integer.valueOf(object.object);
-						ArrayList<String> selectedNodes = new ArrayList<String>();
-						int numberOfNodes = view.getNumberOfNodes();
-						String[] splittedView = view.getView()
-								.substring(1, view.getView().length() - 1)
-								.split(", ");
-						Random randomNumberGenerator = new Random();
-						String tempAddress;
+								int nodesToTransfer = Integer.valueOf(object.object);
+								ArrayList<String> selectedNodes = new ArrayList<String>();
+								int numberOfNodes = view.getNumberOfNodes();
+								String[] splittedView = view.getView()
+										.substring(1, view.getView().length() - 1)
+										.split(", ");
+								Random randomNumberGenerator = new Random();
+								String tempAddress;
 
-						/*
-						 * I can't move the supervisor in another group, so the
-						 * supervisor never sends its integer fitness function
-						 * value. I can't move more nodes than I have.
-						 */
-						if (nodesToTransfer < numberOfNodes) {
+								/*
+								 * I can't move the supervisor in another group, so the
+								 * supervisor never sends its integer fitness function
+								 * value. I can't move more nodes than I have.
+								 */
+								if (nodesToTransfer < numberOfNodes) {
 
-							for (int i = 0; i < nodesToTransfer; i++) {
+									for (int i = 0; i < nodesToTransfer; i++) {
 
-								do {
-									tempAddress = splittedView[randomNumberGenerator
-											.nextInt(numberOfNodes)];
-								} while (tempAddress.equals(supervisorId)
-										|| selectedNodes.contains(tempAddress));
+										do {
+											tempAddress = splittedView[randomNumberGenerator
+													.nextInt(numberOfNodes)];
+										} while (tempAddress.equals(supervisorId)
+												|| selectedNodes.contains(tempAddress));
 
-								selectedNodes.add(tempAddress);
+										selectedNodes.add(tempAddress);
+									}
+
+									for (String address : selectedNodes)
+										handleUnicastMessage(new A3Message(
+												Constants.SPLIT, ""), address);
+								}
+								break;
+
+							case Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION:
+
+								/*
+								 * "senderAddress Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION otherGroupName integerValue"
+								 * .
+								 *
+								 * If I receive this message, I'm the Service of group
+								 * "wait". A waiting node is communicating its
+								 * supervisor fitness function value because it is
+								 * participating to a supervisor election in group
+								 * "otherGroupName". I must send this message to the
+								 * group "otherGroupName".
+								 */
+								String[] splittedObject = ((String) object.object)
+										.split(Constants.A3_SEPARATOR);
+								sendToOtherGroup(object, splittedObject[0]);
+								break;
+
+							case Constants.NEW_SUPERVISOR:
+
+								/*
+								 * This message is sent by a node which was in "wait"
+								 * group. The supervisor election procedure identified a
+								 * "wait" channel as supervisor, because the sender was
+								 * disconnected. Now that the sender is connected, its
+								 * address is different from the one of the one of the
+								 * "wait" channel, so it is stored as the address of the
+								 * new supervisor.
+								 */
+								supervisorId = object.senderAddress;
+								break;
+
+							case Constants.SUPERVISOR_ELECTION:
+								supervisorElection();
+								break;
+
+							default:
+								try {
+									if (txInterface != null) {
+										txInterface.SupervisorReceive(object);
+									}
+								} catch (Exception e) {
+								}
+								break;				// A node called the sendMulticast(A3Message) method.
+
 							}
+							break;
 
-							for (String address : selectedNodes)
-								handleUnicastMessage(new A3Message(
-										Constants.SPLIT, ""), address);
+					// A node called the sendBroadcast(A3Message) method.
+					case SEND_BROADCAST:
+
+						int reason = object.reason;
+
+						if (reason == Constants.BOOLEAN_SPLIT_FITNESS_FUNCTION
+								|| reason == Constants.INTEGER_SPLIT_FITNESS_FUNCTION) {
+							A3Message newGroupMessage = new A3Message(
+									Constants.NEW_SPLITTED_GROUP, "");
+							handleBroadcastMessage(newGroupMessage);
 						}
-						break;
 
-					case Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION:
-
-						/*
-						 * "senderAddress Constants.WAIT_SUPERVISOR_FITNESS_FUNCTION otherGroupName integerValue"
-						 * .
-						 * 
-						 * If I receive this message, I'm the Service of group
-						 * "wait". A waiting node is communicating its
-						 * supervisor fitness function value because it is
-						 * participating to a supervisor election in group
-						 * "otherGroupName". I must send this message to the
-						 * group "otherGroupName".
-						 */
-						String[] splittedObject = ((String) object.object)
-								.split(Constants.A3_SEPARATOR);
-						sendToOtherGroup(object, splittedObject[0]);
-						break;
-
-					case Constants.NEW_SUPERVISOR:
-
-						/*
-						 * This message is sent by a node which was in "wait"
-						 * group. The supervisor election procedure identified a
-						 * "wait" channel as supervisor, because the sender was
-						 * disconnected. Now that the sender is connected, its
-						 * address is different from the one of the one of the
-						 * "wait" channel, so it is stored as the address of the
-						 * new supervisor.
-						 */
-						supervisorId = object.senderAddress;
-						break;
-
-					case Constants.SUPERVISOR_ELECTION:
-						supervisorElection();
-						break;
-
-					default:
 						try {
-							if (txInterface != null) {
-								txInterface.SupervisorReceive(object);
-							}
+
+							handleBroadcastMessage(object);
+
 						} catch (Exception e) {
 						}
+
+						break;
+
+					// A node called the sendMulticast(A3Message) method.
+					case SEND_MULTICAST:
+
+						ArrayList<String> destinations = subscriptions
+								.getSubscriptions(object.reason);
+
+						for (int i = 0; i < destinations.size(); i++)
+							handleUnicastMessage(object, destinations.get(i));
+
+						break;
+
+					// A node called the sendUnicast(A3Message) method.
+					case SEND_UNICAST:
+
+						/*
+						 * In sendUnicast(A3Message, String) I changed the sender
+						 * address with the destination address, in order to pass it
+						 * correctly to this thread without adding further logic.
+						 */
+						handleUnicastMessage(object, object.senderAddress);
 						break;
 					}
-					break;
-
-				// A node called the sendBroadcast(A3Message) method.
-				case SEND_BROADCAST:
-
-					int reason = object.reason;
-
-					if (reason == Constants.BOOLEAN_SPLIT_FITNESS_FUNCTION
-							|| reason == Constants.INTEGER_SPLIT_FITNESS_FUNCTION) {
-						A3Message newGroupMessage = new A3Message(
-								Constants.NEW_SPLITTED_GROUP, "");
-						handleBroadcastMessage(newGroupMessage);
-					}
-
-					try {
-
-						handleBroadcastMessage(object);
-
-					} catch (Exception e) {
-					}
-
-					break;
-
-				// A node called the sendMulticast(A3Message) method.
-				case SEND_MULTICAST:
-
-					ArrayList<String> destinations = subscriptions
-							.getSubscriptions(object.reason);
-
-					for (int i = 0; i < destinations.size(); i++)
-						handleUnicastMessage(object, destinations.get(i));
-
-					break;
-
-				// A node called the sendUnicast(A3Message) method.
-				case SEND_UNICAST:
-
-					/*
-					 * In sendUnicast(A3Message, String) I changed the sender
-					 * address with the destination address, in order to pass it
-					 * correctly to this thread without adding further logic.
-					 */
-					handleUnicastMessage(object, object.senderAddress);
-					break;
 				}
-			}
 		};
 	}
 
@@ -696,6 +700,7 @@ public class Service extends HandlerThread implements BusObject,
 				}
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -704,8 +709,8 @@ public class Service extends HandlerThread implements BusObject,
 			groupTransmitter.sendUnicast(message, Constants.PREFIX + groupName,
 					true);
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
 	}
 
 	/**
