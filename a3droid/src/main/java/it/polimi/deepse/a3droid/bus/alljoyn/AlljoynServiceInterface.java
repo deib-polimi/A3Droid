@@ -1,6 +1,7 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import org.alljoyn.bus.BusException;
+import org.alljoyn.bus.annotation.BusInterface;
 import org.alljoyn.bus.annotation.BusMethod;
 import org.alljoyn.bus.annotation.BusSignal;
 
@@ -9,6 +10,7 @@ import it.polimi.deepse.a3droid.a3.A3ServiceInterface;
 
 /**
  */
+@BusInterface(name = AlljoynBus.SERVICE_PATH)
 public interface AlljoynServiceInterface extends A3ServiceInterface{
 
     /*

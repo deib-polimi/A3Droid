@@ -15,19 +15,24 @@ import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3BusInterface;
-import it.polimi.deepse.a3droid.a3.A3Channel;
+import it.polimi.deepse.a3droid.a3.A3Bus;
+import it.polimi.deepse.a3droid.pattern.Observable;
 
 /**
  * Created by seadev on 5/17/16.
  */
-public class AlljoynBus extends A3BusInterface {
+public class AlljoynBus extends A3Bus {
 
     private static final String TAG = "a3droid.bus.AlljoynBus";
 
-    public AlljoynBus(A3Channel a3Channel){
-        super();
-        mAlljoynChannel = new AlljoynChannel(a3Channel);
+    /*
+     * Load the native alljoyn_java library.  The actual AllJoyn code is
+     * written in C++ and the alljoyn_java library provides the language
+     * bindings from Java to C++ and vice versa.
+     */
+    static {
+        Log.i(TAG, "System.loadLibrary(\"alljoyn_java\")");
+        System.loadLibrary("alljoyn_java");
     }
 
     /**
@@ -41,7 +46,7 @@ public class AlljoynBus extends A3BusInterface {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        a3Application.addObserver(this);
         startBusThread();
         /*
          * We have an AllJoyn handler thread running at this time, so take
@@ -51,7 +56,170 @@ public class AlljoynBus extends A3BusInterface {
          */
         mBackgroundHandler.connect();
         mBackgroundHandler.startDiscovery();
+        mAlljoynChannel = new AlljoynChannel();
     }
+
+    /**
+     * This is the event handler for the Observable/Observed design pattern.
+     * Whenever an interesting event happens in our appliation, the Model (the
+     * source of the event) notifies registered observers, resulting in this
+     * method being called since we registered as an Observer in onCreate().
+     *
+     * This method will be called in the context of the Model, which is, in
+     * turn the context of an event source.  This will either be the single
+     * Android application framework thread if the source is one of the
+     * Activities of the application or the Service.  It could also be in the
+     * context of the Service background thread.  Since the Android Application
+     * framework is a fundamentally single threaded thing, we avoid multithread
+     * issues and deadlocks by immediately getting this event into a separate
+     * execution in the context of the Service message pump.
+     *
+     * We do this by taking the event from the calling component and queueing
+     * it onto a "handler" in our Service and returning to the caller.  When
+     * the calling componenet finishes what ever caused the event notification,
+     * we expect the Android application framework to notice our pending
+     * message and run our handler in the context of the single application
+     * thread.
+     *
+     * In reality, both events are executed in the context of the single
+     * Android thread.
+     */
+    public synchronized void update(Observable o, Object arg) {
+        Log.i(TAG, "update(" + arg + ")");
+        String qualifier = (String)arg;
+
+        if (qualifier.equals(A3Application.APPLICATION_QUIT_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_APPLICATION_QUIT_EVENT);
+            mHandler.sendMessage(message);
+        }
+
+        /**if (qualifier.equals(A3Application.USE_JOIN_CHANNEL_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_USE_JOIN_CHANNEL_EVENT);
+            mHandler.sendMessage(message);
+        }
+
+        if (qualifier.equals(A3Application.USE_LEAVE_CHANNEL_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_USE_LEAVE_CHANNEL_EVENT);
+            mHandler.sendMessage(message);
+        }
+
+        if (qualifier.equals(A3Application.HOST_INIT_CHANNEL_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_HOST_INIT_CHANNEL_EVENT);
+            mHandler.sendMessage(message);
+        }**/
+
+        if (qualifier.equals(A3Application.START_SERVICE_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_HOST_START_CHANNEL_EVENT);
+            mHandler.sendMessage(message);
+        }
+
+        if (qualifier.equals(A3Application.STOP_SERVICE_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_HOST_STOP_CHANNEL_EVENT);
+            mHandler.sendMessage(message);
+        }
+
+        /**if (qualifier.equals(A3Application.OUTBOUND_CHANGED_EVENT)) {
+            Message message = mHandler.obtainMessage(HANDLE_OUTBOUND_CHANGED_EVENT);
+            mHandler.sendMessage(message);
+        }**/
+    }
+
+    /**
+     * This is the Android Service message handler.  It runs in the context of the
+     * main Android Service thread, which is also shared with Activities since
+     * Android is a fundamentally single-threaded system.
+     *
+     * The important thing for us is to note that this thread cannot be blocked for
+     * a significant amount of time or we risk the dreaded "force close" message.
+     * We can run relatively short-lived operations here, but we need to run our
+     * distributed system calls in a background thread.
+     *
+     * This handler serves translates from UI-related events into AllJoyn events
+     * and decides whether functions can be handled in the context of the
+     * Android main thread or if they must be dispatched to a background thread
+     * which can take as much time as needed to accomplish a task.
+     */
+    protected Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case HANDLE_APPLICATION_QUIT_EVENT:
+                {
+                    Log.i(TAG, "mHandler.handleMessage(): APPLICATION_QUIT_EVENT");
+                    mBackgroundHandler.leaveSession();
+                    mBackgroundHandler.cancelAdvertise();
+                    mBackgroundHandler.unbindSession();
+                    mBackgroundHandler.releaseName();
+                    mBackgroundHandler.exit();
+                    stopSelf();
+                }
+                break;
+                case HANDLE_HOST_INIT_CHANNEL_EVENT:
+                {
+                    Log.i(TAG, "mHandler.handleMessage(): HOST_INIT_CHANNEL_EVENT");
+                }
+                break;
+                case HANDLE_HOST_START_CHANNEL_EVENT:
+                {
+                    Log.i(TAG, "mHandler.handleMessage(): START_SERVICE_EVENT");
+                    mBackgroundHandler.requestName();
+                    mBackgroundHandler.bindSession();
+                    mBackgroundHandler.advertise();
+                }
+                break;
+                case HANDLE_HOST_STOP_CHANNEL_EVENT:
+                {
+                    Log.i(TAG, "mHandler.handleMessage(): STOP_SERVICE_EVENT");
+                    mBackgroundHandler.cancelAdvertise();
+                    mBackgroundHandler.unbindSession();
+                    mBackgroundHandler.releaseName();
+                }
+                break;
+                case HANDLE_OUTBOUND_CHANGED_EVENT:
+                {
+                    Log.i(TAG, "mHandler.handleMessage(): OUTBOUND_CHANGED_EVENT");
+                    mBackgroundHandler.sendMessages();
+                }
+                break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    /**
+     * Value for the HANDLE_APPLICATION_QUIT_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_APPLICATION_QUIT_EVENT = 0;
+
+    /**
+     * Value for the HANDLE_USE_JOIN_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_USE_JOIN_CHANNEL_EVENT = 1;
+
+    /**
+     * Value for the HANDLE_USE_LEAVE_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_USE_LEAVE_CHANNEL_EVENT = 2;
+
+    /**
+     * Value for the HANDLE_HOST_INIT_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_INIT_CHANNEL_EVENT = 3;
+
+    /**
+     * Value for the HANDLE_HOST_START_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_START_CHANNEL_EVENT = 4;
+
+    /**
+     * Value for the HANDLE_HOST_STOP_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_STOP_CHANNEL_EVENT = 5;
+
+    /**
+     * Value for the HANDLE_OUTBOUND_CHANGED_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_OUTBOUND_CHANGED_EVENT = 6;
 
     /**
      * This is the AllJoyn background thread handler class.  AllJoyn is a
@@ -309,7 +477,7 @@ public class AlljoynBus extends A3BusInterface {
      * the well-known name a hosting bus attachment will request and
      * advertise.
      */
-    public static final String SERVICE_PATH = "it.polimi.deepse.a3droid";
+    public static final String SERVICE_PATH = "a3.service";
 
     /**
      * The well-known session port used as the contact port for the chat service.
@@ -320,7 +488,7 @@ public class AlljoynBus extends A3BusInterface {
      * The object path used to identify the service "location" in the bus
      * attachment.
      */
-    private static final String OBJECT_PATH = "/a3DroidService";
+    private static final String OBJECT_PATH = "/a3GroupService";
 
     /**
      * An instance of an AllJoyn bus listener that knows what to do with
@@ -349,23 +517,23 @@ public class AlljoynBus extends A3BusInterface {
          * To make a service available to other AllJoyn peers, first
          * register a BusObject with the BusAttachment at a specific
          * object path.  Our service is implemented by the AlljoynService
-         * BusObject found at the "/a3DroidService" object path.
+         * BusObject found at the "/a3GroupService" object path.
          */
         Status status = mBus.registerBusObject(mAlljoynService, OBJECT_PATH);
         if (Status.OK != status) {
-            a3Application.alljoynError(A3Application.Module.HOST, "Unable to register the chat bus object: (" + status + ")");
+            a3Application.busError(A3Application.Module.HOST, "Unable to register the chat bus object: (" + status + ")");
             return;
         }
 
         status = mBus.connect();
         if (status != Status.OK) {
-            a3Application.alljoynError(A3Application.Module.GENERAL, "Unable to connect to the bus: (" + status + ")");
+            a3Application.busError(A3Application.Module.GENERAL, "Unable to connect to the bus: (" + status + ")");
             return;
         }
 
         status = mBus.registerSignalHandlers(mAlljoynChannel);
         if (status != Status.OK) {
-            a3Application.alljoynError(A3Application.Module.GENERAL, "Unable to register signal handlers: (" + status + ")");
+            a3Application.busError(A3Application.Module.GENERAL, "Unable to register signal handlers: (" + status + ")");
             return;
         }
 
@@ -403,7 +571,7 @@ public class AlljoynBus extends A3BusInterface {
             mBusState = BusState.DISCOVERING;
             return;
         } else {
-            a3Application.alljoynError(A3Application.Module.USE, "Unable to start finding advertised names: (" + status + ")");
+            a3Application.busError(A3Application.Module.USE, "Unable to start finding advertised names: (" + status + ")");
             return;
         }
     }
@@ -433,11 +601,7 @@ public class AlljoynBus extends A3BusInterface {
         int stateRelation = mBusState.compareTo(BusState.DISCONNECTED);
         assert (stateRelation >= 0);
 
-        /*
-         * We depend on the user interface and model to work together to not
-         * get this process started until a valid name is set in the channel name.
-         */
-        //TODO: use random id bellow
+        //TODO: use the group name
         String wellKnownName = SERVICE_PATH + "." + a3Application.getGroupName();
         //TODO: check the needed FLAGS
         Status status = mBus.requestName(wellKnownName, BusAttachment.ALLJOYN_REQUESTNAME_FLAG_DO_NOT_QUEUE);
@@ -445,7 +609,7 @@ public class AlljoynBus extends A3BusInterface {
             serviceState = ServiceState.NAMED;
             a3Application.setServiceState(serviceState);
         } else {
-            a3Application.alljoynError(A3Application.Module.USE, "Unable to acquire well-known name: (" + status + ")");
+            a3Application.busError(A3Application.Module.USE, "Unable to acquire well-known name: (" + status + ")");
         }
     }
 
@@ -545,7 +709,7 @@ public class AlljoynBus extends A3BusInterface {
             serviceState = ServiceState.BOUND;
             a3Application.setServiceState(serviceState);
         } else {
-            a3Application.alljoynError(A3Application.Module.HOST, "Unable to bind session contact port: (" + status + ")");
+            a3Application.busError(A3Application.Module.HOST, "Unable to bind session contact port: (" + status + ")");
             return;
         }
     }
@@ -584,14 +748,14 @@ public class AlljoynBus extends A3BusInterface {
          * We depend on the user interface and model to work together to not
          * change the name out from under us while we are running.
          */
-        String wellKnownName = SERVICE_PATH + "." + a3Application.getServiceState();
+        String wellKnownName = SERVICE_PATH + "." + a3Application.getGroupName();
         Status status = mBus.advertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
 
         if (status == Status.OK) {
             serviceState = ServiceState.ADVERTISED;
             a3Application.setServiceState(serviceState);
         } else {
-            a3Application.alljoynError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
+            a3Application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
             return;
         }
     }
@@ -612,7 +776,7 @@ public class AlljoynBus extends A3BusInterface {
         Status status = mBus.cancelAdvertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
 
         if (status != Status.OK) {
-            a3Application.alljoynError(A3Application.Module.HOST, "Unable to cancel advertisement of well-known name: (" + status + ")");
+            a3Application.busError(A3Application.Module.HOST, "Unable to cancel advertisement of well-known name: (" + status + ")");
             return;
         }
 
@@ -659,7 +823,7 @@ public class AlljoynBus extends A3BusInterface {
              */
             public void sessionLost(int sessionId, int reason) {
                 Log.i(TAG, "BusListener.sessionLost(sessionId=" + sessionId + ",reason=" + reason + ")");
-                a3Application.alljoynError(A3Application.Module.USE, "The session has been lost");
+                a3Application.busError(A3Application.Module.USE, "The session has been lost");
                 channelState = ChannelState.IDLE;
                 a3Application.setChannelState(channelState);
             }
@@ -669,7 +833,7 @@ public class AlljoynBus extends A3BusInterface {
             Log.i(TAG, "doJoinSession(): use sessionId is " + mUseSessionId);
             mUseSessionId = sessionId.value;
         } else {
-            a3Application.alljoynError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
+            a3Application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
             return;
         }
 

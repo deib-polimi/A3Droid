@@ -14,7 +14,7 @@ import it.polimi.deepse.a3droid.a3.A3Application;
  */
 public class AlljoynBusListener extends BusListener {
 
-    private static final String TAG = "a3droid.bus.AlljoynBusListener";
+    private static final String TAG = "a3droid.BusListener";
 
     AlljoynBus alljoynBus;
 
@@ -40,8 +40,7 @@ public class AlljoynBusListener extends BusListener {
     public void foundAdvertisedName(String name, short transport, String namePrefix) {
         Log.i(TAG, "foundAdvertisedName(" + name + ")");
         A3Application application = (A3Application)alljoynBus.getApplication();
-        //TODO: add chanell
-        //application.addFoundChannel(name);
+        application.addFoundChannel(name);
     }
 
     /**

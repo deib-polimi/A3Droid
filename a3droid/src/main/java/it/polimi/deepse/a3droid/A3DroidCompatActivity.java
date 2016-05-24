@@ -11,9 +11,9 @@ public abstract class A3DroidCompatActivity extends AppCompatActivity implements
 	private String uuId;
 
 	/* Load the native alljoyn_java library. */
-	static {
+	/*static {
 		System.loadLibrary("alljoyn_java");
-	}
+	}*/
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -21,7 +21,7 @@ public abstract class A3DroidCompatActivity extends AppCompatActivity implements
 		
 		this.uuId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
 
-		org.alljoyn.bus.alljoyn.DaemonInit.PrepareDaemon(getApplicationContext());
+		//org.alljoyn.bus.alljoyn.DaemonInit.PrepareDaemon(getApplicationContext());
 
 		// Set new global handler
 		Thread.setDefaultUncaughtExceptionHandler(new ErrorReportExceptionHandler());

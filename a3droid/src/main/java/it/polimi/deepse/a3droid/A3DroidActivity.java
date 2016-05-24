@@ -12,7 +12,7 @@ public abstract class A3DroidActivity extends Activity implements UserInterface{
 
 	/* Load the native alljoyn_java library. */
 	static {
-		System.loadLibrary("alljoyn_java");
+		//System.loadLibrary("alljoyn_java");
 	}
 
 	@Override
@@ -21,7 +21,7 @@ public abstract class A3DroidActivity extends Activity implements UserInterface{
 		
 		this.uuId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
 
-		org.alljoyn.bus.alljoyn.DaemonInit.PrepareDaemon(getApplicationContext());
+		//org.alljoyn.bus.alljoyn.DaemonInit.PrepareDaemon(getApplicationContext());
 
 		// Set new global handler
 		Thread.setDefaultUncaughtExceptionHandler(new ErrorReportExceptionHandler());

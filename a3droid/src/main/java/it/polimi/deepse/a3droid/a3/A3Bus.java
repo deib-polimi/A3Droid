@@ -3,14 +3,19 @@ package it.polimi.deepse.a3droid.a3;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import it.polimi.deepse.a3droid.pattern.Observable;
+import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
  * Created by seadev on 5/20/16.
  */
-public abstract class A3BusInterface extends Service {
+public abstract class A3Bus extends Service implements Observer{
 
     protected static final String TAG = "a3droid.a3.A3Bus";
 
@@ -33,9 +38,7 @@ public abstract class A3BusInterface extends Service {
      */
     public void onCreate() {
         Log.i(TAG, "onCreate()");
-        //TODO Get Android application class, where application state is kept
         a3Application = (A3Application)getApplication();
-        //a3Application.addObserver(this);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
         builder.setPriority(Notification.PRIORITY_MIN);
@@ -59,6 +62,41 @@ public abstract class A3BusInterface extends Service {
      * received as signals
      */
     protected A3Channel a3Channel = null;
+
+    /**
+     * Value for the HANDLE_APPLICATION_QUIT_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_APPLICATION_QUIT_EVENT = 0;
+
+    /**
+     * Value for the HANDLE_USE_JOIN_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_USE_JOIN_CHANNEL_EVENT = 1;
+
+    /**
+     * Value for the HANDLE_USE_LEAVE_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_USE_LEAVE_CHANNEL_EVENT = 2;
+
+    /**
+     * Value for the HANDLE_HOST_INIT_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_INIT_CHANNEL_EVENT = 3;
+
+    /**
+     * Value for the HANDLE_HOST_START_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_START_CHANNEL_EVENT = 4;
+
+    /**
+     * Value for the HANDLE_HOST_STOP_CHANNEL_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_HOST_STOP_CHANNEL_EVENT = 5;
+
+    /**
+     * Value for the HANDLE_OUTBOUND_CHANGED_EVENT case observer notification handler.
+     */
+    private static final int HANDLE_OUTBOUND_CHANGED_EVENT = 6;
 
     /**
      * The state of the AllJoyn bus attachment.
