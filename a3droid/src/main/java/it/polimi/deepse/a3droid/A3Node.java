@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 /**
  * This class represent a device, with the roles it can play in each group.
- * It contains the methods to connect to groups, to disconnect from them,
+ * It contains the methods to joinGroup to groups, to disconnect from them,
  * to send messages to their members and to manage groups hierarchy.
  * @author Francesco
  *
@@ -191,10 +191,10 @@ public class A3Node extends Thread implements UserInterface{
 		return channel.isSupervisor();
 	}
 
-	/**Determines if this node has both the roles to connect to the specified group.
+	/**Determines if this node has both the roles to joinGroup to the specified group.
 	 * 
 	 * @param groupName The name of the group.
-	 * @return true if this node has both the roles to connect to the group "groupName", false otherwise.
+	 * @return true if this node has both the roles to joinGroup to the group "groupName", false otherwise.
 	 */
 	public boolean hasRolesForGroup(String groupName){
 
@@ -213,13 +213,13 @@ public class A3Node extends Thread implements UserInterface{
 	/**It connects this node to the specified group, if it isn't already connected to it,
 	 * or if a channel to the specified group is not in "WAITING" status.
 	 * 
-	 * @param groupName The name of the group to connect this node to.
+	 * @param groupName The name of the group to joinGroup this node to.
 	 * @param isResultRelevant
 	 * It is used in order not to block the user interface
 	 * while waiting to discover if the status of the new channel will be "CONNECTED" or "WAITING".
 	 * Its value is true if it is important to know the result, so it is important to block while waiting it,
 	 * false otherwise.
-	 * User interface must always call "connect('groupName', false)" to avoid problems.
+	 * User interface must always call "joinGroup('groupName', false)" to avoid problems.
 	 * @param forApplication true if the connection is requested by the application,
 	 * false if it is requested by the system.
 	 * @return true if the status of the channel to group "groupName" is "CONNECTED", false if it is "WAITING".
@@ -541,7 +541,7 @@ public class A3Node extends Thread implements UserInterface{
 	/**
 	 * It tries to create a hierarchical relationship between the specified groups.
 	 * This is possible only if this node is the supervisor of at least one of the two groups
-	 * and if it has the right roles to connect to the other.
+	 * and if it has the right roles to joinGroup to the other.
 	 * If this node is connected to the child group,
 	 * the effects of this method are the ones of "actualStack(parentGroupName, childGroupName)".
 	 * If this node is connected to the parent group,
@@ -585,7 +585,7 @@ public class A3Node extends Thread implements UserInterface{
 
 	/**
 	 * It tries to set the group "groupName1" as parent of group "groupName2" and vice versa.
-	 * This is only possible if each of the two groups have the right roles to connect to the other,
+	 * This is only possible if each of the two groups have the right roles to joinGroup to the other,
 	 * and if this node is the supervisor of at least one of the two groups.
 	 * If this happens, this method send the other group a message asking for a peers operation.
 	 * The supervisor of the other group executes "actualStack(String, String)"
@@ -630,12 +630,12 @@ public class A3Node extends Thread implements UserInterface{
 
 	/**
 	 * It tries to create a group containing the supervisors of the two other specified groups.
-	 * This is only possible if each of the two groups have the right roles to connect to the parent group,
+	 * This is only possible if each of the two groups have the right roles to joinGroup to the parent group,
 	 * if this node is the supervisor of at least one of the two groups
-	 * and if this node has the right roles to connect to the other.
-	 * This node, if it can connect to both the parent group and the other one,
+	 * and if this node has the right roles to joinGroup to the other.
+	 * This node, if it can joinGroup to both the parent group and the other one,
 	 * sends a message to the other one asking for a hierarchy operation.
-	 * The other node executes the method "actualStack(String, String)" to connect to the parent group,
+	 * The other node executes the method "actualStack(String, String)" to joinGroup to the parent group,
 	 * and notifies this node with the result.
 	 * Here, the method "hierarchyReply(String, String, String, boolean)" is called (see it for details).
 	 * 
@@ -682,7 +682,7 @@ public class A3Node extends Thread implements UserInterface{
 	 * It disconnects this node from the group "oldGroupName" and connects it to the group "newGroupName",
 	 * if it has the right roles.
 	 * 
-	 * @param newGroupName The name of the group to connect to.
+	 * @param newGroupName The name of the group to joinGroup to.
 	 * @param oldGroupName The name of the group to disconnect from.
 	 */
 	public void actualMerge(String newGroupName, String oldGroupName) {
@@ -714,7 +714,7 @@ public class A3Node extends Thread implements UserInterface{
 
 	/**
 	 * It transfers the nodes in group "groupName2" to group "groupName1" and destroys group "groupName2".
-	 * The nodes which don't have the right roles to connect to "groupName1"
+	 * The nodes which don't have the right roles to joinGroup to "groupName1"
 	 * won't be there after this operation.
 	 * 
 	 * @param groupName1 The name of the group in which to transfer the nodes in group "groupName2".
@@ -775,7 +775,7 @@ public class A3Node extends Thread implements UserInterface{
 	 * If this node is the supervisor of the group "childGroupName",
 	 * the effects of this method are the ones of method "actualReverseStack(parentGroupName, childGroupName)".
 	 * If this node is the supervisor of the group "parentGroupName",
-	 * and if it has the right roles to connect to the group "childGroupName",
+	 * and if it has the right roles to joinGroup to the group "childGroupName",
 	 * this node send the latter the order to execute "actualReverseStack(parentGroupName, childGroupName)".
 	 * Such operation is always possible, so notifying its result is unuseful.
 	 * 
@@ -857,7 +857,7 @@ public class A3Node extends Thread implements UserInterface{
 	 * It tries to destroy the hierarchy hierarchical relationship
 	 * between the group "parentGroupName" and the groups "groupName1" and "groupName2".
 	 * This is possible only if this node is the supervisor of at least one of the specified son groups
-	 * and if it has the right roles to connect to the other one.
+	 * and if it has the right roles to joinGroup to the other one.
 	 * It sends the other group the order to execute "actualReverseStack(String, String)"
 	 * and calls "actualReverseStack(String, String)" on this node too.
 	 * 
@@ -937,7 +937,7 @@ public class A3Node extends Thread implements UserInterface{
 			}
 
 			else{
-				/*The other node executed a stack operation to connect to me,
+				/*The other node executed a stack operation to joinGroup to me,
 				 * so I don't need to specify to undo a peers operation.
 				 */
 				A3Message message = new A3Message(Constants.REVERSE_STACK, childGroupName);
@@ -975,7 +975,7 @@ public class A3Node extends Thread implements UserInterface{
 				showOnScreen("hierarchy(" + parentGroupName + ", " + myGroupName + ", " + otherGroupName + "): " + true);
 
 			else{
-				/*The other node executed a stack operation to connect to parent,
+				/*The other node executed a stack operation to joinGroup to parent,
 				 * so I don't need to specify to undo a hierarchy operation.
 				 */
 				A3Message message = new A3Message(Constants.REVERSE_STACK, parentGroupName);

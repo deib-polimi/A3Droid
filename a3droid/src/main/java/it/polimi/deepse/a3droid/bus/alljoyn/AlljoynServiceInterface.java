@@ -2,16 +2,14 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.annotation.BusInterface;
-import org.alljoyn.bus.annotation.BusMethod;
 import org.alljoyn.bus.annotation.BusSignal;
 
 import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.a3.A3ServiceInterface;
 
 /**
  */
 @BusInterface(name = AlljoynBus.SERVICE_PATH)
-public interface AlljoynServiceInterface extends A3ServiceInterface{
+public interface AlljoynServiceInterface{
 
     /*
      * The BusMethod annotation signifies that this function should be used as part of the AllJoyn
@@ -22,17 +20,17 @@ public interface AlljoynServiceInterface extends A3ServiceInterface{
      * Bus methods are called from nodes that have joined the service session and executed by the
      * service implementation.
      */
-    @BusMethod(signature = "(sisay)", replySignature = "b")
-    void sendToSupervisor(A3Message message) throws BusException;
-
-    @BusMethod(signature = "(sisay)s", replySignature = "b")
-    void sendUnicast(A3Message message, String address) throws BusException;
+    /*@BusMethod(signature = "(sisay)", replySignature = "b")
+    boolean sendToSupervisor(A3Message message) throws BusException;
 
     @BusMethod(signature = "(sisay)", replySignature = "b")
-    void sendMultiCast(A3Message message) throws BusException;
+    boolean sendUnicast(A3Message message) throws BusException;
 
     @BusMethod(signature = "(sisay)", replySignature = "b")
-    void sendBroadcast(A3Message message) throws BusException;
+    boolean sendMultiCast(A3Message message) throws BusException;
+
+    @BusMethod(signature = "(sisay)", replySignature = "b")
+    boolean sendBroadcast(A3Message message) throws BusException;*/
 
     /*
      * The BusSignal annotation signifies that this function should be used as
@@ -42,11 +40,11 @@ public interface AlljoynServiceInterface extends A3ServiceInterface{
      * Bus signals are called by the service and will be listened by all interfaces that declared
      * the corresponding bus signal handlers, in our case the AlljoynChannel class.
      */
-    @BusSignal(signature = "(sisay)")
-    void ReceiveUnicast(A3Message message) throws BusException;
+    @BusSignal(signature = "(sisay)s")
+    void ReceiveUnicast(A3Message message, String address) throws BusException;
 
-    @BusSignal(signature = "(sisay)")
-    void ReceiveMultiCast(A3Message message) throws BusException;
+    @BusSignal(signature = "(sisay)as")
+    void ReceiveMultiCast(A3Message message, String [] addresses) throws BusException;
 
     @BusSignal(signature = "(sisay)")
     void ReceiveBroadcast(A3Message message) throws BusException;

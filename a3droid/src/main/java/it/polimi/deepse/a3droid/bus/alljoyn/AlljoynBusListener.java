@@ -10,7 +10,7 @@ import it.polimi.deepse.a3droid.a3.A3Application;
  * The ChatBusListener is a class that listens to the AllJoyn bus for
  * notifications corresponding to the existence of events happening out on
  * the bus.  We provide one implementation of our listener to the bus
- * attachment during the connect().
+ * attachment during the joinGroup().
  */
 public class AlljoynBusListener extends BusListener {
 

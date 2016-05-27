@@ -3,13 +3,10 @@ package it.polimi.deepse.a3droid.a3;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
@@ -64,41 +61,6 @@ public abstract class A3Bus extends Service implements Observer{
     protected A3Channel a3Channel = null;
 
     /**
-     * Value for the HANDLE_APPLICATION_QUIT_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_APPLICATION_QUIT_EVENT = 0;
-
-    /**
-     * Value for the HANDLE_USE_JOIN_CHANNEL_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_USE_JOIN_CHANNEL_EVENT = 1;
-
-    /**
-     * Value for the HANDLE_USE_LEAVE_CHANNEL_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_USE_LEAVE_CHANNEL_EVENT = 2;
-
-    /**
-     * Value for the HANDLE_HOST_INIT_CHANNEL_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_HOST_INIT_CHANNEL_EVENT = 3;
-
-    /**
-     * Value for the HANDLE_HOST_START_CHANNEL_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_HOST_START_CHANNEL_EVENT = 4;
-
-    /**
-     * Value for the HANDLE_HOST_STOP_CHANNEL_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_HOST_STOP_CHANNEL_EVENT = 5;
-
-    /**
-     * Value for the HANDLE_OUTBOUND_CHANGED_EVENT case observer notification handler.
-     */
-    private static final int HANDLE_OUTBOUND_CHANGED_EVENT = 6;
-
-    /**
      * The state of the AllJoyn bus attachment.
      */
     protected BusState mBusState = BusState.DISCONNECTED;
@@ -144,6 +106,7 @@ public abstract class A3Bus extends Service implements Observer{
      */
     public static enum ServiceState {
         IDLE,            /** There is no hosted chat channel */
+        REGISTERED,       /** The service has been registered to the bus */
         NAMED,            /** The well-known name for the channel has been successfully acquired */
         BOUND,            /** A session port has been bound for the channel */
         ADVERTISED,        /** The bus attachment has advertised itself as hosting an chat channel */
@@ -159,6 +122,7 @@ public abstract class A3Bus extends Service implements Observer{
      */
     public static enum ChannelState {
         IDLE,            /** There is no used chat channel */
+        REGISTERED,       /** The channel has been registered to the bus */
         JOINED,            /** The session for the channel has been successfully joined */
     }
 

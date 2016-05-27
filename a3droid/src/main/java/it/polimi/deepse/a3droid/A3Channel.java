@@ -152,7 +152,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	 * @param userInterface
 	 *            The user interface to interact to.
 	 * @param groupDescriptor
-	 *            The descriptor of the group to connect this channel to.
+	 *            The descriptor of the group to joinGroup this channel to.
 	 */
 	public A3Channel(A3Node a3node, UserInterface userInterface,
 			GroupDescriptor groupDescriptor) {
@@ -197,12 +197,12 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	}
 
 	/**
-	 * Called by an A3Node when connecting the channel. Used to connect to the
+	 * Called by an A3Node when connecting the channel. Used to joinGroup to the
 	 * AllJoyn bus and to start group discovery. It also sets the roles of this
 	 * channel.
 	 * 
 	 * @param groupName
-	 *            The name of the group to which to connect this channel.
+	 *            The name of the group to which to joinGroup this channel.
 	 * @param a3FollowerRole
 	 *            The logic that is executed when this channel is a follower.
 	 * @param a3SupervisorRole
@@ -226,7 +226,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 	}
 
-	/** Used to connect to the AllJoyn bus and to start group discovery. */
+	/** Used to joinGroup to the AllJoyn bus and to start group discovery. */
 	public void connect(String group_name) {
 
 		showOnScreen("Starting...");
@@ -262,7 +262,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 		Status status = mBus.connect();
 		if (Status.OK != status) {
-			showOnScreen("status = " + status + " dopo connect()");
+			showOnScreen("status = " + status + " dopo joinGroup()");
 			return;
 		}
 
@@ -290,7 +290,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 	/**
 	 * It is called when the timeout fires and the group name was discovered. It
-	 * lets this channel join the AllJoyn session and connect to the group.
+	 * lets this channel join the AllJoyn session and joinGroup to the group.
 	 */
 	public void joinSession() {
 
@@ -458,7 +458,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 		/*
 		 * The name of my UnicastReceiver is strictly based on my address in the
-		 * group, so I can create and connect it only now that I know my
+		 * group, so I can create and joinGroup it only now that I know my
 		 * address.
 		 */
 		unicastReceiver = new A3UnicastReceiver(groupName + "._" + id, this);
@@ -702,7 +702,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 		case Constants.SPLIT:
 
 			/*
-			 * I will connect to a group splitted by this group, which has the
+			 * I will joinGroup to a group splitted by this group, which has the
 			 * same roles of this group, so I don't need to check for right
 			 * roles here.
 			 */

@@ -132,126 +132,6 @@ public class A3Application extends Application implements Observable{
      */
     protected String mErrorString = "ER_OK";
 
-
-    /**
-     * Set the status of the "host" channel.  The AllJoyn Service part of the
-     * appliciation is expected to make this call to set the status to reflect
-     * the status of the underlying AllJoyn session.
-     */
-    public synchronized void setServiceState(A3Bus.ServiceState state) {
-        mServiceState = state;
-        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
-    }
-
-    /**
-     * The object we use in notifications to indicate that the state of the
-     * "host" channel or its name has changed.
-     */
-    public static final String SERVICE_STATE_CHANGED_EVENT = "SERVICE_STATE_CHANGED_EVENT";
-
-    /**
-     * Get the state of the "use" channel.
-     */
-    public synchronized A3Bus.ServiceState getServiceState() {
-        return mServiceState;
-    }
-    /**
-     * The "host" state which reflects the state of the part of the system
-     * related to hosting an chat channel.  In a "real" application this kind
-     * of detail probably isn't appropriate, but we want to do so for this
-     * sample.
-     */
-    protected A3Bus.ServiceState mServiceState = A3Bus.ServiceState.IDLE;
-
-    /**
-     * Set the status of the "use" channel.  The AllJoyn Service part of the
-     * appliciation is expected to make this call to set the status to reflect
-     * the status of the underlying AllJoyn session.
-     */
-    public synchronized void setChannelState(A3Bus.ChannelState state) {
-        mChannelState = state;
-        notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
-    }
-
-    /**
-     * The object we use in notifications to indicate that the state of the
-     * "use" channel or its name has changed.
-     */
-    public static final String CHANNEL_STATE_CHANGED_EVENT = "CHANNEL_STATE_CHANGED_EVENT";
-
-    /**
-     * Get the state of the "use" channel.
-     */
-    public synchronized A3Bus.ChannelState getChannelState() {
-        return mChannelState;
-    }
-
-    /**
-     * The "use" state which reflects the state of the part of the system
-     * related to using a remotely hosted chat channel.  In a "real" application
-     * this kind of detail probably isn't appropriate, but we want to do so for
-     * this sample.
-     */
-    protected A3Bus.ChannelState mChannelState = A3Bus.ChannelState.IDLE;
-
-    /**
-     * Set the name part of the "host" channel.  Since we are going to "use" a
-     * channel that is implemented remotely and discovered through an AllJoyn
-     * FoundAdvertisedName, this must come from a list of advertised names.
-     * These names are our channels, and so we expect the GUI to choose from
-     * among the list of channels it retrieves from getFoundChannels().
-     *
-     * Since we are talking about user-level interactions here, we are talking
-     * about the final segment of a well-known name representing a channel at
-     * this point.
-     */
-    public synchronized void setGroupName(String name) {
-        groupName = name;
-        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
-    }
-
-    /**
-     * Get the name part of the "use" channel.
-     */
-    public synchronized String getGroupName() {
-        return groupName;
-    }
-
-    /**
-     * The name of the "host" channel which the user has selected.
-     */
-    protected String groupName = "TEST";
-
-    /**
-     * This is the method that the "host" tab user interface calls when the
-     * user indicates that she wants to start hosting a channel.
-     */
-    public synchronized void hostStartChannel() {
-        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
-        notifyObservers(START_SERVICE_EVENT);
-    }
-
-    /**
-     * The object we use in notifications to indicate that user has requested
-     * that we initialize the host channel parameters in the "use" tab.
-     */
-    public static final String START_SERVICE_EVENT = "START_SERVICE_EVENT";
-
-    /**
-     * This is the method that the "host" tab user interface calls when the
-     * user indicates that she wants to stop hosting a channel.
-     */
-    public synchronized void hostStopChannel() {
-        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
-        notifyObservers(STOP_SERVICE_EVENT);
-    }
-
-    /**
-     * The object we use in notifications to indicate that user has requested
-     * that we initialize the host channel parameters in the "use" tab.
-     */
-    public static final String STOP_SERVICE_EVENT = "STOP_SERVICE_EVENT";
-
     /**
      * Called from the AllJoyn Service when it gets a FoundAdvertisedName.  We
      * know by construction that the advertised name will correspond to an chat
@@ -333,6 +213,10 @@ public class A3Application extends Application implements Observable{
     public synchronized void deleteObserver(Observer obs) {
         Log.i(TAG, "deleteObserver(" + obs + ")");
         mObservers.remove(obs);
+    }
+
+    public synchronized List<Observer> getObservers(){
+        return mObservers;
     }
 
     /**

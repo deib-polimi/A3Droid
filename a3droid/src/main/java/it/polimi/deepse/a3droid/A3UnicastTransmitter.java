@@ -14,7 +14,7 @@ import org.alljoyn.bus.Status;
  * so it connects and disconnects to the channels' UnicastReceivers as needed.
  * It is a kind of simplified channel,
  * but it is missing group discovery and reconnection in case of missing transmission.
- * In order to connect to a specific client in a multipoint session,
+ * In order to joinGroup to a specific client in a multipoint session,
  * AllJoyn requires that every client is uniquely identified by a well-known-name:
  * such name is obtained by adding an hash of the channel address to the name of the group.
  * Service discovery is not needed here because,

@@ -1,24 +1,272 @@
 package it.polimi.deepse.a3droid.a3;
 
+import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.pattern.Observable;
+import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
  * Created by seadev on 5/20/16.
  */
-public class A3Channel implements A3ChannelInterface {
+public abstract class A3Channel implements A3ChannelInterface, Observable {
+
+    protected static final String TAG = "a3droid.A3Channel";
+
+    public A3Channel(String groupName){
+        this.setGroupName(groupName);
+    }
+
+
+    public void joinGroup(){
+        notifyObservers(A3Channel.JOIN_CHANNEL_EVENT);
+    }
+
+    public void createGroup(){
+        notifyObservers(A3Channel.START_SERVICE_EVENT);
+    }
+
+    /** A3ChannelInterface **/
 
     @Override
-    public void receiveUnicast(A3Message message) {
-
+    public void receiveUnicast(A3Message message, String address) {
+        Log.i(TAG, "UNICAST : " + message.object + " TO " + address);
     }
 
     @Override
-    public void receiveMulticast(A3Message message) {
-
+    public void receiveMulticast(A3Message message, String [] addresses) {
+        Log.i(TAG, "MULTICAST : " + message.object + " TO " + addresses);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
-
+        Log.i(TAG, "BROADCAST : " + message.object);
     }
+
+    /**
+     * Set the status of the "host" channel.  The AllJoyn Service part of the
+     * appliciation is expected to make this call to set the status to reflect
+     * the status of the underlying AllJoyn session.
+     */
+    public synchronized void setServiceState(A3Bus.ServiceState state) {
+        mServiceState = state;
+        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * Get the state of the "use" channel.
+     */
+    public synchronized A3Bus.ServiceState getServiceState() {
+        return mServiceState;
+    }
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "host" channel or its name has changed.
+     */
+    public static final String SERVICE_STATE_CHANGED_EVENT = "SERVICE_STATE_CHANGED_EVENT";
+
+    /**
+     * The "host" state which reflects the state of the part of the system
+     * related to hosting an chat channel.  In a "real" application this kind
+     * of detail probably isn't appropriate, but we want to do so for this
+     * sample.
+     */
+    protected A3Bus.ServiceState mServiceState = A3Bus.ServiceState.IDLE;
+
+    /**
+     * Set the status of the "use" channel.  The AllJoyn Service part of the
+     * appliciation is expected to make this call to set the status to reflect
+     * the status of the underlying AllJoyn session.
+     */
+    public synchronized void setChannelState(A3Bus.ChannelState state) {
+        mChannelState = state;
+        notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "use" channel or its name has changed.
+     */
+    public static final String CHANNEL_STATE_CHANGED_EVENT = "CHANNEL_STATE_CHANGED_EVENT";
+
+    /**
+     * Get the state of the "use" channel.
+     */
+    public synchronized A3Bus.ChannelState getChannelState() {
+        return mChannelState;
+    }
+
+    /**
+     * The "use" state which reflects the state of the part of the system
+     * related to using a remotely hosted chat channel.  In a "real" application
+     * this kind of detail probably isn't appropriate, but we want to do so for
+     * this sample.
+     */
+    protected A3Bus.ChannelState mChannelState = A3Bus.ChannelState.IDLE;
+
+    /**
+     * Set the name part of the "host" channel.  Since we are going to "use" a
+     * channel that is implemented remotely and discovered through an AllJoyn
+     * FoundAdvertisedName, this must come from a list of advertised names.
+     * These names are our channels, and so we expect the GUI to choose from
+     * among the list of channels it retrieves from getFoundChannels().
+     *
+     * Since we are talking about user-level interactions here, we are talking
+     * about the final segment of a well-known name representing a channel at
+     * this point.
+     */
+    private synchronized void setGroupName(String name) {
+        groupName = name;
+        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * Get the name part of the "use" channel.
+     */
+    public synchronized String getGroupName() {
+        return groupName;
+    }
+
+    /**
+     * The name of the "host" channel which the user has selected.
+     */
+    protected String groupName = null;
+
+    /**
+     * Get the channel id
+     */
+    public synchronized void setChannelId(String id) {
+        this.channelId = id;
+        //notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * Get the name part of the "use" channel.
+     */
+    public synchronized String getChannelId() {
+        return channelId;
+    }
+
+    /**
+     * The channel id uniquely identifies the channel
+     */
+    protected String channelId = null;
+
+    /**
+     * This is the method that the "use" tab user interface calls when the
+     * user indicates that she wants to join a channel.  The channel name
+     * must have been previously set with a call to setUseChannelName().
+     * The "use" channel is the channel that we talk about in the "Use" tab.
+     * Since it's a remote channel in a remote bus attachment, we need to tell
+     * the AllJoyn Service to go join the corresponding session.
+     */
+    public synchronized void useJoinChannel() {
+        //clearHistory();
+        notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+        notifyObservers(JOIN_CHANNEL_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that user has requested
+     * that we join a channel in the "use" tab.
+     */
+    public static final String JOIN_CHANNEL_EVENT = "JOIN_CHANNEL_EVENT";
+
+    /**
+     * This is the method that the "use" tab user interface calls when the
+     * user indicates that she wants to leave a channel.  Since we're
+     * talking about a remote channel corresponding to a session with a
+     * remote bus attachment, we needto tell the AllJoyn Service to leave
+     * the corresponding session.
+     */
+    public synchronized void useLeaveChannel() {
+        notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+        notifyObservers(USE_LEAVE_CHANNEL_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that user has requested
+     * that we leave a channel in the "use" tab.
+     */
+    public static final String USE_LEAVE_CHANNEL_EVENT = "USE_LEAVE_CHANNEL_EVENT";
+
+    /**
+     * This is the method that the "host" tab user interface calls when the
+     * user indicates that she wants to start hosting a channel.
+     */
+    public synchronized void startGroupService() {
+        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+        notifyObservers(START_SERVICE_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that user has requested
+     * that we initialize the host channel parameters in the "use" tab.
+     */
+    public static final String START_SERVICE_EVENT = "START_SERVICE_EVENT";
+
+    /**
+     * This is the method that the "host" tab user interface calls when the
+     * user indicates that she wants to stop hosting a channel.
+     */
+    public synchronized void hostStopChannel() {
+        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+        notifyObservers(STOP_SERVICE_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that user has requested
+     * that we initialize the host channel parameters in the "use" tab.
+     */
+    public static final String STOP_SERVICE_EVENT = "STOP_SERVICE_EVENT";
+
+    /** Observable **/
+    /**
+     * This object is really the model of a model-view-controller architecture.
+     * The observer/observed design pattern is used to notify view-controller
+     * objects when the model has changed.  The observed object is this object,
+     * the model.  Observers correspond to the view-controllers which in this
+     * case are the Android Activities (corresponding to the use tab and the
+     * hsot tab) and the Android Service that does all of the AllJoyn work.
+     * When an observer wants to register for change notifications, it calls
+     * here.
+     */
+    public synchronized void addObserver(Observer obs) {
+        Log.i(TAG, "addObserver(" + obs + ")");
+        if (mObservers.indexOf(obs) < 0) {
+            mObservers.add(obs);
+        }
+    }
+
+    public synchronized void addObservers(List<Observer> observers) {
+        Log.i(TAG, "addObservers(" + observers + ")");
+        mObservers.addAll(observers);
+    }
+
+    /**
+     * When an observer wants to unregister to stop receiving change
+     * notifications, it calls here.
+     */
+    public synchronized void deleteObserver(Observer obs) {
+        Log.i(TAG, "deleteObserver(" + obs + ")");
+        mObservers.remove(obs);
+    }
+
+    protected void notifyObservers(Object arg) {
+        Log.i(TAG, "notifyObservers(" + arg + ")");
+        for (Observer obs : mObservers) {
+            Log.i(TAG, "notify observer = " + obs);
+            obs.update(this, arg);
+        }
+    }
+
+    /**
+     * The observers list is the list of all objects that have registered with
+     * us as observers in order to get notifications of interesting events.
+     */
+    private List<Observer> mObservers = new ArrayList<Observer>();
 }

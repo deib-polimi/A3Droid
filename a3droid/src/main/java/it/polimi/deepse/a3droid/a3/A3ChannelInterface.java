@@ -1,5 +1,7 @@
 package it.polimi.deepse.a3droid.a3;
 
+import org.alljoyn.bus.BusException;
+
 import it.polimi.deepse.a3droid.A3Message;
 
 /**
@@ -7,9 +9,19 @@ import it.polimi.deepse.a3droid.A3Message;
  */
 public interface A3ChannelInterface {
 
-    void receiveUnicast(A3Message message);
+    void joinGroup();
 
-    void receiveMulticast(A3Message message);
+    void createGroup();
+
+    void sendUnicast(A3Message message, String address) throws Exception;
+
+    void sendMulticast(A3Message message, String ... address) throws Exception;
+
+    void sendBroadcast(A3Message message) throws Exception;
+
+    void receiveUnicast(A3Message message, String address);
+
+    void receiveMulticast(A3Message message, String [] addresses);
 
     void receiveBroadcast(A3Message message);
 }

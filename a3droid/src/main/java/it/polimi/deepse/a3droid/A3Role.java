@@ -10,7 +10,7 @@ import android.os.Message;
  * and the "id" field of the role to the canonical name of the role class.
  * 
  * There are two roles that can be played in a group by a node: the supervisor or a follower.
- * So a node, to connect a group, must have both roles in its list.
+ * So a node, to joinGroup a group, must have both roles in its list.
  * If it has both of them, the node creates a channel and sets the roles of that channel to a clone of theirs:
  * cloning the roles is necessary in order to avoid that two channels with the same role block together
  * when deactivating only one of them.
@@ -18,7 +18,7 @@ import android.os.Message;
  * 
  * The role id is transmitted in messages about operations between groups.
  * Being it the canonical name of the class, a role is uniquely identified.
- * When a node receives communication to connect to a group with certain two roles,
+ * When a node receives communication to joinGroup to a group with certain two roles,
  * it looks for them in its list, and if it finds them it connects to the group.
  * 
  * This class must be extended, so this solution solves the problem to instantiate the correct superclass.

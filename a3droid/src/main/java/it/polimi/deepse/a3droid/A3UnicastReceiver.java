@@ -11,7 +11,7 @@ import org.alljoyn.bus.Status;
 import org.alljoyn.bus.annotation.BusMethod;
 
 /**This class is designed to stay on an A3ChannelInterface, in order to receive unicast messages from the supervisor.
- * In order to connect to a specific client in a multipoint session,
+ * In order to joinGroup to a specific client in a multipoint session,
  * AllJoyn requires that every client is uniquely identified by a well-known-name:
  * such name is obtained by adding an hash of the channel address to the name of the group.
  * The well-known-name must be published on the bus, so this class is actually an AllJoyn service.
