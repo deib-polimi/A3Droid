@@ -40,7 +40,7 @@ public class AlljoynBusListener extends BusListener {
     public void foundAdvertisedName(String name, short transport, String namePrefix) {
         Log.i(TAG, "foundAdvertisedName(" + name + ")");
         A3Application application = (A3Application)alljoynBus.getApplication();
-        application.addFoundChannel(name);
+        application.addFoundChannel(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
     }
 
     /**
@@ -59,7 +59,6 @@ public class AlljoynBusListener extends BusListener {
     public void lostAdvertisedName(String name, short transport, String namePrefix) {
         Log.i(TAG, "mBusListener.lostAdvertisedName(" + name + ")");
         A3Application application = (A3Application)alljoynBus.getApplication();
-        //TODO: add chanell
-        //application.removeFoundChannel(name);
+        application.removeFoundChannel(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
     }
 }

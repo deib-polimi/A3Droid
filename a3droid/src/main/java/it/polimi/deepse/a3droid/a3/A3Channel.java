@@ -20,6 +20,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         this.setGroupName(groupName);
     }
 
+    public void connect(){
+        notifyObservers(A3Channel.CONNECT_EVENT);
+    }
 
     public void joinGroup(){
         notifyObservers(A3Channel.JOIN_CHANNEL_EVENT);
@@ -169,6 +172,11 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
         notifyObservers(JOIN_CHANNEL_EVENT);
     }
+
+    /**
+     * The object we use in notifications to indicate that a channel must be setup.
+     */
+    public static final String CONNECT_EVENT = "CONNECT_EVENT";
 
     /**
      * The object we use in notifications to indicate that user has requested

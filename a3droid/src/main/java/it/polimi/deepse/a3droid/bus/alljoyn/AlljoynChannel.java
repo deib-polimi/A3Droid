@@ -1,9 +1,10 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
+import org.alljoyn.bus.BusAttachment;
 import org.alljoyn.bus.BusException;
+import org.alljoyn.bus.BusObject;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import it.polimi.deepse.a3droid.A3Message;
@@ -13,7 +14,14 @@ import it.polimi.deepse.a3droid.pattern.Observer;
 /**
  * Created by seadev on 5/20/16.
  */
-public class AlljoynChannel extends A3Channel{
+public class AlljoynChannel extends A3Channel implements BusObject {
+
+    private boolean hosting = false;
+
+    public AlljoynChannel(String groupName){
+        super(groupName);
+        setService(new AlljoynService(groupName));
+    }
 
     public AlljoynChannel(String groupName, List<Observer> observers){
         super(groupName);
@@ -24,17 +32,17 @@ public class AlljoynChannel extends A3Channel{
     /** Methods to send messages through service interface **/
     @Override
     public void sendUnicast(A3Message message, String address) throws BusException {
-        getServiceInterface().ReceiveUnicast(message, address);
+        getServiceInterface().sendUnicast(message, address);
     }
 
     @Override
     public void sendMulticast(A3Message message, String ... addresses) throws BusException {
-        getServiceInterface().ReceiveMultiCast(message, addresses);
+        getServiceInterface().sendMulticast(message, addresses);
     }
 
     @Override
     public void sendBroadcast(A3Message message) throws BusException {
-        getServiceInterface().ReceiveBroadcast(message);
+        getServiceInterface().sendBroadcast(message);
     }
 
     /**
@@ -46,30 +54,53 @@ public class AlljoynChannel extends A3Channel{
      * letter capitalized to conform with the DBus convention for signal
      * handler names.
      */
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveUnicast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
     public void ReceiveUnicast(A3Message message, String address) throws BusException {
         if(address.equals(getChannelId()))
             receiveUnicast(message, address);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveMultiCast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
     public void ReceiveMultiCast(A3Message message, String [] addresses) throws BusException {
         if(isInMulticast(addresses))
             receiveMulticast(message, addresses);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveBroadcast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
     public void ReceiveBroadcast(A3Message message) throws BusException {
         receiveBroadcast(message);
     }
+
+    public BusAttachment getBus(){
+        return mBus;
+    }
+
+    public void setBus(BusAttachment bus){
+        mBus = bus;
+    }
+
+    /**
+     * The bus attachment is the object that provides AllJoyn services to Java
+     * clients.  Pretty much all communiation with AllJoyn is going to go through
+     * this obejct.
+     */
+    private BusAttachment mBus  = new BusAttachment(AlljoynBus.SERVICE_PATH, BusAttachment.RemoteMessage.Receive);
 
     /** Service interface used to create signals in the bus **/
     public AlljoynServiceInterface getServiceInterface() {
         return serviceInterface;
     }
 
-    public void setServiceInterface(AlljoynServiceInterface serviceInterface) {
-        this.serviceInterface = serviceInterface;
+    public void setServiceInterface(AlljoynServiceInterface serviceInterface, boolean proxied) {
+        if(!proxied){
+            this.hosting = true;
+            this.serviceInterface = serviceInterface;
+            this.service.setServiceInterface(serviceInterface);
+        }else
+            if(!hosting) {
+                this.serviceInterface = serviceInterface;
+                this.service.setServiceInterface(serviceInterface);
+            }
     }
 
     private AlljoynServiceInterface serviceInterface;

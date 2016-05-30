@@ -19,6 +19,7 @@ public class A3Node {
 
     public void connect(String groupName){
         A3Channel channel = new AlljoynChannel(groupName, application.getObservers());
+        channel.connect();
         if(application.getFoundChannels().contains(groupName))
             channel.joinGroup();
         else

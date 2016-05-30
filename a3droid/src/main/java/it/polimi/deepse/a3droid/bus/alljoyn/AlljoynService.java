@@ -2,6 +2,7 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.BusObject;
+import org.alljoyn.bus.annotation.BusMethod;
 
 import it.polimi.deepse.a3droid.A3Message;
 
@@ -17,26 +18,32 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
     }
 
     /** Service methods handled by this instance**/
-    //TODO: change these methods to group management methods, since communication uses signals
-    /*@Override
+    //TODO: add methods to group management methods, since communication uses signals
+    @Override
     public boolean sendToSupervisor(A3Message message) throws BusException {
         return true;
     }
 
     @Override
-    public boolean sendUnicast(A3Message message) throws BusException {
+    @BusMethod(signature = "(sisay)s", replySignature = "b")
+    public boolean sendUnicast(A3Message message, String address) throws BusException {
+        this.serviceInterface.ReceiveUnicast(message, address);
         return true;
     }
 
     @Override
-    public boolean sendMultiCast(A3Message message) throws BusException {
+    @BusMethod(signature = "(sisay)as", replySignature = "b")
+    public boolean sendMulticast(A3Message message, String [] addresses) throws BusException {
+        this.serviceInterface.ReceiveMultiCast(message, addresses);
         return true;
     }
 
     @Override
+    @BusMethod(signature = "(sisay)", replySignature = "b")
     public boolean sendBroadcast(A3Message message) throws BusException {
+        this.serviceInterface.ReceiveBroadcast(message);
         return true;
-    }*/
+    }
 
     /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynChannel class**/
     public void ReceiveUnicast(A3Message message, String address) throws BusException {}
@@ -72,4 +79,10 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
      * The group name.
      */
     protected String groupName = null;
+
+    public void setServiceInterface(AlljoynServiceInterface serviceInterface) {
+        this.serviceInterface = serviceInterface;
+    }
+
+    private AlljoynServiceInterface serviceInterface;
 }

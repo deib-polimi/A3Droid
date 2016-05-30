@@ -2,13 +2,14 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.annotation.BusInterface;
+import org.alljoyn.bus.annotation.BusMethod;
 import org.alljoyn.bus.annotation.BusSignal;
 
 import it.polimi.deepse.a3droid.A3Message;
 
 /**
  */
-@BusInterface(name = AlljoynBus.SERVICE_PATH)
+@BusInterface(name = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface")
 public interface AlljoynServiceInterface{
 
     /*
@@ -20,17 +21,17 @@ public interface AlljoynServiceInterface{
      * Bus methods are called from nodes that have joined the service session and executed by the
      * service implementation.
      */
-    /*@BusMethod(signature = "(sisay)", replySignature = "b")
+    @BusMethod(signature = "(sisay)", replySignature = "b")
     boolean sendToSupervisor(A3Message message) throws BusException;
 
-    @BusMethod(signature = "(sisay)", replySignature = "b")
-    boolean sendUnicast(A3Message message) throws BusException;
+    @BusMethod(signature = "(sisay)s", replySignature = "b")
+    boolean sendUnicast(A3Message message, String address) throws BusException;
+
+    @BusMethod(signature = "(sisay)as", replySignature = "b")
+    boolean sendMulticast(A3Message message, String [] address) throws BusException;
 
     @BusMethod(signature = "(sisay)", replySignature = "b")
-    boolean sendMultiCast(A3Message message) throws BusException;
-
-    @BusMethod(signature = "(sisay)", replySignature = "b")
-    boolean sendBroadcast(A3Message message) throws BusException;*/
+    boolean sendBroadcast(A3Message message) throws BusException;
 
     /*
      * The BusSignal annotation signifies that this function should be used as
