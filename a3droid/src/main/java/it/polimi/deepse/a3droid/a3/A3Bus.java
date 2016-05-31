@@ -55,28 +55,6 @@ public abstract class A3Bus extends Service implements Observer{
     protected A3Application a3Application = null;
 
     /**
-     * A reference to an A3Channel instance of this node, to which A3 methods are delegated when
-     * received as signals
-     */
-    protected A3Channel a3Channel = null;
-
-    /**
-     * The state of the AllJoyn bus attachment.
-     */
-    protected BusState mBusState = BusState.DISCONNECTED;
-
-    /**
-     * The state of the AllJoyn components responsible for hosting an chat channel.
-     */
-    protected ServiceState serviceState = ServiceState.IDLE;
-
-    /**
-     * The state of the AllJoyn components responsible for hosting an chat channel.
-     */
-    protected ChannelState channelState = ChannelState.IDLE;
-
-
-    /**
      * Enumeration of the states of the AllJoyn bus attachment.  This
      * lets us make a note to ourselves regarding where we are in the process
      * of preparing and tearing down the fundamental connection to the AllJoyn

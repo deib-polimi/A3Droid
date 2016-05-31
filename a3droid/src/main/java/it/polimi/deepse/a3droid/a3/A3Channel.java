@@ -16,12 +16,18 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     protected static final String TAG = "a3droid.A3Channel";
 
-    public A3Channel(String groupName){
+    public A3Channel(String groupName, A3Application application){
         this.setGroupName(groupName);
+        addObservers(application.getObservers());
     }
 
     public void connect(){
         notifyObservers(A3Channel.CONNECT_EVENT);
+    }
+
+    public void disconnect(){
+        notifyObservers(A3Channel.DISCONNECT_EVENT);
+        clearObservers();
     }
 
     public void joinGroup(){
@@ -127,6 +133,21 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         notifyObservers(SERVICE_STATE_CHANGED_EVENT);
     }
 
+    public synchronized void setBusState(A3Bus.BusState state) {
+        mBusState = state;
+        //TODO
+        //notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+    }
+
+    public A3Bus.BusState getBusState() {
+        return mBusState;
+    }
+
+    /**
+     * The state of the AllJoyn bus attachment.
+     */
+    protected A3Bus.BusState mBusState = A3Bus.BusState.DISCONNECTED;
+
     /**
      * Get the name part of the "use" channel.
      */
@@ -159,6 +180,20 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      */
     protected String channelId = null;
 
+    public int getSessionId(){
+        return mSessionId;
+    }
+
+    public void setSessionId(int sessionId){
+        mSessionId = sessionId;
+    }
+
+    /**
+     * The session identifier that the application
+     * provides for remote devices.  Set to -1 if not connected.
+     */
+    int mSessionId = -1;
+
     /**
      * This is the method that the "use" tab user interface calls when the
      * user indicates that she wants to join a channel.  The channel name
@@ -177,6 +212,11 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * The object we use in notifications to indicate that a channel must be setup.
      */
     public static final String CONNECT_EVENT = "CONNECT_EVENT";
+
+    /**
+     * The object we use in notifications to indicate that a channel must be setup.
+     */
+    public static final String DISCONNECT_EVENT = "DISCONNECT_EVENT";
 
     /**
      * The object we use in notifications to indicate that user has requested
@@ -268,6 +308,15 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public synchronized void deleteObserver(Observer obs) {
         Log.i(TAG, "deleteObserver(" + obs + ")");
         mObservers.remove(obs);
+    }
+
+    /**
+     * When an observer wants to unregister to stop receiving change
+     * notifications, it calls here.
+     */
+    public synchronized void clearObservers() {
+        Log.i(TAG, "clearObservers()");
+        mObservers.clear();
     }
 
     protected void notifyObservers(Object arg) {

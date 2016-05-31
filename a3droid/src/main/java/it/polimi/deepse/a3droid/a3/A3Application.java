@@ -132,6 +132,7 @@ public class A3Application extends Application implements Observable{
      */
     protected String mErrorString = "ER_OK";
 
+
     /**
      * Called from the AllJoyn Service when it gets a FoundAdvertisedName.  We
      * know by construction that the advertised name will correspond to an chat
@@ -140,11 +141,11 @@ public class A3Application extends Application implements Observable{
      * simply the channel name, which is the final segment of the well-known
      * name.
      */
-    public synchronized void addFoundChannel(String channel) {
-        Log.i(TAG, "addFoundChannel(" + channel + ")");
-        removeFoundChannel(channel);
-        mChannels.add(channel);
-        Log.i(TAG, "addFoundChannel(): added " + channel);
+    public synchronized void addFoundGroup(String channel) {
+        Log.i(TAG, "addFoundGroup(" + channel + ")");
+        removeFoundGroup(channel);
+        mGroups.add(channel);
+        Log.i(TAG, "addFoundGroup(): added " + channel);
     }
 
     /**
@@ -152,13 +153,13 @@ public class A3Application extends Application implements Observable{
      * know by construction that the advertised name will correspond to an chat
      * channel.
      */
-    public synchronized void removeFoundChannel(String channel) {
-        Log.i(TAG, "removeFoundChannel(" + channel + ")");
+    public synchronized void removeFoundGroup(String channel) {
+        Log.i(TAG, "removeFoundGroup(" + channel + ")");
 
-        for (Iterator<String> i = mChannels.iterator(); i.hasNext();) {
+        for (Iterator<String> i = mGroups.iterator(); i.hasNext();) {
             String string = i.next();
             if (string.equals(channel)) {
-                Log.i(TAG, "removeFoundChannel(): removed " + channel);
+                Log.i(TAG, "removeFoundGroup(): removed " + channel);
                 i.remove();
             }
         }
@@ -172,8 +173,8 @@ public class A3Application extends Application implements Observable{
      */
     public synchronized List<String> getFoundChannels() {
         Log.i(TAG, "getFoundChannels()");
-        List<String> clone = new ArrayList<String>(mChannels.size());
-        for (String string : mChannels) {
+        List<String> clone = new ArrayList<String>(mGroups.size());
+        for (String string : mGroups) {
             Log.i(TAG, "getFoundChannels(): added " + string);
             clone.add(new String(string));
         }
@@ -187,7 +188,7 @@ public class A3Application extends Application implements Observable{
      * "join channel" dialog, whereupon she will choose one.  This will
      * eventually result in a joinSession call out from the AllJoyn Service
      */
-    private List<String> mChannels = new ArrayList<String>();
+    private List<String> mGroups = new ArrayList<String>();
 
     /**
      * This object is really the model of a model-view-controller architecture.

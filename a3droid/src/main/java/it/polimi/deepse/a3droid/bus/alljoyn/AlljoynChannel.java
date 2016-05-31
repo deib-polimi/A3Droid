@@ -5,11 +5,9 @@ import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.BusObject;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
-import java.util.List;
-
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Channel;
-import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
  * Created by seadev on 5/20/16.
@@ -18,15 +16,9 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     private boolean hosting = false;
 
-    public AlljoynChannel(String groupName){
-        super(groupName);
+    public AlljoynChannel(String groupName, A3Application application){
+        super(groupName, application);
         setService(new AlljoynService(groupName));
-    }
-
-    public AlljoynChannel(String groupName, List<Observer> observers){
-        super(groupName);
-        setService(new AlljoynService(groupName));
-        addObservers(observers);
     }
 
     /** Methods to send messages through service interface **/

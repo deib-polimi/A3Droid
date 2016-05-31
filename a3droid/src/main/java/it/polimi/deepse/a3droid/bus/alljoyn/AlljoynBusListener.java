@@ -34,13 +34,13 @@ public class AlljoynBusListener extends BusListener {
      * In the class documentation for the BusListener note that it is a
      * requirement for this method to be multithread safe.  This is
      * accomplished by the use of a monitor on the A3Application as
-     * exemplified by the synchronized attribute of the addFoundChannel
+     * exemplified by the synchronized attribute of the addFoundGroup
      * method there.
      */
     public void foundAdvertisedName(String name, short transport, String namePrefix) {
         Log.i(TAG, "foundAdvertisedName(" + name + ")");
         A3Application application = (A3Application)alljoynBus.getApplication();
-        application.addFoundChannel(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
+        application.addFoundGroup(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
     }
 
     /**
@@ -53,12 +53,12 @@ public class AlljoynBusListener extends BusListener {
      * In the class documentation for the BusListener note that it is a
      * requirement for this method to be multithread safe.  This is
      * accomplished by the use of a monitor on the A3Application as
-     * exemplified by the synchronized attribute of the removeFoundChannel
+     * exemplified by the synchronized attribute of the removeFoundGroup
      * method there.
      */
     public void lostAdvertisedName(String name, short transport, String namePrefix) {
         Log.i(TAG, "mBusListener.lostAdvertisedName(" + name + ")");
         A3Application application = (A3Application)alljoynBus.getApplication();
-        application.removeFoundChannel(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
+        application.removeFoundGroup(name.replace(AlljoynBus.SERVICE_PATH + ".", ""));
     }
 }
