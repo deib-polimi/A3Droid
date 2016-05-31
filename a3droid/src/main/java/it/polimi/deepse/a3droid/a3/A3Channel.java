@@ -10,7 +10,7 @@ import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
- * Created by seadev on 5/20/16.
+ * TODO: Describe
  */
 public abstract class A3Channel implements A3ChannelInterface, Observable {
 

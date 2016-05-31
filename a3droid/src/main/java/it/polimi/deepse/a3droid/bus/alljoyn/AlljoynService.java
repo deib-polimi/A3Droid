@@ -10,6 +10,7 @@ import it.polimi.deepse.a3droid.A3Message;
  * Our chat messages are going to be Bus Signals multicast out onto an
  * associated session.  In order to send signals, we need to define an
  * AllJoyn bus object that will allow us to instantiate a signal emmiter.
+ * TODO: Describe
  */
 class AlljoynService implements BusObject, AlljoynServiceInterface {
 
@@ -17,8 +18,8 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
         setGroupName(groupName);
     }
 
+    //TODO: add group management methods
     /** Service methods handled by this instance**/
-    //TODO: add methods to group management methods, since communication uses signals
     @Override
     public boolean sendToSupervisor(A3Message message) throws BusException {
         return true;
@@ -27,21 +28,21 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
     @Override
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     public boolean sendUnicast(A3Message message) throws BusException {
-        this.serviceInterface.ReceiveUnicast(message);
+        this.serviceSignalEmitterInterface.ReceiveUnicast(message);
         return true;
     }
 
     @Override
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     public boolean sendMulticast(A3Message message) throws BusException {
-        this.serviceInterface.ReceiveMultiCast(message);
+        this.serviceSignalEmitterInterface.ReceiveMultiCast(message);
         return true;
     }
 
     @Override
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     public boolean sendBroadcast(A3Message message) throws BusException {
-        this.serviceInterface.ReceiveBroadcast(message);
+        this.serviceSignalEmitterInterface.ReceiveBroadcast(message);
         return true;
     }
 
@@ -52,37 +53,22 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
 
     public void ReceiveBroadcast(A3Message message) throws BusException {}
 
-    /**
-     * Set the group name, used as part of the service name.  Since we are going to "use" a
-     * channel that is implemented remotely and discovered through an AllJoyn
-     * FoundAdvertisedName, this must come from a list of advertised names.
-     * These names are our channels, and so we expect the GUI to choose from
-     * among the list of channels it retrieves from getFoundChannels().
-     *
-     * Since we are talking about user-level interactions here, we are talking
-     * about the final segment of a well-known name representing a channel at
-     * this point.
-     */
     private synchronized void setGroupName(String name) {
         groupName = name;
-        //notifyObservers(SERVICE_STATE_CHANGED_EVENT);
     }
 
-    /**
-     * Get the group name used as part of the service name.
-     */
     public synchronized String getGroupName() {
         return groupName;
     }
 
-    /**
-     * The group name.
-     */
     protected String groupName = null;
 
-    public void setServiceInterface(AlljoynServiceInterface serviceInterface) {
-        this.serviceInterface = serviceInterface;
+    public void setServiceSignalEmitterInterface(AlljoynServiceInterface serviceSignalEmitterInterface) {
+        this.serviceSignalEmitterInterface = serviceSignalEmitterInterface;
     }
 
-    private AlljoynServiceInterface serviceInterface;
+    /**
+     * This interface is used for emitting bus signals in the bus, not calling methods
+     */
+    private AlljoynServiceInterface serviceSignalEmitterInterface;
 }

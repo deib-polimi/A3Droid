@@ -10,7 +10,7 @@ import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 
 /**
- * Created by seadev on 5/20/16.
+ * TODO: Describe
  */
 public class AlljoynChannel extends A3Channel implements BusObject {
 
@@ -92,6 +92,9 @@ public class AlljoynChannel extends A3Channel implements BusObject {
                 this.serviceInterface = serviceInterface;
     }
 
+    /**
+     * This interface is used for calling bus methods in the Service, not signals
+     */
     private AlljoynServiceInterface serviceInterface;
 
     /** Service class instance used to create signals in the bus **/

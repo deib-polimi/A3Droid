@@ -8,6 +8,7 @@ import org.alljoyn.bus.annotation.BusSignal;
 import it.polimi.deepse.a3droid.A3Message;
 
 /**
+ * TODO: Describe
  */
 @BusInterface(name = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface")
 public interface AlljoynServiceInterface{

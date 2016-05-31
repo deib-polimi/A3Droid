@@ -10,7 +10,7 @@ import android.util.Log;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
- * Created by seadev on 5/20/16.
+ * TODO: Describe
  */
 public abstract class A3Bus extends Service implements Observer{
 

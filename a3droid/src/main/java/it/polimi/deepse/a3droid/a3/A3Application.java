@@ -14,7 +14,7 @@ import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
- * Created by seadev on 5/20/16.
+ * TODO: Describe
  */
 public class A3Application extends Application implements Observable{
 

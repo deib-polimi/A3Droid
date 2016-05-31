@@ -23,7 +23,7 @@ import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.pattern.Observable;
 
 /**
- * Created by seadev on 5/17/16.
+ * TODO: Describe
  */
 public class AlljoynBus extends A3Bus {
 
@@ -817,7 +817,7 @@ public class AlljoynBus extends A3Bus {
                 channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), false);
 
                 SignalEmitter emitter = new SignalEmitter(channel.getService(), id, SignalEmitter.GlobalBroadcast.Off);
-                channel.getService().setServiceInterface(emitter.getInterface(AlljoynServiceInterface.class));
+                channel.getService().setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class));
             }
         });
 
@@ -963,7 +963,7 @@ public class AlljoynBus extends A3Bus {
 
         //TODO: Original chat way of getting the service interface. But as a follower, channel.getService() won't be registered as object
         //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
-        //channel.setServiceInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
+        //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
 
         channel.setChannelState(ChannelState.JOINED);
     }

@@ -5,7 +5,7 @@ import org.alljoyn.bus.BusException;
 import it.polimi.deepse.a3droid.A3Message;
 
 /**
- * Created by seadev on 5/20/16.
+ * TODO: Describe
  */
 public interface A3ChannelInterface {
 
