@@ -25,30 +25,30 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
     }
 
     @Override
-    @BusMethod(signature = "(sisay)s", replySignature = "b")
-    public boolean sendUnicast(A3Message message, String address) throws BusException {
-        this.serviceInterface.ReceiveUnicast(message, address);
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    public boolean sendUnicast(A3Message message) throws BusException {
+        this.serviceInterface.ReceiveUnicast(message);
         return true;
     }
 
     @Override
-    @BusMethod(signature = "(sisay)as", replySignature = "b")
-    public boolean sendMulticast(A3Message message, String [] addresses) throws BusException {
-        this.serviceInterface.ReceiveMultiCast(message, addresses);
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    public boolean sendMulticast(A3Message message) throws BusException {
+        this.serviceInterface.ReceiveMultiCast(message);
         return true;
     }
 
     @Override
-    @BusMethod(signature = "(sisay)", replySignature = "b")
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
     public boolean sendBroadcast(A3Message message) throws BusException {
         this.serviceInterface.ReceiveBroadcast(message);
         return true;
     }
 
     /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynChannel class**/
-    public void ReceiveUnicast(A3Message message, String address) throws BusException {}
+    public void ReceiveUnicast(A3Message message) throws BusException {}
 
-    public void ReceiveMultiCast(A3Message message, String [] addresses) throws BusException {}
+    public void ReceiveMultiCast(A3Message message) throws BusException {}
 
     public void ReceiveBroadcast(A3Message message) throws BusException {}
 

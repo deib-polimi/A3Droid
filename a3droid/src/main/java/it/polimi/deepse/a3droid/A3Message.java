@@ -30,6 +30,11 @@ public class A3Message {
 	@Signature("ay")
 	public byte[] bytes = new byte[0];
 
+	/**The extra data in this message.*/
+	@Position(4)
+	@Signature("as")
+	public String[] addresses = new String [] {""};
+
 	/**This must exists because AllJoyn needs it, but is never used in these API.*/
 	public A3Message(){}
 	
@@ -41,18 +46,38 @@ public class A3Message {
 		this.reason = reason;
 		this.object = object;
 		this.bytes = new byte[0];
-		senderAddress = "";
+		this.senderAddress = "";
+		this.addresses = new String [] {""};
 	}
 	
 	/**
 	 * @param reason The kind of this message.
 	 * @param object The data in this message.
+	 * @param extra The data in this message.
 	 */
 	public A3Message(int reason, String object, byte [] extra){
+		assert(extra != null);
+		this.reason = reason;
+		this.object = object;
+		this.bytes = extra;
+		this.senderAddress = "";
+		this.addresses = new String [] {""};
+	}
+
+	/**
+	 * @param reason The kind of this message.
+	 * @param object The data in this message.
+	 * @param extra The data in this message.
+	 * @param addresses The data in this message.
+	 */
+	public A3Message(int reason, String object, byte [] extra, String [] addresses){
+		assert(extra != null);
+		assert(addresses != null);
 		this.reason = reason;
 		this.object = object;
 		this.bytes = extra;
 		senderAddress = "";
+		this.addresses = addresses;
 	}
 	
 	@Override

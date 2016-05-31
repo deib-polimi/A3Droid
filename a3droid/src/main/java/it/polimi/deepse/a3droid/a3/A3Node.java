@@ -31,7 +31,9 @@ public class A3Node {
     public void sendUnicast(A3Message message, String groupName, String address){
         try {
             A3Channel channel = getChannel(groupName);
-            channel.sendUnicast(message, address);
+            message.addresses = new String [] {address};
+            message.reason = A3Channel.UNICAST_MSG;
+            channel.addOutboundItem(message);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -40,7 +42,9 @@ public class A3Node {
     public void sendMulticast(A3Message message, String groupName, String ... addresses){
         try {
             A3Channel channel = getChannel(groupName);
-            channel.sendMulticast(message, addresses);
+            message.addresses = addresses;
+            message.reason = A3Channel.MULTICAST_MSG;
+            channel.addOutboundItem(message);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -49,7 +53,8 @@ public class A3Node {
     public void sendBroadcast(A3Message message, String groupName){
         try {
             A3Channel channel = getChannel(groupName);
-            channel.sendBroadcast(message);
+            message.reason = A3Channel.BROADCAST_MSG;
+            channel.addOutboundItem(message);
         } catch (Exception e) {
             e.printStackTrace();
         }

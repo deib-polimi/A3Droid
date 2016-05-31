@@ -35,13 +35,13 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     /** A3ChannelInterface **/
 
     @Override
-    public void receiveUnicast(A3Message message, String address) {
-        Log.i(TAG, "UNICAST : " + message.object + " TO " + address);
+    public void receiveUnicast(A3Message message) {
+        Log.i(TAG, "UNICAST : " + message.object + " TO " + message.addresses);
     }
 
     @Override
-    public void receiveMulticast(A3Message message, String [] addresses) {
-        Log.i(TAG, "MULTICAST : " + message.object + " TO " + addresses);
+    public void receiveMulticast(A3Message message) {
+        Log.i(TAG, "MULTICAST : " + message.object + " TO " + message.addresses);
     }
 
     @Override
@@ -232,6 +232,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      */
     public static final String STOP_SERVICE_EVENT = "STOP_SERVICE_EVENT";
 
+    /**
+     * The object we use in notifications to indicate that the the user has
+     * entered a message and it is queued to be sent to the outside world.
+     */
+    public static final String OUTBOUND_CHANGED_EVENT = "OUTBOUND_CHANGED_EVENT";
+
     /** Observable **/
     /**
      * This object is really the model of a model-view-controller architecture.
@@ -277,4 +283,35 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * us as observers in order to get notifications of interesting events.
      */
     private List<Observer> mObservers = new ArrayList<Observer>();
+
+    public synchronized A3Message getOutboundItem() {
+        if (mOutbound.isEmpty()) {
+            return null;
+        } else {
+            return mOutbound.remove(0);
+        }
+    }
+
+    /**
+     * Whenever the local user types a message for distribution to the channel
+     * it calls newLocalMessage.  We are called to queue up the message and
+     * send a notification to all of our observers indicating that the we have
+     * something ready to go out.  We expect that the AllJoyn Service will
+     * eventually respond by calling back in here to get items off of the queue
+     * and send them down the session corresponding to the channel.
+     */
+    public void addOutboundItem(A3Message message) {
+        mOutbound.add(message);
+        notifyObservers(OUTBOUND_CHANGED_EVENT);
+    }
+
+    /**
+     * The outbound list is the list of all messages that have been originated
+     * by our local user and are designed for the outside world.
+     */
+    private List<A3Message> mOutbound = new ArrayList<A3Message>();
+
+    public static final int BROADCAST_MSG = 0;
+    public static final int UNICAST_MSG = 1;
+    public static final int MULTICAST_MSG = 2;
 }

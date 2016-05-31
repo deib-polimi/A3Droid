@@ -7,6 +7,7 @@ import android.os.Message;
 import android.util.Log;
 
 import org.alljoyn.bus.BusAttachment;
+import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Mutable;
 import org.alljoyn.bus.ProxyBusObject;
 import org.alljoyn.bus.SessionListener;
@@ -15,6 +16,10 @@ import org.alljoyn.bus.SessionPortListener;
 import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
 
+import java.util.Collections;
+import java.util.Map;
+
+import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
@@ -141,10 +146,11 @@ public class AlljoynBus extends A3Bus {
             mHandler.sendMessage(message);
         }
 
-        /**if (qualifier.equals(A3Application.OUTBOUND_CHANGED_EVENT)) {
+        if (qualifier.equals(A3Channel.OUTBOUND_CHANGED_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_OUTBOUND_CHANGED_EVENT);
+            message.obj = (AlljoynChannel) o;
             mHandler.sendMessage(message);
-        }**/
+        }
     }
 
     /**
@@ -490,8 +496,7 @@ public class AlljoynBus extends A3Bus {
                     doLeaveSession((AlljoynChannel) msg.obj);
                     break;
                 case SEND_MESSAGES:
-                    //TODO
-                    //doSendMessages();
+                    doSendMessages((AlljoynChannel) msg.obj);
                     break;
                 case EXIT:
                     getLooper().quit();
@@ -794,8 +799,14 @@ public class AlljoynBus extends A3Bus {
             public void sessionJoined(short sessionPort, int id, String joiner) {
                 Log.i(TAG, "SessionPortListener.sessionJoined(" + sessionPort + ", " + id + ", " + joiner + ")");
                 mHostSessionId = id;
+
+                ProxyBusObject mProxyObj;
+                mProxyObj = channel.getBus().getProxyBusObject(SERVICE_PATH + "." + channel.getGroupName(), OBJECT_PATH,
+                        id, new Class<?>[]{AlljoynServiceInterface.class});
+                channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), false);
+
                 SignalEmitter emitter = new SignalEmitter(channel.getService(), id, SignalEmitter.GlobalBroadcast.Off);
-                channel.setServiceInterface(emitter.getInterface(AlljoynServiceInterface.class), false);
+                channel.getService().setServiceInterface(emitter.getInterface(AlljoynServiceInterface.class));
             }
         });
 
@@ -963,6 +974,47 @@ public class AlljoynBus extends A3Bus {
         mUseSessionId = -1;
         channelState = ChannelState.IDLE;
         channel.setChannelState(channelState);
+    }
+
+    /**
+     * Implementation of the functionality related to sending messages out over
+     * an existing remote session.  Note that we always send all of the
+     * messages on the outbound queue, so there may be instances where this
+     * method is called and we find nothing to send depending on the races.
+     */
+    private void doSendMessages(AlljoynChannel channel) {
+        Log.i(TAG, "doSendMessages()");
+
+        A3Message message;
+        while ((message = channel.getOutboundItem()) != null) {
+            Log.i(TAG, "doSendMessages(): sending message \"" + message + "\"");
+            /*
+             * If we are joined to a remote session, we send the message over
+             * the mChatInterface.  If we are implicityly joined to a session
+             * we are hosting, we send the message over the mHostChatInterface.
+             * The mHostChatInterface may or may not exist since it is created
+             * when the sessionJoined() callback is fired in the
+             * SessionPortListener, so we have to check for it.
+             */
+            try {
+                switch (message.reason){
+
+                    case A3Channel.BROADCAST_MSG:
+                        channel.sendBroadcast(message);
+                        break;
+                    case A3Channel.UNICAST_MSG:
+                        channel.sendUnicast(message);
+                        break;
+                    case A3Channel.MULTICAST_MSG:
+                        channel.sendMulticast(message);
+                        break;
+                    default:
+                        break;
+                }
+            } catch (BusException ex) {
+                a3Application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
+            }
+        }
     }
 
     /**

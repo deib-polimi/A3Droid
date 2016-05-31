@@ -31,13 +31,13 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     /** Methods to send messages through service interface **/
     @Override
-    public void sendUnicast(A3Message message, String address) throws BusException {
-        getServiceInterface().sendUnicast(message, address);
+    public void sendUnicast(A3Message message) throws BusException {
+        getServiceInterface().sendUnicast(message);
     }
 
     @Override
-    public void sendMulticast(A3Message message, String ... addresses) throws BusException {
-        getServiceInterface().sendMulticast(message, addresses);
+    public void sendMulticast(A3Message message) throws BusException {
+        getServiceInterface().sendMulticast(message);
     }
 
     @Override
@@ -55,15 +55,15 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * handler names.
      */
     @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
-    public void ReceiveUnicast(A3Message message, String address) throws BusException {
-        if(address.equals(getChannelId()))
-            receiveUnicast(message, address);
+    public void ReceiveUnicast(A3Message message) throws BusException {
+        if(isAddressed(message.addresses))
+            receiveUnicast(message);
     }
 
     @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
-    public void ReceiveMultiCast(A3Message message, String [] addresses) throws BusException {
-        if(isInMulticast(addresses))
-            receiveMulticast(message, addresses);
+    public void ReceiveMultiCast(A3Message message) throws BusException {
+        if(isAddressed(message.addresses))
+            receiveMulticast(message);
     }
 
     @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
@@ -95,12 +95,9 @@ public class AlljoynChannel extends A3Channel implements BusObject {
         if(!proxied){
             this.hosting = true;
             this.serviceInterface = serviceInterface;
-            this.service.setServiceInterface(serviceInterface);
         }else
-            if(!hosting) {
+            if(!hosting)
                 this.serviceInterface = serviceInterface;
-                this.service.setServiceInterface(serviceInterface);
-            }
     }
 
     private AlljoynServiceInterface serviceInterface;
@@ -117,7 +114,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     private AlljoynService service;
 
     /** Utilitary methods **/
-    private boolean isInMulticast(String [] addresses){
+    private boolean isAddressed(String[] addresses){
         String channelId = getChannelId();
         for(String address : addresses)
             if(address.equals(channelId))

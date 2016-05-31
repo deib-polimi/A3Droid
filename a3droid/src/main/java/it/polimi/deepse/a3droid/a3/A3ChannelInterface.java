@@ -13,15 +13,15 @@ public interface A3ChannelInterface {
 
     void createGroup();
 
-    void sendUnicast(A3Message message, String address) throws Exception;
+    void sendUnicast(A3Message message) throws Exception;
 
-    void sendMulticast(A3Message message, String ... address) throws Exception;
+    void sendMulticast(A3Message message) throws Exception;
 
     void sendBroadcast(A3Message message) throws Exception;
 
-    void receiveUnicast(A3Message message, String address);
+    void receiveUnicast(A3Message message);
 
-    void receiveMulticast(A3Message message, String [] addresses);
+    void receiveMulticast(A3Message message);
 
     void receiveBroadcast(A3Message message);
 }

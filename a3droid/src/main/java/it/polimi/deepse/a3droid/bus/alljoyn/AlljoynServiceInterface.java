@@ -21,16 +21,16 @@ public interface AlljoynServiceInterface{
      * Bus methods are called from nodes that have joined the service session and executed by the
      * service implementation.
      */
-    @BusMethod(signature = "(sisay)", replySignature = "b")
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
     boolean sendToSupervisor(A3Message message) throws BusException;
 
-    @BusMethod(signature = "(sisay)s", replySignature = "b")
-    boolean sendUnicast(A3Message message, String address) throws BusException;
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    boolean sendUnicast(A3Message message) throws BusException;
 
-    @BusMethod(signature = "(sisay)as", replySignature = "b")
-    boolean sendMulticast(A3Message message, String [] address) throws BusException;
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    boolean sendMulticast(A3Message message) throws BusException;
 
-    @BusMethod(signature = "(sisay)", replySignature = "b")
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
     boolean sendBroadcast(A3Message message) throws BusException;
 
     /*
@@ -41,13 +41,13 @@ public interface AlljoynServiceInterface{
      * Bus signals are called by the service and will be listened by all interfaces that declared
      * the corresponding bus signal handlers, in our case the AlljoynChannel class.
      */
-    @BusSignal(signature = "(sisay)s")
-    void ReceiveUnicast(A3Message message, String address) throws BusException;
+    @BusSignal(signature = "(sisayas)")
+    void ReceiveUnicast(A3Message message) throws BusException;
 
-    @BusSignal(signature = "(sisay)as")
-    void ReceiveMultiCast(A3Message message, String [] addresses) throws BusException;
+    @BusSignal(signature = "(sisayas)")
+    void ReceiveMultiCast(A3Message message) throws BusException;
 
-    @BusSignal(signature = "(sisay)")
+    @BusSignal(signature = "(sisayas)")
     void ReceiveBroadcast(A3Message message) throws BusException;
 
 }
