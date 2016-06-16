@@ -132,7 +132,6 @@ public class A3Application extends Application implements Observable{
      */
     protected String mErrorString = "ER_OK";
 
-
     /**
      * Called from the AllJoyn Service when it gets a FoundAdvertisedName.  We
      * know by construction that the advertised name will correspond to an chat
@@ -179,6 +178,10 @@ public class A3Application extends Application implements Observable{
             clone.add(new String(string));
         }
         return clone;
+    }
+
+    public boolean isGroupFound(String groupName){
+        return getFoundChannels().contains(groupName);
     }
 
     /**

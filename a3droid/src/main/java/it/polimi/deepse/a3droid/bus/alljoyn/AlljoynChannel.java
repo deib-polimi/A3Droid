@@ -1,12 +1,17 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
+import android.os.HandlerThread;
+import android.os.Message;
+
 import org.alljoyn.bus.BusAttachment;
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.BusObject;
+import org.alljoyn.bus.Status;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.A3Application;
+import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 
 /**
@@ -15,10 +20,57 @@ import it.polimi.deepse.a3droid.a3.A3Channel;
 public class AlljoynChannel extends A3Channel implements BusObject {
 
     private boolean hosting = false;
+    private AlljoynErrorHandler errorHandler;
 
     public AlljoynChannel(String groupName, A3Application application){
         super(groupName, application);
         setService(new AlljoynService(groupName));
+        HandlerThread busThread = new HandlerThread("BackgroundHandler");
+        busThread.start();
+        errorHandler = new AlljoynErrorHandler(busThread.getLooper(), this);
+    }
+
+    @Override
+    public void createGroup(){
+        this.hosting = true;
+        super.createGroup();
+    }
+
+    @Override
+    public void joinGroup(){
+        this.hosting = false;
+        super.joinGroup();
+    }
+
+    public void handleEvent(String event, Object arg){
+        if(event.equals(AlljoynBus.SESSION_LOST_EVENT))
+            if(!this.hosting)
+    }
+
+    /**
+     * Handles Alljoyn error events. If an A3Exception is trowed, it was not possible to handle the
+     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
+     * @param status
+     */
+    public void handleError(Status status, int errorSide){
+        assert (errorSide == AlljoynErrorHandler.CHANNEL ||
+                errorSide == AlljoynErrorHandler.SERVICE);
+        Message msg = errorHandler.obtainMessage(errorSide);
+        msg.obj = status;
+        errorHandler.sendMessage(msg);
+    }
+
+    /**
+     * Handles Alljoyn errors. If an A3Exception is trowed, it was not possible to handle the
+     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
+     * @param ex
+     */
+    public void handleError(BusException ex, int errorSide){
+        assert (errorSide == AlljoynErrorHandler.CHANNEL ||
+                errorSide == AlljoynErrorHandler.SERVICE);
+        Message msg = errorHandler.obtainMessage(errorSide);
+        msg.obj = ex;
+        errorHandler.sendMessage(msg);
     }
 
     /** Methods to send messages through service interface **/
@@ -84,8 +136,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     }
 
     public void setServiceInterface(AlljoynServiceInterface serviceInterface, boolean proxied) {
-        if(!proxied){
-            this.hosting = true;
+        if(!proxied && this.hosting){
             this.serviceInterface = serviceInterface;
         }else
             if(!hosting)
@@ -116,4 +167,82 @@ public class AlljoynChannel extends A3Channel implements BusObject {
                 return true;
         return false;
     }
+
+    /**
+     * Set the status of the "host" channel.  The AllJoyn Service part of the
+     * appliciation is expected to make this call to set the status to reflect
+     * the status of the underlying AllJoyn session.
+     */
+    public synchronized void setServiceState(AlljoynBus.ServiceState state) {
+        mServiceState = state;
+        notifyObservers(SERVICE_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * Get the state of the "use" channel.
+     */
+    public synchronized AlljoynBus.ServiceState getServiceState() {
+        return mServiceState;
+    }
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "host" channel or its name has changed.
+     */
+    public static final String SERVICE_STATE_CHANGED_EVENT = "SERVICE_STATE_CHANGED_EVENT";
+
+    /**
+     * The "host" state which reflects the state of the part of the system
+     * related to hosting an chat channel.  In a "real" application this kind
+     * of detail probably isn't appropriate, but we want to do so for this
+     * sample.
+     */
+    protected AlljoynBus.ServiceState mServiceState = AlljoynBus.ServiceState.IDLE;
+
+    /**
+     * Set the status of the "use" channel.  The AllJoyn Service part of the
+     * appliciation is expected to make this call to set the status to reflect
+     * the status of the underlying AllJoyn session.
+     */
+    public synchronized void setChannelState(AlljoynBus.ChannelState state) {
+        mChannelState = state;
+        notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+    }
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "use" channel or its name has changed.
+     */
+    public static final String CHANNEL_STATE_CHANGED_EVENT = "CHANNEL_STATE_CHANGED_EVENT";
+
+    /**
+     * Get the state of the "use" channel.
+     */
+    public synchronized AlljoynBus.ChannelState getChannelState() {
+        return mChannelState;
+    }
+
+    /**
+     * The "use" state which reflects the state of the part of the system
+     * related to using a remotely hosted chat channel.  In a "real" application
+     * this kind of detail probably isn't appropriate, but we want to do so for
+     * this sample.
+     */
+    protected AlljoynBus.ChannelState mChannelState = AlljoynBus.ChannelState.IDLE;
+
+    public synchronized void setBusState(AlljoynBus.BusState state) {
+        mBusState = state;
+        //TODO
+        //notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+    }
+
+    public AlljoynBus.BusState getBusState() {
+        return mBusState;
+    }
+
+    /**
+     * The state of the AllJoyn bus attachment.
+     */
+    protected AlljoynBus.BusState mBusState = AlljoynBus.BusState.DISCONNECTED;
+
 }

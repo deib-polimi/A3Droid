@@ -323,7 +323,6 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 					inTransitionConditions = true;
 					createGroup();
 					reconnect();
-
 				} else {
 					// If this channel is already joined.
 					if (status == Status.ALLJOYN_JOINSESSION_REPLY_ALREADY_JOINED)
