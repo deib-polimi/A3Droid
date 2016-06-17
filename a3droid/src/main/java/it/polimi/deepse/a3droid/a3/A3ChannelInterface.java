@@ -9,6 +9,12 @@ import it.polimi.deepse.a3droid.A3Message;
  */
 public interface A3ChannelInterface {
 
+    void connect();
+
+    void disconnect();
+
+    void reconnect();
+
     void joinGroup();
 
     void createGroup();

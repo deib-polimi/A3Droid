@@ -1,6 +1,5 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
-import android.os.HandlerThread;
 import android.os.Message;
 
 import org.alljoyn.bus.BusAttachment;
@@ -11,7 +10,6 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 
 /**
@@ -21,13 +19,43 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
+    private AlljoynEventListener eventListener;
 
     public AlljoynChannel(String groupName, A3Application application){
         super(groupName, application);
         setService(new AlljoynService(groupName));
-        HandlerThread busThread = new HandlerThread("BackgroundHandler");
-        busThread.start();
-        errorHandler = new AlljoynErrorHandler(busThread.getLooper(), this);
+    }
+
+    /**
+     * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
+     */
+    @Override
+    public void connect(){
+        errorHandler = new AlljoynErrorHandler(this);
+        eventListener = new AlljoynEventListener(application, this);
+        super.connect();
+        if(application.isGroupFound(groupName))
+            joinGroup();
+        else
+            createGroup();
+    }
+
+    /**
+     * Leaves a group and destroy it if hosting, them disconnects from the alljoyn bus.
+     */
+    @Override
+    public void disconnect(){
+        leaveGroup();
+        if(hosting)
+            destroyGroup();
+        super.disconnect();
+        //TODO: clean the channel resources, will you?
+    }
+
+    @Override
+    public void reconnect(){
+        disconnect();
+        connect();
     }
 
     @Override
@@ -37,14 +65,22 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     }
 
     @Override
+    public void destroyGroup(){
+        this.hosting = false;
+        super.destroyGroup();
+    }
+
+    @Override
     public void joinGroup(){
         this.hosting = false;
         super.joinGroup();
     }
 
-    public void handleEvent(String event, Object arg){
-        if(event.equals(AlljoynBus.SESSION_LOST_EVENT))
-            if(!this.hosting)
+    public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
+        Message msg = errorHandler.obtainMessage();
+        msg.obj = event;
+        msg.arg1 = arg;
+        eventListener.sendMessage(msg);
     }
 
     /**
@@ -115,6 +151,10 @@ public class AlljoynChannel extends A3Channel implements BusObject {
         receiveBroadcast(message);
     }
 
+    public boolean isHosting() {
+        return hosting;
+    }
+
     public BusAttachment getBus(){
         return mBus;
     }
@@ -135,8 +175,8 @@ public class AlljoynChannel extends A3Channel implements BusObject {
         return serviceInterface;
     }
 
-    public void setServiceInterface(AlljoynServiceInterface serviceInterface, boolean proxied) {
-        if(!proxied && this.hosting){
+    public void setServiceInterface(AlljoynServiceInterface serviceInterface, boolean remote) {
+        if(!remote && this.hosting){
             this.serviceInterface = serviceInterface;
         }else
             if(!hosting)

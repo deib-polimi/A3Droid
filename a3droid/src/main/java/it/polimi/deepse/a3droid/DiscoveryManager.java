@@ -48,7 +48,7 @@ public class DiscoveryManager extends Thread {
 		}
 
 		/* Inizio il discovery, che continua finch� il canale � connesso.
-		 * Attivo il timer, il quale, una volta scaduto, chiama il metodo timerFired().
+		 * Attivo il timer, il quale, una volta scaduto, chiama il metodo handleTimeEvent().
 		 * Allo scadere del tempo, se non sono ancora connesso a nessun gruppo creo il Service.
 		 * A questo punto scopro il gruppo appena creato e mi ci connetto.
 		 */

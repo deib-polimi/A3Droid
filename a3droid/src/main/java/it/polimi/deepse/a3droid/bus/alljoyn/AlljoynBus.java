@@ -744,7 +744,7 @@ public class AlljoynBus extends A3Bus {
             channel.setServiceState(ServiceState.NAMED);
         } else {
             a3Application.busError(A3Application.Module.USE, "Unable to acquire well-known name: (" + status + ")");
-            channel.handleError(status, AlljoynErrorHandler.CHANNEL);
+            channel.handleError(status, AlljoynErrorHandler.SERVICE);
         }
     }
 
@@ -785,6 +785,7 @@ public class AlljoynBus extends A3Bus {
              */
             channel.getBus().releaseName(wellKnownName);
             channel.setServiceState(ServiceState.REGISTERED);
+            channel.handleEvent(A3Event.GROUP_DESTROYED);
         }
     }
 
@@ -893,6 +894,7 @@ public class AlljoynBus extends A3Bus {
 
         if (status == Status.OK) {
             channel.setServiceState(ServiceState.ADVERTISED);
+            channel.handleEvent(A3Event.GROUP_CREATED);
         } else {
             a3Application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
@@ -976,7 +978,7 @@ public class AlljoynBus extends A3Bus {
                     Log.i(TAG, "BusListener.sessionLost(sessionId=" + sessionId + ",reason=" + reason + ")");
                     a3Application.busError(A3Application.Module.USE, "The session has been lost");
                     channel.setChannelState(ChannelState.REGISTERED);
-                    channel.handleEvent(SESSION_LOST_EVENT, reason);
+                    channel.handleEvent(AlljoynEvent.SESSION_LOST, reason);
                 }
 
                 @Override
@@ -1125,5 +1127,7 @@ public class AlljoynBus extends A3Bus {
     /**
      * The session with a service has been lost.
      */
-    public static final String SESSION_LOST_EVENT = "SESSION_LOST_EVENT";
+    public static enum AlljoynEvent {
+        SESSION_LOST
+    }
 }

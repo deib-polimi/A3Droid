@@ -53,4 +53,14 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
      * acting as the Model of our MVC-based application.
      */
     protected A3Application a3Application = null;
+
+    /**
+     * The session with a service has been lost.
+     */
+    public static enum A3Event {
+        GROUP_CREATED,
+        GROUP_DESTROYED,
+        GROUP_JOINT,
+        GROUP_LEFT
+    }
 }

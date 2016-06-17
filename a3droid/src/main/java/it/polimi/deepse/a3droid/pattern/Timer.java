@@ -1,4 +1,5 @@
-package it.polimi.deepse.a3droid;
+package it.polimi.deepse.a3droid.pattern;
+
 
 /**This class is used in A3ChannelInterface and in Service, which implement the interface "TimerInterface".
  * After a 2 seconds timeout, it calls TimerInterface.handleTimeEvent(int), to notify the timeout fired.
@@ -9,7 +10,7 @@ public class Timer extends Thread {
 
 	/**The TimerInterface to notify at timeout firing time.*/
 	private TimerInterface channel;
-	
+
 	/**It indicates why the timeout is needed.
 	 * It is passed in handleTimeEvent(int), in order for the TimerInterface to know which timeout fired.
 	 */
@@ -19,7 +20,7 @@ public class Timer extends Thread {
 	private int timeToWait;
 
 	private boolean abort;
-	
+
 	/**
 	 * @param channel The TimerInterface to notify at timeout firing time.
 	 * @param reason It indicates why the timeout is needed on "channel".
@@ -31,7 +32,7 @@ public class Timer extends Thread {
 		this.abort = false;
 		timeToWait = 2000;
 	}
-	
+
 	/**
 	 * @param timerInterface The TimerInterface to notify at timeout firing time.
 	 * @param reason It indicates why the timeout is needed on "channel".
@@ -55,7 +56,7 @@ public class Timer extends Thread {
 		try {
 			sleep(timeToWait);
 			if(!abort)
-				channel.timerFired(reason);
+				channel.handleTimeEvent(reason);
 		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO Auto-generated catch block

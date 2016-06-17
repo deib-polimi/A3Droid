@@ -7,9 +7,13 @@ import java.util.List;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
+import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
+import it.polimi.deepse.a3droid.pattern.RandomWait;
 
 /**
  * TODO: Describe
@@ -21,7 +25,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public A3Channel(String groupName, A3Application application){
         this.setGroupName(groupName);
         addObservers(application.getObservers());
+        this.application = application;
     }
+
+    protected A3Application application;
+
+    protected RandomWait randomWait = new RandomWait();
 
     /** A3Channel methods **/
 
@@ -38,13 +47,45 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         notifyObservers(A3Channel.JOIN_CHANNEL_EVENT);
     }
 
+    public void leaveGroup(){
+        notifyObservers(A3Channel.USE_LEAVE_CHANNEL_EVENT);
+    }
+
     public void createGroup(){
         notifyObservers(A3Channel.START_SERVICE_EVENT);
-        notifyObservers(A3Channel.JOIN_CHANNEL_EVENT);
+    }
+
+    public void destroyGrGROUP_CREATEDoup(){
+        notifyObservers(A3Channel.STOP_SERVICE_EVENT);
+    }
+
+    public void handleEvent(A3Bus.A3Event event){
+       switch (event) {
+           case GROUP_CREATED:
+               //A node also needs to join the group it has created
+               joinGroup();
+               break;
+           case GROUP_DESTROYED:
+               break;
+           case GROUP_JOINT:
+               break;
+           case GROUP_LEFT:
+               break;
+           default:
+                break;
+       }
     }
 
     public void handleError(A3Exception ex){
+        if(ex instanceof A3GroupDuplicationException){
 
+        }else if(ex instanceof A3GroupDisconnectedException){
+
+        }else if(ex instanceof A3GroupCreateException){
+
+        }else if(ex instanceof A3GroupJoinException){
+
+        }
     }
 
     /** A3ChannelInterface **/
