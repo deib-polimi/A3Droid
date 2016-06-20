@@ -21,16 +21,18 @@ import it.polimi.deepse.a3droid.pattern.Fibonacci;
 public class AlljoynErrorHandler extends Handler {
 
     private AlljoynChannel channel;
-    private Map<AlljoynBus.ChannelState, Integer> channelRetries;
-    private Map<AlljoynBus.ServiceState, Integer> serviceRetries;
+    private Map<AlljoynBus.AlljoynChannelState, Integer> channelRetries;
+    private Map<AlljoynBus.AlljoynServiceState, Integer> serviceRetries;
     private static final int MAX_CHANNEL_RETRIES = 3;
     private static final int MAX_SERVICE_RETRIES = 3;
 
 
     public AlljoynErrorHandler(AlljoynChannel channel){
         this.channel = channel;
-        channelRetries = new HashMap<AlljoynBus.ChannelState, Integer>();
-        serviceRetries = new HashMap<AlljoynBus.ServiceState, Integer>();
+        channelRetries = new HashMap<AlljoynBus.AlljoynChannelState, Integer>();
+        resetChannelRetry();
+        serviceRetries = new HashMap<AlljoynBus.AlljoynServiceState, Integer>();
+        resetServiceRetry();
     }
 
     @Override
@@ -74,9 +76,9 @@ public class AlljoynErrorHandler extends Handler {
                     case ALLJOYN_JOINSESSION_REPLY_CONNECT_FAILED:
                     case ALLJOYN_JOINSESSION_REPLY_FAILED:
                     case ALLJOYN_JOINSESSION_REPLY_ALREADY_JOINED:
-                        if(channelRetries.get(AlljoynBus.ChannelState.REGISTERED) < MAX_CHANNEL_RETRIES) {
-                            waitToRetry(channelRetries.get(AlljoynBus.ChannelState.REGISTERED));
-                            incChannelRetries(AlljoynBus.ChannelState.REGISTERED);
+                        if(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED) < MAX_CHANNEL_RETRIES) {
+                            waitToRetry(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED));
+                            incChannelRetries(AlljoynBus.AlljoynChannelState.REGISTERED);
                             channel.joinGroup();
                         }else
                             channel.handleError(new A3GroupJoinException(alljoynStatus.toString()));
@@ -101,9 +103,9 @@ public class AlljoynErrorHandler extends Handler {
                         channel.handleError(new A3GroupDuplicationException(alljoynStatus.toString()));
                         break;
                     case BUS_NOT_CONNECTED:
-                        if(serviceRetries.get(AlljoynBus.ServiceState.REGISTERED) < MAX_SERVICE_RETRIES) {
-                            waitToRetry(serviceRetries.get(AlljoynBus.ServiceState.REGISTERED));
-                            incServiceRetries(AlljoynBus.ServiceState.REGISTERED);
+                        if(serviceRetries.get(AlljoynBus.AlljoynServiceState.REGISTERED) < MAX_SERVICE_RETRIES) {
+                            waitToRetry(serviceRetries.get(AlljoynBus.AlljoynServiceState.REGISTERED));
+                            incServiceRetries(AlljoynBus.AlljoynServiceState.REGISTERED);
                             channel.createGroup();
                         }else
                             channel.handleError(new A3GroupCreateException(alljoynStatus.toString()));
@@ -116,9 +118,9 @@ public class AlljoynErrorHandler extends Handler {
                 switch (alljoynStatus){
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_BINDSESSIONPORT_REPLY_FAILED:
-                        if(serviceRetries.get(AlljoynBus.ServiceState.NAMED) < MAX_SERVICE_RETRIES) {
-                                waitToRetry(serviceRetries.get(AlljoynBus.ServiceState.NAMED));
-                                incServiceRetries(AlljoynBus.ServiceState.NAMED);
+                        if(serviceRetries.get(AlljoynBus.AlljoynServiceState.NAMED) < MAX_SERVICE_RETRIES) {
+                                waitToRetry(serviceRetries.get(AlljoynBus.AlljoynServiceState.NAMED));
+                                incServiceRetries(AlljoynBus.AlljoynServiceState.NAMED);
                                 channel.createGroup();
                         }else {
                                 channel.handleError(new A3GroupCreateException(alljoynStatus.toString()));
@@ -140,9 +142,9 @@ public class AlljoynErrorHandler extends Handler {
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_ADVERTISENAME_REPLY_FAILED:
                     case ALLJOYN_ADVERTISENAME_REPLY_TRANSPORT_NOT_AVAILABLE:
-                        if(serviceRetries.get(AlljoynBus.ServiceState.BOUND) < MAX_SERVICE_RETRIES) {
-                                waitToRetry(serviceRetries.get(AlljoynBus.ServiceState.BOUND));
-                                incServiceRetries(AlljoynBus.ServiceState.BOUND);
+                        if(serviceRetries.get(AlljoynBus.AlljoynServiceState.BOUND) < MAX_SERVICE_RETRIES) {
+                                waitToRetry(serviceRetries.get(AlljoynBus.AlljoynServiceState.BOUND));
+                                incServiceRetries(AlljoynBus.AlljoynServiceState.BOUND);
                                 channel.createGroup();
                         }else {
                                 channel.handleError(new A3GroupCreateException(alljoynStatus.toString()));
@@ -163,22 +165,24 @@ public class AlljoynErrorHandler extends Handler {
         }
     }
 
-    private void incChannelRetries(AlljoynBus.ChannelState state){
+    private void incChannelRetries(AlljoynBus.AlljoynChannelState state){
         assert ((channelRetries.get(state) + 1) < MAX_CHANNEL_RETRIES);
         channelRetries.put(state, channelRetries.get(state) + 1);
     }
 
-    private void incServiceRetries(AlljoynBus.ServiceState state){
+    private void incServiceRetries(AlljoynBus.AlljoynServiceState state){
         assert ((serviceRetries.get(state) + 1) < MAX_SERVICE_RETRIES);
         serviceRetries.put(state, serviceRetries.get(state) + 1);
     }
 
-    public void resetChannelRetry(AlljoynBus.ChannelState state){
-        channelRetries.put(state, 0);
+    public void resetChannelRetry(){
+        for(AlljoynBus.AlljoynChannelState state : AlljoynBus.AlljoynChannelState.values())
+            channelRetries.put(state, 0);
     }
 
-    public void resetServiceRetry(AlljoynBus.ServiceState state){
-        serviceRetries.put(state, 0);
+    public void resetServiceRetry(){
+        for(AlljoynBus.AlljoynServiceState state : AlljoynBus.AlljoynServiceState.values())
+            serviceRetries.put(state, 0);
     }
 
     private void waitToRetry(int retry){

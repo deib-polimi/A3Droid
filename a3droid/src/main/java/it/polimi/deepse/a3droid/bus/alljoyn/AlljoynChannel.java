@@ -19,11 +19,13 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
-    private AlljoynEventListener eventListener;
+    private AlljoynEventHandler eventListener;
 
     public AlljoynChannel(String groupName, A3Application application){
         super(groupName, application);
         setService(new AlljoynService(groupName));
+        errorHandler = new AlljoynErrorHandler(this);
+        eventListener = new AlljoynEventHandler(application, this);
     }
 
     /**
@@ -31,8 +33,6 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      */
     @Override
     public void connect(){
-        errorHandler = new AlljoynErrorHandler(this);
-        eventListener = new AlljoynEventListener(application, this);
         super.connect();
         if(application.isGroupFound(groupName))
             joinGroup();
@@ -74,6 +74,11 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     public void joinGroup(){
         this.hosting = false;
         super.joinGroup();
+    }
+
+    @Override
+    public void leaveGroup(){
+        super.leaveGroup();
     }
 
     public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
@@ -213,7 +218,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public synchronized void setServiceState(AlljoynBus.ServiceState state) {
+    public synchronized void setServiceState(AlljoynBus.AlljoynServiceState state) {
         mServiceState = state;
         notifyObservers(SERVICE_STATE_CHANGED_EVENT);
     }
@@ -221,7 +226,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     /**
      * Get the state of the "use" channel.
      */
-    public synchronized AlljoynBus.ServiceState getServiceState() {
+    public synchronized AlljoynBus.AlljoynServiceState getServiceState() {
         return mServiceState;
     }
 
@@ -237,14 +242,14 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * of detail probably isn't appropriate, but we want to do so for this
      * sample.
      */
-    protected AlljoynBus.ServiceState mServiceState = AlljoynBus.ServiceState.IDLE;
+    protected AlljoynBus.AlljoynServiceState mServiceState = AlljoynBus.AlljoynServiceState.IDLE;
 
     /**
      * Set the status of the "use" channel.  The AllJoyn Service part of the
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public synchronized void setChannelState(AlljoynBus.ChannelState state) {
+    public synchronized void setChannelState(AlljoynBus.AlljoynChannelState state) {
         mChannelState = state;
         notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
     }
@@ -258,7 +263,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     /**
      * Get the state of the "use" channel.
      */
-    public synchronized AlljoynBus.ChannelState getChannelState() {
+    public synchronized AlljoynBus.AlljoynChannelState getChannelState() {
         return mChannelState;
     }
 
@@ -268,7 +273,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * this kind of detail probably isn't appropriate, but we want to do so for
      * this sample.
      */
-    protected AlljoynBus.ChannelState mChannelState = AlljoynBus.ChannelState.IDLE;
+    protected AlljoynBus.AlljoynChannelState mChannelState = AlljoynBus.AlljoynChannelState.IDLE;
 
     public synchronized void setBusState(AlljoynBus.BusState state) {
         mBusState = state;

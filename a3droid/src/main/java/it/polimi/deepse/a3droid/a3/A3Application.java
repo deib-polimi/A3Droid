@@ -6,8 +6,12 @@ import android.content.Intent;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.pattern.Observable;
@@ -144,6 +148,7 @@ public class A3Application extends Application implements Observable{
         Log.i(TAG, "addFoundGroup(" + channel + ")");
         removeFoundGroup(channel);
         mGroups.add(channel);
+
         Log.i(TAG, "addFoundGroup(): added " + channel);
     }
 
@@ -192,6 +197,22 @@ public class A3Application extends Application implements Observable{
      * eventually result in a joinSession call out from the AllJoyn Service
      */
     private List<String> mGroups = new ArrayList<String>();
+
+    public synchronized void addGroupMember(String groupName,String id) {
+        Log.i(TAG, "addGroupMember(" + groupName + ":" + id + ")");
+        if (groupsMembers.containsKey(groupName)) {
+            groupsMembers.get(groupName).add(id);
+        }
+    }
+
+    public synchronized void deleteGroupMember(String groupName,String id) {
+        Log.i(TAG, "deleteGroupMember(" + groupName + ":" + id + ")");
+        if (groupsMembers.containsKey(groupName)) {
+            groupsMembers.get(groupName).add(id);
+        }
+    }
+
+    private Map<String, Set<String>> groupsMembers = new HashMap<String, Set<String>>();
 
     /**
      * This object is really the model of a model-view-controller architecture.

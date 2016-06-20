@@ -57,6 +57,15 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
     /**
      * The session with a service has been lost.
      */
+    public static enum A3GroupState {
+        IDLE,
+        CREATED,
+        JOINED
+    }
+
+    /**
+     * The session with a service has been lost.
+     */
     public static enum A3Event {
         GROUP_CREATED,
         GROUP_DESTROYED,

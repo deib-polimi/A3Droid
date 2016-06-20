@@ -24,17 +24,15 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     public A3Channel(String groupName, A3Application application){
         this.setGroupName(groupName);
-        addObservers(application.getObservers());
         this.application = application;
     }
 
     protected A3Application application;
 
-    protected RandomWait randomWait = new RandomWait();
-
     /** A3Channel methods **/
 
     public void connect(){
+        addObservers(application.getObservers());
         notifyObservers(A3Channel.CONNECT_EVENT);
     }
 
@@ -55,7 +53,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         notifyObservers(A3Channel.START_SERVICE_EVENT);
     }
 
-    public void destroyGrGROUP_CREATEDoup(){
+    public void destroyGroup(){
         notifyObservers(A3Channel.STOP_SERVICE_EVENT);
     }
 
@@ -78,7 +76,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     public void handleError(A3Exception ex){
         if(ex instanceof A3GroupDuplicationException){
-
+            reconnect();
         }else if(ex instanceof A3GroupDisconnectedException){
 
         }else if(ex instanceof A3GroupCreateException){
@@ -281,6 +279,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public void addOutboundItem(A3Message message) {
         mOutbound.add(message);
         notifyObservers(OUTBOUND_CHANGED_EVENT);
+    }
+
+    public void addOutboundItem(A3Message message, boolean notify) {
+        mOutbound.add(message);
+        if(notify)
+            notifyObservers(OUTBOUND_CHANGED_EVENT);
     }
 
     /**

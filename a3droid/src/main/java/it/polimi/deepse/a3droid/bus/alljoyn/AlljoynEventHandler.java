@@ -12,13 +12,13 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class AlljoynEventListener extends Handler implements TimerInterface{
+public class AlljoynEventHandler extends Handler implements TimerInterface{
 
     private A3Application application;
     private AlljoynChannel channel;
     private RandomWait randomWait = new RandomWait();
 
-    public AlljoynEventListener(A3Application application, AlljoynChannel channel){
+    public AlljoynEventHandler(A3Application application, AlljoynChannel channel){
         this.application = application;
         this.channel = channel;
     }
@@ -30,7 +30,7 @@ public class AlljoynEventListener extends Handler implements TimerInterface{
     public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
         switch (event){
             case SESSION_LOST:
-                new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT));
+                new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
                 break;
             default:
                 break;
