@@ -69,6 +69,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
     public static enum A3Event {
         GROUP_CREATED,
         GROUP_DESTROYED,
+        GROUP_LOST,
         GROUP_JOINT,
         GROUP_LEFT
     }

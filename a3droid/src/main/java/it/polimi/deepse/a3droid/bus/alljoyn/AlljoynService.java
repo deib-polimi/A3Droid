@@ -46,12 +46,21 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
         return true;
     }
 
+    @Override
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    public boolean sendControl(A3Message message) throws BusException {
+        this.serviceSignalEmitterInterface.ReceiveControl(message);
+        return true;
+    }
+
     /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynChannel class**/
     public void ReceiveUnicast(A3Message message) throws BusException {}
 
     public void ReceiveMultiCast(A3Message message) throws BusException {}
 
     public void ReceiveBroadcast(A3Message message) throws BusException {}
+
+    public void ReceiveControl(A3Message message) throws BusException {}
 
     private synchronized void setGroupName(String name) {
         groupName = name;

@@ -3,11 +3,11 @@ package it.polimi.deepse.a3droid.a3;
 import android.app.Application;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,10 +33,17 @@ public class A3Application extends Application implements Observable{
         mRunningService = startService(intent);
         if (mRunningService == null)
             Log.i(TAG, "onCreate(): failed to startService()");
+        this.myUID = Settings.Secure.getString(this.getContentResolver(), "android_id");
     }
 
     public static String PACKAGE_NAME;
     private ComponentName mRunningService = null;
+
+    public String getUID(){
+        return myUID;
+    }
+
+    private String myUID = null;
 
     /**
      * Since our application is "rooted" in this class derived from Appliation
@@ -170,23 +177,23 @@ public class A3Application extends Application implements Observable{
     }
 
     /**
-     * Whenever the user is asked for a channel to join, it nees the list of
+     * Whenever the user is asked for a channel to join, it needs the list of
      * channels found via FoundAdvertisedName.  This method provides that
-     * list.  Since we have no idea how or when the caller is going to access
+     * list. Since we have no idea how or when the caller is going to access
      * or change the list, and we are deeply paranoid, we provide a deep copy.
      */
-    public synchronized List<String> getFoundChannels() {
-        Log.i(TAG, "getFoundChannels()");
+    public synchronized List<String> getFoundGroups() {
+        Log.i(TAG, "getFoundGroups()");
         List<String> clone = new ArrayList<String>(mGroups.size());
         for (String string : mGroups) {
-            Log.i(TAG, "getFoundChannels(): added " + string);
+            Log.i(TAG, "getFoundGroups(): added " + string);
             clone.add(new String(string));
         }
         return clone;
     }
 
     public boolean isGroupFound(String groupName){
-        return getFoundChannels().contains(groupName);
+        return mGroups.contains(groupName);
     }
 
     /**
@@ -210,6 +217,22 @@ public class A3Application extends Application implements Observable{
         if (groupsMembers.containsKey(groupName)) {
             groupsMembers.get(groupName).add(id);
         }
+    }
+
+    public boolean isGroupEmpty(String groupName){
+        return !groupsMembers.containsKey(groupName)
+                || groupsMembers.get(groupName).isEmpty();
+    }
+
+    public boolean isGroupMemberIn(String groupName, String id){
+        return groupsMembers.containsKey(groupName) &&
+                groupsMembers.get(groupName).contains(id);
+    }
+
+    public boolean isGroupMemberAlone(String groupName, String id){
+        return groupsMembers.containsKey(groupName) &&
+                groupsMembers.get(groupName).contains(id) &&
+                groupsMembers.get(groupName).size() == 1;
     }
 
     private Map<String, Set<String>> groupsMembers = new HashMap<String, Set<String>>();

@@ -1,4 +1,4 @@
-package it.polimi.deepse.a3droid.pattern;
+package it.polimi.deepse.a3droid.utility;
 
 import java.util.Random;
 

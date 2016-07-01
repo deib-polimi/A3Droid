@@ -59,7 +59,9 @@ public class AlljoynBus extends A3Bus {
          * remote channel instances in the background while the rest of the app
          * is starting up.
          */
-        mDiscoveryChannel = new AlljoynChannel("DISCOVERY", (A3Application)getApplication());
+        mDiscoveryChannel = new AlljoynChannel((A3Application)getApplication(),
+                "DISCOVERY",
+                false, false);
         mBackgroundHandler.connect(mDiscoveryChannel);
         mBackgroundHandler.startDiscovery(mDiscoveryChannel);
     }
@@ -1002,6 +1004,7 @@ public class AlljoynBus extends A3Bus {
                     a3Application.busError(A3Application.Module.USE, "The session has been lost");
                     channel.setChannelState(AlljoynChannelState.REGISTERED);
                     channel.setSessionId(-1);
+                    channel.handleEvent(A3Event.GROUP_LOST);
                     channel.handleEvent(AlljoynEvent.SESSION_LOST, reason);
                 }
 
@@ -1018,6 +1021,7 @@ public class AlljoynBus extends A3Bus {
 
             if (status == Status.OK) {
                 channel.setSessionId(sessionId.value);
+                channel.handleEvent(A3Event.GROUP_JOINT);
                 Log.i(TAG, "doJoinSession(): use sessionId is " + sessionId.value);
             } else {
                 a3Application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
@@ -1047,11 +1051,12 @@ public class AlljoynBus extends A3Bus {
      */
     private void doLeaveSession(AlljoynChannel channel) {
         Log.i(TAG, "doLeaveSession()");
-        //TODO: Is this the right place for this verification?
+        //TODO: Is this the right place for this verification? Why it is here?
         if(channel.getChannelState() == AlljoynChannelState.JOINED) {
             channel.getBus().leaveSession(channel.getSessionId());
             channel.setSessionId(-1);
             channel.setChannelState(AlljoynChannelState.REGISTERED);
+            channel.handleEvent(A3Event.GROUP_LEFT);
         }
     }
 
@@ -1077,7 +1082,6 @@ public class AlljoynBus extends A3Bus {
              */
             try {
                 switch (message.reason){
-
                     case A3Channel.BROADCAST_MSG:
                         channel.sendBroadcast(message);
                         break;
@@ -1086,6 +1090,9 @@ public class AlljoynBus extends A3Bus {
                         break;
                     case A3Channel.MULTICAST_MSG:
                         channel.sendMulticast(message);
+                        break;
+                    case A3Channel.CONTROL_MSG:
+                        channel.sendControl(message);
                         break;
                     default:
                         break;

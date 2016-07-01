@@ -11,6 +11,8 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Channel;
+import it.polimi.deepse.a3droid.a3.A3FollowerRole;
+import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
 
 /**
  * TODO: Describe
@@ -21,8 +23,11 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     private AlljoynErrorHandler errorHandler;
     private AlljoynEventHandler eventListener;
 
-    public AlljoynChannel(String groupName, A3Application application){
-        super(groupName, application);
+    public AlljoynChannel(A3Application application,
+                          String groupName,
+                          boolean hasFollowerRole,
+                          boolean hasSupervisorRole){
+        super(application, groupName, hasFollowerRole, hasSupervisorRole);
         setService(new AlljoynService(groupName));
         errorHandler = new AlljoynErrorHandler(this);
         eventListener = new AlljoynEventHandler(application, this);
@@ -32,8 +37,8 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
      */
     @Override
-    public void connect(){
-        super.connect();
+    public void connect(A3FollowerRole a3FollowerRole, A3SupervisorRole a3SupervisorRole){
+        super.connect(a3FollowerRole, a3SupervisorRole);
         if(application.isGroupFound(groupName))
             joinGroup();
         else
@@ -55,7 +60,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     @Override
     public void reconnect(){
         disconnect();
-        connect();
+        connect(followerRole, supervisorRole);
     }
 
     @Override
@@ -107,28 +112,38 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * @param ex
      */
     public void handleError(BusException ex, int errorSide){
-        assert (errorSide == AlljoynErrorHandler.CHANNEL ||
-                errorSide == AlljoynErrorHandler.SERVICE);
+        assert (errorSide == AlljoynErrorHandler.BUS);
         Message msg = errorHandler.obtainMessage(errorSide);
         msg.obj = ex;
         errorHandler.sendMessage(msg);
     }
 
-    /** Methods to send messages through service interface **/
+    /** Methods to send application messages through service interface **/
     @Override
     public void sendUnicast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
         getServiceInterface().sendUnicast(message);
     }
 
     @Override
     public void sendMulticast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
         getServiceInterface().sendMulticast(message);
     }
 
     @Override
     public void sendBroadcast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
         getServiceInterface().sendBroadcast(message);
     }
+
+    /** Methods to send control messages through service interface **/
+    @Override
+    public void sendControl(A3Message message) throws BusException{
+        message.senderAddress = channelId;
+        getServiceInterface().sendControl(message);
+    }
+
 
     /**
      * The signal handlers for messages received from the AllJoyn bus
@@ -154,6 +169,12 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
     public void ReceiveBroadcast(A3Message message) throws BusException {
         receiveBroadcast(message);
+    }
+
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveControl")
+    public void ReceiveControl(A3Message message) throws BusException {
+        if(message.addresses.length == 0 || isAddressed(message.addresses))
+            receiveControl(message);
     }
 
     public boolean isHosting() {

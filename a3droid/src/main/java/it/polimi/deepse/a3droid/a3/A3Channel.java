@@ -11,27 +11,59 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynConstants;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
-import it.polimi.deepse.a3droid.pattern.RandomWait;
+import it.polimi.deepse.a3droid.pattern.Timer;
+import it.polimi.deepse.a3droid.pattern.TimerInterface;
+import it.polimi.deepse.a3droid.utility.RandomWait;
 
 /**
  * TODO: Describe
  */
-public abstract class A3Channel implements A3ChannelInterface, Observable {
+public abstract class A3Channel implements A3ChannelInterface, Observable, TimerInterface {
 
     protected static final String TAG = "a3droid.A3Channel";
 
-    public A3Channel(String groupName, A3Application application){
+    /** Indicates if this channel is a supervisor **/
+    private boolean supervisor = false;
+
+    /** The current supervisor id **/
+    private String supervisorId = null;
+
+    /** The fitness function value of this node in this group **/
+    private float myFF = 0;
+
+    /** Indicate if this node has follower and supervisor roles **/
+    private boolean hasSupervisorRole = false;
+    private boolean hasFollowerRole = false;
+
+    /** The logic that is executed when this channel is a follower. */
+    protected A3FollowerRole followerRole;
+
+    /** The logic that is executed when this channel is the supervisor. */
+    protected A3SupervisorRole supervisorRole;
+
+    public A3Channel(A3Application application,
+                     String groupName,
+                     boolean hasFollowerRole,
+                     boolean hasSupervisorRole){
         this.setGroupName(groupName);
         this.application = application;
+        this.hasFollowerRole = hasFollowerRole;
+        this.hasSupervisorRole = hasSupervisorRole;
     }
 
     protected A3Application application;
 
     /** A3Channel methods **/
 
-    public void connect(){
+    public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
+        this.followerRole = followerRole;
+        this.supervisorRole = supervisorRole;
+        this.followerRole.setChannel(this);
+        this.supervisorRole.setChannel(this);
         addObservers(application.getObservers());
         notifyObservers(A3Channel.CONNECT_EVENT);
     }
@@ -65,7 +97,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
                break;
            case GROUP_DESTROYED:
                break;
+           case GROUP_LOST:
+               if(supervisor)
+                    deactivateSupervisor();
+               else
+                    deactivateFollower();
+               break;
            case GROUP_JOINT:
+               new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, randomWait.next(WAIT_AND_QUERY_ROLE_FT, WAIT_AND_QUERY_ROLE_RT)).start();
                break;
            case GROUP_LEFT:
                break;
@@ -74,42 +113,188 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
        }
     }
 
+    public void handleTimeEvent(int reason){
+        switch (reason){
+            case WAIT_AND_QUERY_ROLE_EVENT:
+                queryRole();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private RandomWait randomWait = new RandomWait();
+    private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
+    private static final int WAIT_AND_QUERY_ROLE_FT = 0;
+    private static final int WAIT_AND_QUERY_ROLE_RT = 2000;
+
     public void handleError(A3Exception ex){
         if(ex instanceof A3GroupDuplicationException){
             reconnect();
         }else if(ex instanceof A3GroupDisconnectedException){
-
+            //TODO raise this to the application?
         }else if(ex instanceof A3GroupCreateException){
-
+            //TODO raise this to the application?
         }else if(ex instanceof A3GroupJoinException){
-
+            //TODO raise this to the application?
+        }else if(ex instanceof A3MessageDeliveryException){
+            //TODO raise this to the application?
         }
     }
 
-    /** A3ChannelInterface **/
+    /**
+     * Check for the condition to become a supervisor or to query for existing one.
+     */
+    public void queryRole(){
+        if((application.isGroupEmpty(groupName) ||
+                application.isGroupMemberAlone(groupName, channelId)) &&
+                hasSupervisorRole)
+            becomeSupervisor();
+        else
+            querySupervisor();
+    }
 
+    /**
+     * Called when this channels becomes supervisor. It deactivates the follower
+     * role (if it is active) and it activates the supervisor role.
+     */
+    private void becomeSupervisor() {
+        assert (hasSupervisorRole);
+        supervisor = true;
+        supervisorId = channelId;
+        followerRole.setActive(false);
+        if(!followerRole.isActive()) {
+            supervisorRole.setActive(true);
+            new Thread(supervisorRole).start();
+        }
+        notifyCurrentSupervisor();
+    }
+
+    /**
+     * Removes the supervisor role by deactivating it and seting supervisor false.
+     */
+    private void deactivateSupervisor(){
+        assert (hasSupervisorRole);
+        supervisor = false;
+        supervisorRole.setActive(false);
+    }
+
+    /**
+     * Removes the follower role by deactivating it and seting supervisor false.
+     */
+    private void deactivateFollower(){
+        assert (hasFollowerRole);
+        followerRole.setActive(false);
+    }
+
+    /**
+     * Called when this channels becomes a follower. It deactivates the supervisor
+     * role (if it is active) and it activates the follower role.
+     */
+    public void becomeFollower(){
+        assert (hasFollowerRole);
+        supervisor = false;
+        supervisorRole.setActive(false);
+        if(!followerRole.isActive()) {
+            followerRole.setActive(true);
+            new Thread(followerRole).start();
+        }
+    }
+
+    /** Control communication methods **/
+    private void notifyCurrentSupervisor(String... addresses){
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, myFF + "");
+        m.addresses = addresses;
+        addOutboundItem(m, true);
+    }
+
+    /** Control communication methods **/
+    private void notifyNoSupervisor(String... addresses){
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_NO_SUPERVISOR, channelId);
+        m.addresses = addresses;
+        addOutboundItem(m, true);
+    }
+
+    /** Control communication methods **/
+    private void querySupervisor(){
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_GET_SUPERVISOR, "");
+        addOutboundItem(m, true);
+    }
+
+    /** A3ChannelInterface for application communication **/
     @Override
     public void receiveUnicast(A3Message message) {
-        Log.i(TAG, "UNICAST : " + message.object + " TO " + message.addresses);
+        Log.i(TAG, "UNICAST : " + (String) message.object + " TO " + message.addresses);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
-        Log.i(TAG, "MULTICAST : " + message.object + " TO " + message.addresses);
+        Log.i(TAG, "MULTICAST : " + (String) message.object + " TO " + message.addresses);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
-        Log.i(TAG, "BROADCAST : " + message.object);
+        Log.i(TAG, "BROADCAST : " + (String) message.object);
     }
 
+    /** A3ChannelInterface for control **/
+
+    @Override
+    public void receiveControl(A3Message message) {
+        Log.i(TAG, "CONTROL : " + (String) message.object);
+        switch (message.reason){
+            case AlljoynConstants.CONTROL_CURRENT_SUPERVISOR:
+                handleCurrentSupervisorNotification(message);
+                break;
+            case AlljoynConstants.CONTROL_NO_SUPERVISOR:
+                handleNoSupervisorNotification(message);
+                break;
+            case AlljoynConstants.CONTROL_GET_SUPERVISOR:
+                handleGetSupervisorQuery(message);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**Notification handlers**/
+    private void handleCurrentSupervisorNotification(A3Message message){
+        supervisorId = message.senderAddress;
+        if(!channelId.equals(supervisorId)){
+            float supervisorFF = Float.parseFloat(message.object);
+            if(hasSupervisorRole){
+                if (myFF > supervisorFF)
+                    becomeSupervisor();
+                else{
+                    if(hasFollowerRole)
+                        becomeFollower();
+                    else if(supervisor)
+                        deactivateSupervisor();
+                }
+            }else if(hasFollowerRole)
+                becomeFollower();
+        }
+    }
+
+    private void handleNoSupervisorNotification(A3Message message){
+        if(hasSupervisorRole)
+            becomeSupervisor();
+    }
+
+    /**Query handlers**/
+    private void handleGetSupervisorQuery(A3Message message){
+        if(supervisor)
+            notifyCurrentSupervisor(message.senderAddress);
+        else if(supervisorId == null)
+            notifyNoSupervisor(message.senderAddress);
+    }
 
     /**
      * Set the name part of the "host" channel.  Since we are going to "use" a
      * channel that is implemented remotely and discovered through an AllJoyn
      * FoundAdvertisedName, this must come from a list of advertised names.
      * These names are our channels, and so we expect the GUI to choose from
-     * among the list of channels it retrieves from getFoundChannels().
+     * among the list of channels it retrieves from getFoundGroups().
      *
      * Since we are talking about user-level interactions here, we are talking
      * about the final segment of a well-known name representing a channel at
@@ -164,6 +349,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * provides for remote devices.  Set to -1 if not connected.
      */
     int mSessionId = -1;
+
+    public String getSupervisorId() {
+        return supervisorId;
+    }
+
+    public boolean isSupervisor(){
+        return supervisor;
+    }
 
     /**
      * The object we use in notifications to indicate that a channel must be setup.
@@ -296,4 +489,5 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public static final int BROADCAST_MSG = 0;
     public static final int UNICAST_MSG = 1;
     public static final int MULTICAST_MSG = 2;
+    public static final int CONTROL_MSG = 3;
 }

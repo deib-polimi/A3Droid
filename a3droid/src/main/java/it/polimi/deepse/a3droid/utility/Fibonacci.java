@@ -1,4 +1,4 @@
-package it.polimi.deepse.a3droid.pattern;
+package it.polimi.deepse.a3droid.utility;
 
 public class Fibonacci {
     public static int fib(int n) {

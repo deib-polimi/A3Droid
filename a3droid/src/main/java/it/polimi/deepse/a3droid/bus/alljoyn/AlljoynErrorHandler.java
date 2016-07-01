@@ -12,7 +12,8 @@ import java.util.Map;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
-import it.polimi.deepse.a3droid.pattern.Fibonacci;
+import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
+import it.polimi.deepse.a3droid.utility.Fibonacci;
 
 /**
  * Handles three types of error: from service setup, from channel setup and from the bus.
@@ -53,12 +54,14 @@ public class AlljoynErrorHandler extends Handler {
     }
 
     public void handleBusError(BusException ex){
-        switch (channel.getChannelState()){
-            case REGISTERED:
-
+        switch (channel.getBusState()){
+            case DISCONNECTED:
                 break;
-            case JOINED:
-
+            case CONNECTED:
+                //TODO: Handle message send error
+                channel.handleError(new A3MessageDeliveryException(ex.getMessage()));
+                break;
+            case DISCOVERING:
                 break;
             default:
                 break;

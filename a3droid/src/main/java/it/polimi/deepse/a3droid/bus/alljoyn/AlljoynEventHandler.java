@@ -4,7 +4,8 @@ import android.os.Handler;
 import android.os.Message;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.pattern.RandomWait;
+import it.polimi.deepse.a3droid.a3.A3Bus;
+import it.polimi.deepse.a3droid.utility.RandomWait;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 
@@ -48,7 +49,6 @@ public class AlljoynEventHandler extends Handler implements TimerInterface{
     }
 
     private static final int WAIT_AND_RECONNECT_EVENT = 0;
-
     private static final int WAIT_AND_RECONNECT_FT = 0;
     private static final int WAIT_AND_RECONNECT_RT = 2000;
 }

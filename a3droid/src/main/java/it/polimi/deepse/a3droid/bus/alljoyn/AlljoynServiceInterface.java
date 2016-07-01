@@ -34,6 +34,9 @@ public interface AlljoynServiceInterface{
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     boolean sendBroadcast(A3Message message) throws BusException;
 
+    @BusMethod(signature = "(sisayas)", replySignature = "b")
+    boolean sendControl(A3Message message) throws BusException;
+
     /*
      * The BusSignal annotation signifies that this function should be used as
      * part of the AllJoyn interface.  The runtime is smart enough to figure
@@ -50,5 +53,8 @@ public interface AlljoynServiceInterface{
 
     @BusSignal(signature = "(sisayas)")
     void ReceiveBroadcast(A3Message message) throws BusException;
+
+    @BusSignal(signature = "(sisayas)")
+    void ReceiveControl(A3Message message) throws BusException;
 
 }
