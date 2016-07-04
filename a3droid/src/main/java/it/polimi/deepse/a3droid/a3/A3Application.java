@@ -8,6 +8,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -151,12 +152,13 @@ public class A3Application extends Application implements Observable{
      * simply the channel name, which is the final segment of the well-known
      * name.
      */
-    public synchronized void addFoundGroup(String channel) {
-        Log.i(TAG, "addFoundGroup(" + channel + ")");
-        removeFoundGroup(channel);
-        mGroups.add(channel);
+    public synchronized void addFoundGroup(String groupName) {
+        Log.i(TAG, "addFoundGroup(" + groupName + ")");
+        removeFoundGroup(groupName);
+        mGroups.add(groupName);
+        groupsMembers.put(groupName, new HashSet<String>());
 
-        Log.i(TAG, "addFoundGroup(): added " + channel);
+        Log.i(TAG, "addFoundGroup(): added " + groupName);
     }
 
     /**
@@ -164,14 +166,15 @@ public class A3Application extends Application implements Observable{
      * know by construction that the advertised name will correspond to an chat
      * channel.
      */
-    public synchronized void removeFoundGroup(String channel) {
-        Log.i(TAG, "removeFoundGroup(" + channel + ")");
+    public synchronized void removeFoundGroup(String groupName) {
+        Log.i(TAG, "removeFoundGroup(" + groupName + ")");
 
         for (Iterator<String> i = mGroups.iterator(); i.hasNext();) {
             String string = i.next();
-            if (string.equals(channel)) {
-                Log.i(TAG, "removeFoundGroup(): removed " + channel);
+            if (string.equals(groupName)) {
+                Log.i(TAG, "removeFoundGroup(): removed " + groupName);
                 i.remove();
+                groupsMembers.remove(groupName);
             }
         }
     }

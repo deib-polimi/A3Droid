@@ -1,5 +1,6 @@
 package it.polimi.deepse.a3droid.a3;
 
+import android.os.Message;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -15,14 +16,11 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynConstants;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
-import it.polimi.deepse.a3droid.pattern.Timer;
-import it.polimi.deepse.a3droid.pattern.TimerInterface;
-import it.polimi.deepse.a3droid.utility.RandomWait;
 
 /**
  * TODO: Describe
  */
-public abstract class A3Channel implements A3ChannelInterface, Observable, TimerInterface {
+public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     protected static final String TAG = "a3droid.A3Channel";
 
@@ -45,6 +43,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** The logic that is executed when this channel is the supervisor. */
     protected A3SupervisorRole supervisorRole;
 
+    /** Handler class for A3 layer events **/
+    private A3EventHandler eventHandler;
+
     public A3Channel(A3Application application,
                      String groupName,
                      boolean hasFollowerRole,
@@ -53,6 +54,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         this.application = application;
         this.hasFollowerRole = hasFollowerRole;
         this.hasSupervisorRole = hasSupervisorRole;
+        eventHandler = new A3EventHandler(application, this);
     }
 
     protected A3Application application;
@@ -90,43 +92,10 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     public void handleEvent(A3Bus.A3Event event){
-       switch (event) {
-           case GROUP_CREATED:
-               //A node also needs to join the group it has created
-               joinGroup();
-               break;
-           case GROUP_DESTROYED:
-               break;
-           case GROUP_LOST:
-               if(supervisor)
-                    deactivateSupervisor();
-               else
-                    deactivateFollower();
-               break;
-           case GROUP_JOINT:
-               new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, randomWait.next(WAIT_AND_QUERY_ROLE_FT, WAIT_AND_QUERY_ROLE_RT)).start();
-               break;
-           case GROUP_LEFT:
-               break;
-           default:
-                break;
-       }
+        Message msg = eventHandler.obtainMessage();
+        msg.obj = event;
+        eventHandler.sendMessage(msg);
     }
-
-    public void handleTimeEvent(int reason){
-        switch (reason){
-            case WAIT_AND_QUERY_ROLE_EVENT:
-                queryRole();
-                break;
-            default:
-                break;
-        }
-    }
-
-    private RandomWait randomWait = new RandomWait();
-    private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
-    private static final int WAIT_AND_QUERY_ROLE_FT = 0;
-    private static final int WAIT_AND_QUERY_ROLE_RT = 2000;
 
     public void handleError(A3Exception ex){
         if(ex instanceof A3GroupDuplicationException){
@@ -145,7 +114,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /**
      * Check for the condition to become a supervisor or to query for existing one.
      */
-    public void queryRole(){
+    protected void queryRole(){
         if((application.isGroupEmpty(groupName) ||
                 application.isGroupMemberAlone(groupName, channelId)) &&
                 hasSupervisorRole)
@@ -167,13 +136,13 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
             supervisorRole.setActive(true);
             new Thread(supervisorRole).start();
         }
-        notifyCurrentSupervisor();
+        notifyNewSupervisor();
     }
 
     /**
      * Removes the supervisor role by deactivating it and seting supervisor false.
      */
-    private void deactivateSupervisor(){
+    protected void deactivateSupervisor(){
         assert (hasSupervisorRole);
         supervisor = false;
         supervisorRole.setActive(false);
@@ -182,7 +151,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /**
      * Removes the follower role by deactivating it and seting supervisor false.
      */
-    private void deactivateFollower(){
+    protected void deactivateFollower(){
         assert (hasFollowerRole);
         followerRole.setActive(false);
     }
@@ -202,23 +171,32 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /** Control communication methods **/
-    private void notifyCurrentSupervisor(String... addresses){
+    private void notifyNewSupervisor(){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, myFF + "");
-        m.addresses = addresses;
-        addOutboundItem(m, true);
+        enqueueControl(m);
     }
 
-    /** Control communication methods **/
-    private void notifyNoSupervisor(String... addresses){
+    private void notifyCurrentSupervisor(String address){
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, myFF + "");
+        enqueueControl(m);
+    }
+
+    private void notifyNoSupervisor(String address){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_NO_SUPERVISOR, channelId);
-        m.addresses = addresses;
-        addOutboundItem(m, true);
+        enqueueControl(m);
     }
 
-    /** Control communication methods **/
     private void querySupervisor(){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_GET_SUPERVISOR, "");
-        addOutboundItem(m, true);
+        enqueueControl(m);
+    }
+
+    private void enqueueControl(A3Message message){
+        try {
+            addOutboundItem(message, A3Channel.CONTROL_MSG);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /** A3ChannelInterface for application communication **/
@@ -285,8 +263,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     private void handleGetSupervisorQuery(A3Message message){
         if(supervisor)
             notifyCurrentSupervisor(message.senderAddress);
-        else if(supervisorId == null)
-            notifyNoSupervisor(message.senderAddress);
+        //else if(!message.senderAddress.equals(getChannelId()) && supervisorId == null)
+          //  notifyNoSupervisor(message.senderAddress);
     }
 
     /**
@@ -453,7 +431,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      */
     private List<Observer> mObservers = new ArrayList<Observer>();
 
-    public synchronized A3Message getOutboundItem() {
+    public synchronized A3MessageItem getOutboundItem() {
         if (mOutbound.isEmpty()) {
             return null;
         } else {
@@ -469,13 +447,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * eventually respond by calling back in here to get items off of the queue
      * and send them down the session corresponding to the channel.
      */
-    public void addOutboundItem(A3Message message) {
-        mOutbound.add(message);
-        notifyObservers(OUTBOUND_CHANGED_EVENT);
+    public void addOutboundItem(A3Message message, int type) {
+        addOutboundItem(message, type, true);
     }
 
-    public void addOutboundItem(A3Message message, boolean notify) {
-        mOutbound.add(message);
+    public void addOutboundItem(A3Message message, int type, boolean notify) {
+        mOutbound.add(new A3MessageItem(message, type));
         if(notify)
             notifyObservers(OUTBOUND_CHANGED_EVENT);
     }
@@ -484,7 +461,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * The outbound list is the list of all messages that have been originated
      * by our local user and are designed for the outside world.
      */
-    private List<A3Message> mOutbound = new ArrayList<A3Message>();
+    private List<A3MessageItem> mOutbound = new ArrayList<A3MessageItem>();
 
     public static final int BROADCAST_MSG = 0;
     public static final int UNICAST_MSG = 1;

@@ -33,7 +33,7 @@ public class A3Message {
 	/**The extra data in this message.*/
 	@Position(4)
 	@Signature("as")
-	public String[] addresses = new String [] {""};
+	public String[] addresses = new String [0];
 
 	/**This must exists because AllJoyn needs it, but is never used in these API.*/
 	public A3Message(){}
@@ -47,7 +47,7 @@ public class A3Message {
 		this.object = object;
 		this.bytes = new byte[0];
 		this.senderAddress = "";
-		this.addresses = new String [] {""};
+		this.addresses = new String [0];
 	}
 	
 	/**
@@ -61,7 +61,7 @@ public class A3Message {
 		this.object = object;
 		this.bytes = extra;
 		this.senderAddress = "";
-		this.addresses = new String [] {""};
+		this.addresses = new String [0];
 	}
 
 	/**

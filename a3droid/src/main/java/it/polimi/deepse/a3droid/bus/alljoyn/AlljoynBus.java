@@ -20,6 +20,7 @@ import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
+import it.polimi.deepse.a3droid.a3.A3MessageItem;
 import it.polimi.deepse.a3droid.pattern.Observable;
 
 /**
@@ -1069,8 +1070,9 @@ public class AlljoynBus extends A3Bus {
     private void doSendMessages(AlljoynChannel channel) {
         Log.i(TAG, "doSendMessages()");
 
-        A3Message message;
-        while ((message = channel.getOutboundItem()) != null) {
+        A3MessageItem messageItem;
+        while ((messageItem = channel.getOutboundItem()) != null) {
+            A3Message message = messageItem.getMessage();
             Log.i(TAG, "doSendMessages(): sending message \"" + message + "\"");
             /*
              * If we are joined to a remote session, we send the message over
@@ -1081,7 +1083,7 @@ public class AlljoynBus extends A3Bus {
              * SessionPortListener, so we have to check for it.
              */
             try {
-                switch (message.reason){
+                switch (messageItem.getType()){
                     case A3Channel.BROADCAST_MSG:
                         channel.sendBroadcast(message);
                         break;
@@ -1100,7 +1102,7 @@ public class AlljoynBus extends A3Bus {
 
             } catch (BusException ex) {
                 a3Application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
-                channel.addOutboundItem(message, false);
+                channel.addOutboundItem(message, messageItem.getType(), false);
                 channel.handleError(ex, AlljoynErrorHandler.SERVICE);
                 break;
             }

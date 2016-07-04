@@ -74,8 +74,7 @@ public class A3Node {
         try {
             A3Channel channel = getChannel(groupName);
             message.addresses = new String [] {address};
-            message.reason = A3Channel.UNICAST_MSG;
-            channel.addOutboundItem(message);
+            channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -85,8 +84,7 @@ public class A3Node {
         try {
             A3Channel channel = getChannel(groupName);
             message.addresses = addresses;
-            message.reason = A3Channel.MULTICAST_MSG;
-            channel.addOutboundItem(message);
+            channel.addOutboundItem(message, A3Channel.MULTICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -95,8 +93,7 @@ public class A3Node {
     public void sendBroadcast(A3Message message, String groupName){
         try {
             A3Channel channel = getChannel(groupName);
-            message.reason = A3Channel.BROADCAST_MSG;
-            channel.addOutboundItem(message);
+            channel.addOutboundItem(message, A3Channel.BROADCAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -106,8 +103,7 @@ public class A3Node {
         try {
             A3Channel channel = getChannel(groupName);
             message.addresses = new String [] {channel.getSupervisorId()};
-            message.reason = A3Channel.UNICAST_MSG;
-            channel.addOutboundItem(message);
+            channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -101,8 +101,7 @@ public abstract class A3Role implements Runnable {
 	public void sendUnicast(A3Message message, String address){
 		try {
 			message.addresses = new String [] {address};
-			message.reason = A3Channel.UNICAST_MSG;
-			channel.addOutboundItem(message);
+			channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,8 +110,7 @@ public abstract class A3Role implements Runnable {
 	public void sendMulticast(A3Message message, String ... addresses){
 		try {
 			message.addresses = addresses;
-			message.reason = A3Channel.MULTICAST_MSG;
-			channel.addOutboundItem(message);
+			channel.addOutboundItem(message, A3Channel.MULTICAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -120,8 +118,7 @@ public abstract class A3Role implements Runnable {
 
 	public void sendBroadcast(A3Message message){
 		try {
-			message.reason = A3Channel.BROADCAST_MSG;
-			channel.addOutboundItem(message);
+			channel.addOutboundItem(message, A3Channel.BROADCAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

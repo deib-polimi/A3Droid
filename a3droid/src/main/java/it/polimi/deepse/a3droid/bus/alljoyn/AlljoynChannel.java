@@ -21,7 +21,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
-    private AlljoynEventHandler eventListener;
+    private AlljoynEventHandler eventHandler;
 
     public AlljoynChannel(A3Application application,
                           String groupName,
@@ -30,7 +30,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
         super(application, groupName, hasFollowerRole, hasSupervisorRole);
         setService(new AlljoynService(groupName));
         errorHandler = new AlljoynErrorHandler(this);
-        eventListener = new AlljoynEventHandler(application, this);
+        eventHandler = new AlljoynEventHandler(application, this);
     }
 
     /**
@@ -87,10 +87,10 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     }
 
     public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
-        Message msg = errorHandler.obtainMessage();
+        Message msg = eventHandler.obtainMessage();
         msg.obj = event;
         msg.arg1 = arg;
-        eventListener.sendMessage(msg);
+        eventHandler.sendMessage(msg);
     }
 
     /**
