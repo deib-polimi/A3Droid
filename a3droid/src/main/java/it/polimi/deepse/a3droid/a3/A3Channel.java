@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
@@ -30,9 +31,6 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     /** The current supervisor id **/
     private String supervisorId = null;
 
-    /** The fitness function value of this node in this group **/
-    private float myFF = 0;
-
     /** Indicate if this node has follower and supervisor roles **/
     private boolean hasSupervisorRole = false;
     private boolean hasFollowerRole = false;
@@ -46,12 +44,16 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
+    private GroupDescriptor groupDescriptor;
+
     public A3Channel(A3Application application,
+                     GroupDescriptor descriptor,
                      String groupName,
                      boolean hasFollowerRole,
                      boolean hasSupervisorRole){
         this.setGroupName(groupName);
         this.application = application;
+        this.groupDescriptor = descriptor;
         this.hasFollowerRole = hasFollowerRole;
         this.hasSupervisorRole = hasSupervisorRole;
         eventHandler = new A3EventHandler(application, this);
@@ -64,8 +66,10 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
         this.followerRole = followerRole;
         this.supervisorRole = supervisorRole;
-        this.followerRole.setChannel(this);
-        this.supervisorRole.setChannel(this);
+        if(this.followerRole != null)
+            this.followerRole.setChannel(this);
+        if(this.supervisorRole != null)
+            this.supervisorRole.setChannel(this);
         addObservers(application.getObservers());
         notifyObservers(A3Channel.CONNECT_EVENT);
     }
@@ -116,7 +120,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      */
     protected void queryRole(){
         if((application.isGroupEmpty(groupName) ||
-                application.isGroupMemberAlone(groupName, channelId)) &&
+                application.isGroupMemberAlone(groupName, channelId) ||
+                !application.isGroupMemberIn(groupName, supervisorId)
+                ) &&
                 hasSupervisorRole)
             becomeSupervisor();
         else
@@ -131,8 +137,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         assert (hasSupervisorRole);
         supervisor = true;
         supervisorId = channelId;
-        followerRole.setActive(false);
-        if(!followerRole.isActive()) {
+        if(hasFollowerRole)
+            followerRole.setActive(false);
+        if(!supervisorRole.isActive()) {
             supervisorRole.setActive(true);
             new Thread(supervisorRole).start();
         }
@@ -163,7 +170,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public void becomeFollower(){
         assert (hasFollowerRole);
         supervisor = false;
-        supervisorRole.setActive(false);
+        if(hasSupervisorRole)
+            supervisorRole.setActive(false);
         if(!followerRole.isActive()) {
             followerRole.setActive(true);
             new Thread(followerRole).start();
@@ -172,12 +180,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     /** Control communication methods **/
     private void notifyNewSupervisor(){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, myFF + "");
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
     private void notifyCurrentSupervisor(String address){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, myFF + "");
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
@@ -241,7 +249,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         if(!channelId.equals(supervisorId)){
             float supervisorFF = Float.parseFloat(message.object);
             if(hasSupervisorRole){
-                if (myFF > supervisorFF)
+                if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF)
                     becomeSupervisor();
                 else{
                     if(hasFollowerRole)

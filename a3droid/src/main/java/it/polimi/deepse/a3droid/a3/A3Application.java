@@ -218,7 +218,7 @@ public class A3Application extends Application implements Observable{
     public synchronized void deleteGroupMember(String groupName,String id) {
         Log.i(TAG, "deleteGroupMember(" + groupName + ":" + id + ")");
         if (groupsMembers.containsKey(groupName)) {
-            groupsMembers.get(groupName).add(id);
+            groupsMembers.get(groupName).remove(id);
         }
     }
 

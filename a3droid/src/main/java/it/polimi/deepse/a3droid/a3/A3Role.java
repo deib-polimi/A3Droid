@@ -124,6 +124,15 @@ public abstract class A3Role implements Runnable {
 		}
 	}
 
+	public void sendToSupervisor(A3Message message){
+		try {
+			message.addresses = new String [] {channel.getSupervisorId()};
+			channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * The logic that must be executed when receiving an application message.
 	 * System messages, which doesn't depend on the application,

@@ -9,6 +9,7 @@ import org.alljoyn.bus.Status;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
@@ -24,11 +25,14 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     private AlljoynEventHandler eventHandler;
 
     public AlljoynChannel(A3Application application,
+                          GroupDescriptor descriptor,
                           String groupName,
                           boolean hasFollowerRole,
                           boolean hasSupervisorRole){
-        super(application, groupName, hasFollowerRole, hasSupervisorRole);
-        setService(new AlljoynService(groupName));
+        super(application, descriptor, groupName, hasFollowerRole, hasSupervisorRole);
+        assert(application != null);
+        assert(descriptor != null);
+        setService(new AlljoynService(descriptor.getName()));
         errorHandler = new AlljoynErrorHandler(this);
         eventHandler = new AlljoynEventHandler(application, this);
     }

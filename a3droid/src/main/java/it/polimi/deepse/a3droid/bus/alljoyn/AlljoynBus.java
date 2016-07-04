@@ -17,6 +17,7 @@ import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
 
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
@@ -60,8 +61,10 @@ public class AlljoynBus extends A3Bus {
          * remote channel instances in the background while the rest of the app
          * is starting up.
          */
+        DiscoveryDescriptor discoveryDescriptor = new DiscoveryDescriptor();
         mDiscoveryChannel = new AlljoynChannel((A3Application)getApplication(),
-                "DISCOVERY",
+                discoveryDescriptor,
+                discoveryDescriptor.getName(),
                 false, false);
         mBackgroundHandler.connect(mDiscoveryChannel);
         mBackgroundHandler.startDiscovery(mDiscoveryChannel);
@@ -1005,8 +1008,8 @@ public class AlljoynBus extends A3Bus {
                     a3Application.busError(A3Application.Module.USE, "The session has been lost");
                     channel.setChannelState(AlljoynChannelState.REGISTERED);
                     channel.setSessionId(-1);
-                    channel.handleEvent(A3Event.GROUP_LOST);
                     channel.handleEvent(AlljoynEvent.SESSION_LOST, reason);
+                    channel.handleEvent(A3Event.GROUP_LOST);
                 }
 
                 @Override
@@ -1017,6 +1020,7 @@ public class AlljoynBus extends A3Bus {
                 @Override
                 public void sessionMemberRemoved(int sessionId, String uniqueName) {
                     a3Application.deleteGroupMember(channel.getGroupName(), uniqueName);
+                    channel.handleEvent(A3Event.MEMBER_LEFT);
                 }
             });
 
@@ -1103,7 +1107,7 @@ public class AlljoynBus extends A3Bus {
             } catch (BusException ex) {
                 a3Application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
                 channel.addOutboundItem(message, messageItem.getType(), false);
-                channel.handleError(ex, AlljoynErrorHandler.SERVICE);
+                channel.handleError(ex, AlljoynErrorHandler.BUS);
                 break;
             }
         }
@@ -1163,5 +1167,16 @@ public class AlljoynBus extends A3Bus {
      */
     public static enum AlljoynEvent {
         SESSION_LOST
+    }
+
+    public class DiscoveryDescriptor extends GroupDescriptor{
+        public DiscoveryDescriptor(){
+            super("DISCOVERY", null, null);
+        }
+
+        @Override
+        public int getSupervisorFitnessFunction() {
+            return 0;
+        }
     }
 }

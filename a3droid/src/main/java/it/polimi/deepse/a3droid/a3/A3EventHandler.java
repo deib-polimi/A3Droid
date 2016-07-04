@@ -46,6 +46,9 @@ public class A3EventHandler extends Handler implements TimerInterface{
                 break;
             case GROUP_LEFT:
                 break;
+            case MEMBER_LEFT:
+                channel.queryRole();
+                break;
             default:
                 break;
         }

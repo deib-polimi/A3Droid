@@ -47,9 +47,9 @@ public class A3Node {
                 hasSupervisorRole = true;
                 supervisorRole.setNode(this);
             }
-
+            int myFF = descriptor.getSupervisorFitnessFunction();
             A3Channel channel = new AlljoynChannel(application,
-                    groupName, hasFollowerRole, hasSupervisorRole);
+                    descriptor, groupName, hasFollowerRole, hasSupervisorRole);
             channel.connect(followerRole, supervisorRole);
             addChannel(channel);
         }else{

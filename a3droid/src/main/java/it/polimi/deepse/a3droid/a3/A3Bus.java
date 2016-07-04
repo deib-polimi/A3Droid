@@ -71,6 +71,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         GROUP_DESTROYED,
         GROUP_LOST,
         GROUP_JOINT,
-        GROUP_LEFT
+        GROUP_LEFT,
+        MEMBER_LEFT
     }
 }

@@ -190,7 +190,9 @@ public class AlljoynErrorHandler extends Handler {
 
     private void waitToRetry(int retry){
         try {
-            this.wait(Fibonacci.fib(retry) * 250);//250, 500, 750, 1250...
+            synchronized (this) {
+                this.wait(Fibonacci.fib(retry) * 250);//250, 500, 750, 1250...
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
