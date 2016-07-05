@@ -359,7 +359,7 @@ public class A3Node extends Thread implements UserInterface{
 				channel.setConnectedForApplication(false);
 			else
 				channel.setConnectedForSystem(false);
-			/*showOnScreen(groupName + " usage:\n application: " + channel.isConnectedForApplication() +
+			/*showOnScreen(groupName + " usage:\n application: " + channel.isConnected() +
 					"\n system: " + channel.isConnectedForSystem());*/
 			if(!(channel.isConnectedForApplication() || channel.isConnectedForSystem())){
 				channel.disconnect();
@@ -547,7 +547,7 @@ public class A3Node extends Thread implements UserInterface{
 	 * If this node is connected to the parent group,
 	 * it connects to the child group, if it can,
 	 * and sends it the order to execute "actualStack(parentGroupName, childGroupName)".
-	 * The success or the failure of the stack operation
+	 * The success or the failure of the requestStack operation
 	 * is notified by method "stackReply(String, String, boolean)".
 	 * 
 	 * @param parentGroupName The name of the parent group.
@@ -901,15 +901,15 @@ public class A3Node extends Thread implements UserInterface{
 	}
 
 	/**
-	 * It notifies this node with the result of a stack operation.
+	 * It notifies this node with the result of a requestStack operation.
 	 * 
 	 * @param parentGroupName The name of the parent group.
 	 * @param childGroupName The name of the child group.
-	 * @param ok true if the stack operation was successful, false otherwise.
+	 * @param ok true if the requestStack operation was successful, false otherwise.
 	 */
 	public void stackReply(String parentGroupName, String childGroupName, boolean ok) {
 		// TODO Auto-generated method stub
-		showOnScreen("stack(" + parentGroupName + ", " + childGroupName + "): " + ok);
+		showOnScreen("requestStack(" + parentGroupName + ", " + childGroupName + "): " + ok);
 		disconnect(childGroupName, false);
 	}
 
@@ -923,7 +923,7 @@ public class A3Node extends Thread implements UserInterface{
 	 * 
 	 * @param parentGroupName The name of the parent group.
 	 * @param childGroupName The name of the child group.
-	 * @param ok true if the stack operation was successful, false otherwise.
+	 * @param ok true if the requestStack operation was successful, false otherwise.
 	 */
 	public void peersReply(String parentGroupName, String childGroupName, boolean ok) {
 		// TODO Auto-generated method stub
@@ -937,7 +937,7 @@ public class A3Node extends Thread implements UserInterface{
 			}
 
 			else{
-				/*The other node executed a stack operation to joinGroup to me,
+				/*The other node executed a requestStack operation to joinGroup to me,
 				 * so I don't need to specify to undo a peers operation.
 				 */
 				A3Message message = new A3Message(Constants.REVERSE_STACK, childGroupName);
@@ -975,7 +975,7 @@ public class A3Node extends Thread implements UserInterface{
 				showOnScreen("hierarchy(" + parentGroupName + ", " + myGroupName + ", " + otherGroupName + "): " + true);
 
 			else{
-				/*The other node executed a stack operation to joinGroup to parent,
+				/*The other node executed a requestStack operation to joinGroup to parent,
 				 * so I don't need to specify to undo a hierarchy operation.
 				 */
 				A3Message message = new A3Message(Constants.REVERSE_STACK, parentGroupName);
@@ -1002,11 +1002,11 @@ public class A3Node extends Thread implements UserInterface{
 	}
 
 	/**
-	 * It notifies this node with the result of a reverse stack operation.
+	 * It notifies this node with the result of a reverse requestStack operation.
 	 * 
 	 * @param parentGroupName The name of the parent group.
 	 * @param childGroupName The name of the child group.
-	 * @param ok true if the reverse stack operation was successful, false otherwise.
+	 * @param ok true if the reverse requestStack operation was successful, false otherwise.
 	 */
 	private void reverseStackReply(String parentGroupName, String childGroupName, boolean ok) {
 		// TODO Auto-generated method stub

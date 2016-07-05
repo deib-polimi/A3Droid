@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.Constants;
 import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
@@ -14,7 +15,6 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynConstants;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
@@ -46,22 +46,29 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     protected A3Role activeRole;
 
+    protected A3NodeInterface node;
+
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
     private GroupDescriptor groupDescriptor;
 
+    private Hierarchy hierarchy;
+
     public A3Channel(A3Application application,
+                     A3Node node,
                      GroupDescriptor descriptor,
                      String groupName,
                      boolean hasFollowerRole,
                      boolean hasSupervisorRole){
         this.setGroupName(groupName);
         this.application = application;
+        this.node = node;
         this.groupDescriptor = descriptor;
         this.hasFollowerRole = hasFollowerRole;
         this.hasSupervisorRole = hasSupervisorRole;
         eventHandler = new A3EventHandler(application, this);
+        hierarchy = new Hierarchy(this);
     }
 
     protected A3Application application;
@@ -100,6 +107,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         notifyObservers(A3Channel.STOP_SERVICE_EVENT);
     }
 
+    /** A3Channel methods used internally**/
     public void handleEvent(A3Bus.A3Event event){
         Message msg = eventHandler.obtainMessage();
         msg.obj = event;
@@ -156,7 +164,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * Called when this channels becomes a follower. It deactivates the supervisor
      * role (if it is active) and it activates the follower role.
      */
-    public void becomeFollower(){
+    private void becomeFollower(){
         assert (hasFollowerRole);
         supervisor = false;
         if(hasSupervisorRole)
@@ -190,7 +198,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * Broadcasts the election of a new supervisor
      */
     private void notifyNewSupervisor(){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
@@ -199,7 +207,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * @param address
      */
     private void notifyCurrentSupervisor(String address){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         m.addresses = new String[]{address};
         enqueueControl(m);
     }
@@ -209,7 +217,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * @param address
      */
     private void notifyNoSupervisor(String address){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_NO_SUPERVISOR, channelId);
+        A3Message m = new A3Message(A3Constants.CONTROL_NO_SUPERVISOR, channelId);
         m.addresses = new String[]{address};
         enqueueControl(m);
     }
@@ -218,8 +226,39 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * Broadcasts a query about the current supervisor
      */
     private void querySupervisor(){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_GET_SUPERVISOR, "");
+        A3Message m = new A3Message(A3Constants.CONTROL_GET_SUPERVISOR, "");
         enqueueControl(m);
+    }
+
+    /**
+     * TODO: describe
+     * @param parentGroupName
+     */
+    protected void requestStack(String parentGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REQUEST, parentGroupName, new String[]{getSupervisorId()}));
+    }
+
+    /**
+     * TODO: describe
+     * @param parentGroupName
+     * @param result
+     * @param address
+     */
+    protected void replyStack(String parentGroupName, boolean result, String address){
+        enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
+    }
+
+    /**
+     * If this node has the proper roles,
+     * this method creates a hierarchical relationship between the specified groups.
+     * This happens by connecting this node to the parent group
+     * and by adding the latter to the hierarchy of the child group.
+     *
+     * @param parentGroupName The name of the parent group.
+     * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
+     */
+    protected void notifyStack(String parentGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
     }
 
     /**
@@ -258,22 +297,36 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     public void receiveControl(A3Message message) {
         Log.i(TAG, "CONTROL : " + (String) message.object);
         switch (message.reason){
-            case AlljoynConstants.CONTROL_NEW_SUPERVISOR:
-            case AlljoynConstants.CONTROL_CURRENT_SUPERVISOR:
+            /** Supervisor election **/
+            case A3Constants.CONTROL_NEW_SUPERVISOR:
+            case A3Constants.CONTROL_CURRENT_SUPERVISOR:
                 handleCurrentSupervisorNotification(message);
                 break;
-            case AlljoynConstants.CONTROL_NO_SUPERVISOR:
+            case A3Constants.CONTROL_NO_SUPERVISOR:
                 handleNoSupervisorNotification(message);
                 break;
-            case AlljoynConstants.CONTROL_GET_SUPERVISOR:
+            case A3Constants.CONTROL_GET_SUPERVISOR:
                 handleGetSupervisorQuery(message);
+                break;
+            /** Stack operation **/
+            case A3Constants.CONTROL_STACK_REQUEST:
+                handleStackRequest(message);
+                break;
+            case A3Constants.CONTROL_STACK_REPLY:
+                handleStackReply(message);
+                break;
+            case A3Constants.CONTROL_GET_HIERARCHY:
+            case A3Constants.CONTROL_HIERARCHY_REPLY:
+            case A3Constants.CONTROL_ADD_TO_HIERARCHY:
+            case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
+                hierarchy.onMessage(message);
                 break;
             default:
                 break;
         }
     }
 
-    /**Notification handlers**/
+    /**Supervisor election handlers**/
     private void handleCurrentSupervisorNotification(A3Message message){
         supervisorId = message.senderAddress;
         if(!channelId.equals(supervisorId)){
@@ -297,12 +350,26 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
             becomeSupervisor();
     }
 
-    /**Query handlers**/
     private void handleGetSupervisorQuery(A3Message message){
         if(supervisor)
             notifyCurrentSupervisor(message.senderAddress);
         //else if(!message.senderAddress.equals(getChannelId()) && supervisorId == null)
           //  notifyNoSupervisor(message.senderAddress);
+    }
+
+    /** Stack operation handlers **/
+    private void handleStackRequest(A3Message message){
+        try{
+            boolean ok = node.actualStack(message.object, getGroupName());
+            replyStack(message.object, ok, message.senderAddress);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleStackReply(A3Message message){
+        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]));
     }
 
     /**

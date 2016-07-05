@@ -1,6 +1,9 @@
-package it.polimi.deepse.a3droid;
+package it.polimi.deepse.a3droid.a3;
 
 import java.util.ArrayList;
+
+import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.Constants;
 
 /**
  * This class is the list of the groups to which the supervisor of a group must be connected
@@ -16,7 +19,7 @@ public class Hierarchy {
 	
 	/**The channel this hierarchy belongs to.*/
 	private A3Channel channel;
-	
+
 	/**
 	 * Only useful to determine the right name of a new splitted group.
 	 * Groups splitted by the group "group" are named "group_1", "group_2", ..., "group_numberOfSplittedGroups".
@@ -42,7 +45,7 @@ public class Hierarchy {
 		try{
 		switch(message.reason){
 
-		case Constants.HIERARCHY:
+		case A3Constants.CONTROL_HIERARCHY_REPLY:
 
 			/* This message is like
 			 * "senderAddress Constants.CONTROL_HIERARCHY_REPLY numberOfSubgroups name1 name2 ..."
@@ -65,7 +68,7 @@ public class Hierarchy {
 
 			break;
 
-		case Constants.ADD_TO_HIERARCHY:
+		case A3Constants.CONTROL_ADD_TO_HIERARCHY:
 
 			/* This message is like
 			 * "senderAddress Constants.CONTROL_ADD_TO_HIERARCHY groupName".
@@ -80,7 +83,7 @@ public class Hierarchy {
 			}
 			break;
 
-		case Constants.REMOVE_FROM_HIERARCHY:
+		case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
 
 			/* This message is like
 			 * "senderAddress Constants.CONTROL_REMOVE_FROM_HIERARCHY groupName".

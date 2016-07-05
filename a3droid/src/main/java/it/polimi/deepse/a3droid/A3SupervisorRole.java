@@ -59,14 +59,14 @@ public abstract class A3SupervisorRole extends A3Role implements BusObject, Time
 				 * 
 				 * I answer the channel with the hierarchy. 
 				 * The reply message is like
-				 * "Constants.HIERARCHY name1 name2 ... n" or "Constants.HIERARCHY n", if the hierarchy is empty.
+				 * "Constants.CONTROL_HIERARCHY_REPLY name1 name2 ... n" or "Constants.CONTROL_HIERARCHY_REPLY n", if the hierarchy is empty.
 				 * n is the number of subgroups splitted by a group.
 				 */
 				channel.sendUnicast(new A3Message(Constants.HIERARCHY, channel.getHierarchy().toString()), message.senderAddress);
 				break;
 
 			case Constants.STACK_REQUEST:
-				//"senderAddress Constants.STACK_REQUEST parentGroupName".
+				//"senderAddress Constants.CONTROL_STACK_REQUEST parentGroupName".
 				try{
 					ok = node.actualStack(message.object, getGroupName());
 					reply = new A3Message(Constants.STACK_REPLY, message.object + Constants.A3_SEPARATOR + ok);

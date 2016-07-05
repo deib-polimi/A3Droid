@@ -17,6 +17,8 @@ public interface A3ChannelInterface {
 
     void createGroup();
 
+    boolean isConnected();
+
     void sendUnicast(A3Message message) throws Exception;
 
     void sendMulticast(A3Message message) throws Exception;

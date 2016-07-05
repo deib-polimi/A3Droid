@@ -67,8 +67,21 @@ public class A3Message {
 	/**
 	 * @param reason The kind of this message.
 	 * @param object The data in this message.
+	 * @param addresses The addresses to receive this message
+	 */
+	public A3Message(int reason, String object, String [] addresses){
+		assert(addresses != null);
+		this.reason = reason;
+		this.object = object;
+		this.senderAddress = "";
+		this.addresses = addresses;
+	}
+
+	/**
+	 * @param reason The kind of this message.
+	 * @param object The data in this message.
 	 * @param extra The data in this message.
-	 * @param addresses The data in this message.
+	 * @param addresses The addresses to receive this message
 	 */
 	public A3Message(int reason, String object, byte [] extra, String [] addresses){
 		assert(extra != null);
@@ -88,17 +101,17 @@ public class A3Message {
 		case Constants.NEW_SUPERVISOR: reasonString = "NEW_SUPERVISOR"; break;
 		case Constants.SUBSCRIPTION: reasonString = "SUBSCRIPTION"; break;
 		case Constants.UNSUBSCRIPTION: reasonString = "UNSUBSCRIPTION"; break;
-		case Constants.ADD_TO_HIERARCHY: reasonString = "ADD_TO_HIERARCHY"; break;
-		case Constants.REMOVE_FROM_HIERARCHY: reasonString = "REMOVE_FROM_HIERARCHY"; break;
-		case Constants.HIERARCHY: reasonString = "HIERARCHY"; break;
+		case Constants.ADD_TO_HIERARCHY: reasonString = "CONTROL_ADD_TO_HIERARCHY"; break;
+		case Constants.REMOVE_FROM_HIERARCHY: reasonString = "CONTROL_REMOVE_FROM_HIERARCHY"; break;
+		case Constants.HIERARCHY: reasonString = "CONTROL_HIERARCHY_REPLY"; break;
 		case Constants.PEERS_REQUEST: reasonString = "PEERS_REQUEST"; break;
 		case Constants.HIERARCHY_REQUEST: reasonString = "HIERARCHY_REQUEST"; break;
 		case Constants.REVERSE_STACK: reasonString = "REVERSE_STACK"; break;
-		case Constants.STACK_REPLY: reasonString = "STACK_REPLY"; break;
+		case Constants.STACK_REPLY: reasonString = "CONTROL_STACK_REPLY"; break;
 		case Constants.PEERS_REPLY: reasonString = "PEERS_REPLY"; break;
-		case Constants.HIERARCHY_REPLY: reasonString = "HIERARCHY_REPLY"; break;
+		case Constants.HIERARCHY_REPLY: reasonString = "CONTROL_HIERARCHY_REPLY"; break;
 		case Constants.GET_HIERARCHY: reasonString = "GET_HIERARCHY"; break;
-		case Constants.STACK_REQUEST: reasonString = "STACK_REQUEST"; break;
+		case Constants.STACK_REQUEST: reasonString = "CONTROL_STACK_REQUEST"; break;
 		case Constants.MERGE: reasonString = "MERGE"; break;
 		case Constants.SPLIT: reasonString = "SPLIT"; break;
 		case Constants.SUPERVISOR_ELECTION: reasonString = "SUPERVISOR_ELECTION"; break;

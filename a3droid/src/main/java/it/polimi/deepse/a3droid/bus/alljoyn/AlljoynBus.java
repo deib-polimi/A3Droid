@@ -63,6 +63,7 @@ public class AlljoynBus extends A3Bus {
          */
         DiscoveryDescriptor discoveryDescriptor = new DiscoveryDescriptor();
         mDiscoveryChannel = new AlljoynChannel((A3Application)getApplication(),
+                null,
                 discoveryDescriptor,
                 discoveryDescriptor.getName(),
                 false, false);

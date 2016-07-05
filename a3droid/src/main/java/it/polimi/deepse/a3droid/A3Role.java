@@ -140,7 +140,7 @@ public abstract class A3Role implements Runnable {
 		switch(message.reason){
 
 		case Constants.STACK_REPLY:
-			//"senderAddress Constants.STACK_REPLY otherGroupName true/false".
+			//"senderAddress Constants.CONTROL_STACK_REPLY otherGroupName true/false".
 			try{
 				object = message.object.split(Constants.A3_SEPARATOR);
 				node.stackReply(object[0], getGroupName(), Boolean.valueOf(object[1]));
@@ -162,7 +162,7 @@ public abstract class A3Role implements Runnable {
 			 * or I became supervisor during an ongoing hierarchy operation.
 			 */
 		case Constants.HIERARCHY_REPLY:
-			//"senderAddress Constants.HIERARCHY_REPLY parentGroupName otherGroupName true/false".
+			//"senderAddress Constants.CONTROL_HIERARCHY_REPLY parentGroupName otherGroupName true/false".
 			object = message.object.split(Constants.A3_SEPARATOR);
 			node.hierarchyReply(object[0], object[1], getGroupName(), Boolean.valueOf(object[2]));
 			break;

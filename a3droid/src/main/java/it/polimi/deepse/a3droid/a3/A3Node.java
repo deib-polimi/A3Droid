@@ -1,10 +1,13 @@
 package it.polimi.deepse.a3droid.a3;
 
+import android.util.Log;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.GroupDescriptor;
+import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
 
@@ -16,7 +19,11 @@ import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
  * @author Francesco (original)
  *
  */
-public class A3Node {
+public class A3Node implements A3NodeInterface{
+
+    protected static final String TAG = "a3droid.A3Node";
+
+    private A3Application application;
 
     public A3Node(A3Application application,
                   ArrayList<GroupDescriptor> groupDescriptors,
@@ -26,11 +33,10 @@ public class A3Node {
         this.roles = roles;
     }
 
-    public String getUID(){
-        return application.getUID();
-    }
+    public boolean connect(String groupName) throws A3NoGroupDescriptionException {
+        if(this.isConnectedForApplication(groupName))
+            return true;
 
-    public void connect(String groupName) throws A3NoGroupDescriptionException {
         GroupDescriptor descriptor = getGroupDescriptor(groupName);
         boolean hasFollowerRole = false, hasSupervisorRole = false;
         A3FollowerRole followerRole = null;
@@ -49,15 +55,15 @@ public class A3Node {
             }
             int myFF = descriptor.getSupervisorFitnessFunction();
             A3Channel channel = new AlljoynChannel(application,
-                    descriptor, groupName, hasFollowerRole, hasSupervisorRole);
+                    this, descriptor, groupName,
+                    hasFollowerRole, hasSupervisorRole);
             channel.connect(followerRole, supervisorRole);
             addChannel(channel);
+            return true;
         }else{
             throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
         }
     }
-
-    private A3Application application;
 
     public void disconnect(String groupName){
         A3Channel channel = null;
@@ -68,6 +74,94 @@ public class A3Node {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * It tries to create a hierarchical relationship between the specified groups.
+     * This is possible only if this node is the supervisor of at least one of the two groups
+     * and if it has the right roles to joinGroup to the other.
+     * If this node is connected to the child group,
+     * the effects of this method are the ones of "actualStack(parentGroupName, childGroupName)".
+     * If this node is connected to the parent group,
+     * it connects to the child group, if it can,
+     * and sends it the order to execute "actualStack(parentGroupName, childGroupName)".
+     * The success or the failure of the requestStack operation
+     * is notified by method "stackReply(String, String, boolean)".
+     *
+     * @param parentGroupName The name of the parent group.
+     * @param childGroupName The name of the son group.
+     */
+    public void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters {
+        Log.i(TAG, "stack(" + parentGroupName + ", " + childGroupName + ")");
+        if(parentGroupName == null || childGroupName == null ||
+                !(parentGroupName.equals("") || childGroupName.equals(""))){
+            if(isSupervisor(childGroupName))
+                actualStack(parentGroupName, childGroupName);
+                //stackReply(parentGroupName, childGroupName, actualStack(parentGroupName, childGroupName));
+            else{
+                if(isSupervisor(parentGroupName)){
+                    //TODO not connected for application, but for control
+                    //TODO should we use a control channel for all groups?
+                    //TODO maybe the discovery channel could become control channel
+                    if(connect(childGroupName)){
+                        A3Channel channel = null;
+                        try{
+                            channel = getChannel(childGroupName);
+                            channel.requestStack(parentGroupName);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else
+                        stackReply(parentGroupName, childGroupName, false);
+                }else{
+                    stackReply(parentGroupName, childGroupName, false);
+                }
+            }
+        }
+        else
+            throw new A3InvalidOperationParameters("stack operation requires non empty parent/child group names");
+            //stackReply(parentGroupName, childGroupName, false);
+    }
+
+    /**
+     * If this node has the proper roles,
+     * this method creates a hierarchical relationship between the specified groups.
+     * This happens by connecting this node to the parent group
+     * and by adding the latter to the hierarchy of the child group.
+     *
+     * @param parentGroupName The name of the parent group.
+     * @param childGroupName The name of the son group.
+     * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
+     */
+    public boolean actualStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException{
+        Log.i(TAG, "actualStack(" + parentGroupName + ", " + childGroupName + ")");
+        assert(!parentGroupName.isEmpty());
+        assert(!childGroupName.isEmpty());
+        if(connect(parentGroupName)) {
+            A3Channel channel = null;
+            try {
+                channel = getChannel(childGroupName);
+                channel.notifyStack(parentGroupName);
+                return true;//TODO implement real verification of the result
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }else
+            return false;
+    }
+
+    /**
+     * It notifies this node with the result of a requestStack operation.
+     *
+     * @param parentGroupName The name of the parent group.
+     * @param childGroupName The name of the child group.
+     * @param result true if the requestStack operation was successful, false otherwise.
+     */
+    public void stackReply(String parentGroupName, String childGroupName, boolean result) {
+        Log.i(TAG, "stackReply(" + parentGroupName + ", " + childGroupName + ", " + result + "): ");
+        disconnect(childGroupName);
     }
 
     public void sendUnicast(A3Message message, String groupName, String address){
@@ -110,7 +204,7 @@ public class A3Node {
     }
 
     /**Called by the user interface to determine if the channel "groupName" is used by the application or not.
-     * TODO: Not yet checking 'for application'
+     * TODO: Not yet checking if connected 'for application'
      * @param groupName The name of the target channel.
      * @return true, if the channel "groupName" is used by the application, false otherwise.
      */
@@ -118,9 +212,8 @@ public class A3Node {
         A3Channel channel;
         try {
             channel = getChannel(groupName);
-            return true;//channel.isConnectedForApplication();
+            return channel.isConnected();
         } catch (Exception e) {
-            // TODO Remove exception in getChannel?
             return false;
         }
 
@@ -224,6 +317,10 @@ public class A3Node {
                 return channel;
         }
         throw new Exception("NO CHANNEL WITH NAME " + groupName + ".");
+    }
+
+    public String getUID(){
+        return application.getUID();
     }
 
     public synchronized void addChannel(A3Channel channel){
