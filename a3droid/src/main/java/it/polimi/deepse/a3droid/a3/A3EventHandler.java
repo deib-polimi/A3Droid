@@ -3,7 +3,6 @@ package it.polimi.deepse.a3droid.a3;
 import android.os.Handler;
 import android.os.Message;
 
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -42,12 +41,14 @@ public class A3EventHandler extends Handler implements TimerInterface{
                     channel.deactivateFollower();
                 break;
             case GROUP_JOINT:
-                new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FT).start();
+                new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
                 break;
             case MEMBER_LEFT:
-                channel.queryRole();
+                new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
+                        randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
+                        ).start();
                 break;
             default:
                 break;
@@ -59,11 +60,17 @@ public class A3EventHandler extends Handler implements TimerInterface{
             case WAIT_AND_QUERY_ROLE_EVENT:
                 channel.queryRole();
                 break;
+
             default:
                 break;
         }
     }
 
     private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
-    private static final int WAIT_AND_QUERY_ROLE_FT = 2000;
+    /** Used as fixed time after a GROUP_JOINT event **/
+    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 1000;
+    /** Used as fixed time part after a MEMBER_LEFT event **/
+    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;
+    /** Used as random time part after a MEMBER_LEFT event **/
+    private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 2000;
 }

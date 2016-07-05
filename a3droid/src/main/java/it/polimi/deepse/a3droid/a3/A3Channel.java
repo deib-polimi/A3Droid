@@ -19,7 +19,10 @@ import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
 /**
- * TODO: Describe
+ * This is the A3 layer class responsible for group management, A3 application/control communication,
+ * handling A3 events and errors, and other methods related to A3 layer only. The framework responsible
+ * for the actual communication between nodes must extend this class and implement its logic in its
+ * own layer.
  */
 public abstract class A3Channel implements A3ChannelInterface, Observable {
 
@@ -40,6 +43,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     /** The logic that is executed when this channel is the supervisor. */
     protected A3SupervisorRole supervisorRole;
+
+    protected A3Role activeRole;
 
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
@@ -139,11 +144,28 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         supervisorId = channelId;
         if(hasFollowerRole)
             followerRole.setActive(false);
+        activeRole = supervisorRole;
         if(!supervisorRole.isActive()) {
             supervisorRole.setActive(true);
             new Thread(supervisorRole).start();
         }
         notifyNewSupervisor();
+    }
+
+    /**
+     * Called when this channels becomes a follower. It deactivates the supervisor
+     * role (if it is active) and it activates the follower role.
+     */
+    public void becomeFollower(){
+        assert (hasFollowerRole);
+        supervisor = false;
+        if(hasSupervisorRole)
+            supervisorRole.setActive(false);
+        activeRole = followerRole;
+        if(!followerRole.isActive()) {
+            followerRole.setActive(true);
+            new Thread(followerRole).start();
+        }
     }
 
     /**
@@ -163,42 +185,47 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         followerRole.setActive(false);
     }
 
-    /**
-     * Called when this channels becomes a follower. It deactivates the supervisor
-     * role (if it is active) and it activates the follower role.
-     */
-    public void becomeFollower(){
-        assert (hasFollowerRole);
-        supervisor = false;
-        if(hasSupervisorRole)
-            supervisorRole.setActive(false);
-        if(!followerRole.isActive()) {
-            followerRole.setActive(true);
-            new Thread(followerRole).start();
-        }
-    }
-
     /** Control communication methods **/
+    /**
+     * Broadcasts the election of a new supervisor
+     */
     private void notifyNewSupervisor(){
-        A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(AlljoynConstants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
+    /**
+     * Notifies @address of the current supervisor
+     * @param address
+     */
     private void notifyCurrentSupervisor(String address){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        m.addresses = new String[]{address};
         enqueueControl(m);
     }
 
+    /**
+     * Notifies @address of no existing supervisor
+     * @param address
+     */
     private void notifyNoSupervisor(String address){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_NO_SUPERVISOR, channelId);
+        m.addresses = new String[]{address};
         enqueueControl(m);
     }
 
+    /**
+     * Broadcasts a query about the current supervisor
+     */
     private void querySupervisor(){
         A3Message m = new A3Message(AlljoynConstants.CONTROL_GET_SUPERVISOR, "");
         enqueueControl(m);
     }
 
+    /**
+     * Enqueue a control message
+     * @param message
+     */
     private void enqueueControl(A3Message message){
         try {
             addOutboundItem(message, A3Channel.CONTROL_MSG);
@@ -211,24 +238,27 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     @Override
     public void receiveUnicast(A3Message message) {
         Log.i(TAG, "UNICAST : " + (String) message.object + " TO " + message.addresses);
+        activeRole.onMessage(message);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
         Log.i(TAG, "MULTICAST : " + (String) message.object + " TO " + message.addresses);
+        activeRole.onMessage(message);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
         Log.i(TAG, "BROADCAST : " + (String) message.object);
+        activeRole.onMessage(message);
     }
 
     /** A3ChannelInterface for control **/
-
     @Override
     public void receiveControl(A3Message message) {
         Log.i(TAG, "CONTROL : " + (String) message.object);
         switch (message.reason){
+            case AlljoynConstants.CONTROL_NEW_SUPERVISOR:
             case AlljoynConstants.CONTROL_CURRENT_SUPERVISOR:
                 handleCurrentSupervisorNotification(message);
                 break;
@@ -319,6 +349,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     /**
      * The channel id uniquely identifies the channel
+     * The channel className uniquely identifies the channel
      */
     protected String channelId = null;
 

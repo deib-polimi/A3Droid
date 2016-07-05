@@ -177,9 +177,9 @@ public class A3Node {
 
     /**Looks for a role in the "roles" list.
      *
-     * @param roleId The id of the role to look for.
-     * @return The role with "roleId" as id.
-     * @throws Exception No role has "roleId" as id.
+     * @param roleId The className of the role to look for.
+     * @return The role with "roleId" as className.
+     * @throws Exception No role has "roleId" as className.
      */
     public <T extends A3Role> T getRole(String roleId, Class<T> type){
         String role;
