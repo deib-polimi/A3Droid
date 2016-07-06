@@ -18,4 +18,6 @@ public class A3Constants {
     public static final int CONTROL_ADD_TO_HIERARCHY = 14;
     public static final int CONTROL_REMOVE_FROM_HIERARCHY = 15;
 
+    public static final int CONTROL_MERGE = 16;
+
 }

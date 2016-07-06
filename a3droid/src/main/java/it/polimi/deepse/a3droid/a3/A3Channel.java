@@ -15,6 +15,7 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 
@@ -27,12 +28,6 @@ import it.polimi.deepse.a3droid.pattern.Observer;
 public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     protected static final String TAG = "a3droid.A3Channel";
-
-    /** Indicates if this channel is a supervisor **/
-    private boolean supervisor = false;
-
-    /** The current supervisor id **/
-    private String supervisorId = null;
 
     /** Indicate if this node has follower and supervisor roles **/
     private boolean hasSupervisorRole = false;
@@ -52,8 +47,6 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     private A3EventHandler eventHandler;
 
     private GroupDescriptor groupDescriptor;
-
-    private Hierarchy hierarchy;
 
     public A3Channel(A3Application application,
                      A3Node node,
@@ -193,7 +186,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         followerRole.setActive(false);
     }
 
-    /** Control communication methods **/
+    /** Supervisor election methods **/
     /**
      * Broadcasts the election of a new supervisor
      */
@@ -230,6 +223,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         enqueueControl(m);
     }
 
+    /** Stack methods **/
+
     /**
      * TODO: describe
      * @param parentGroupName
@@ -249,16 +244,30 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**
-     * If this node has the proper roles,
-     * this method creates a hierarchical relationship between the specified groups.
-     * This happens by connecting this node to the parent group
-     * and by adding the latter to the hierarchy of the child group.
-     *
+     * TODO: describe
      * @param parentGroupName The name of the parent group.
      * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
      */
     protected void notifyStack(String parentGroupName){
         enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
+    }
+
+    /** Merge methods **/
+
+    /**
+     * TODO describe
+     * @param oldGroupName
+     */
+    protected void requestHierarchyRemove(String oldGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_REMOVE_FROM_HIERARCHY, oldGroupName));
+    }
+
+    /**
+     * TODO describe
+     * @param receiverGroupName
+     */
+    protected void notifyMerge(String receiverGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE, receiverGroupName));
     }
 
     /**
@@ -321,6 +330,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
             case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
                 hierarchy.onMessage(message);
                 break;
+            case A3Constants.CONTROL_MERGE:
+                handleMergeRequest(message);
+                break;
             default:
                 break;
         }
@@ -369,7 +381,16 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     private void handleStackReply(A3Message message){
         String [] reply = message.object.split(Constants.A3_SEPARATOR);
-        node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]));
+        node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
+    }
+
+    /** Merge operation handlers **/
+    private void handleMergeRequest(A3Message message){
+        try {
+            node.actualMerge(message.object, getGroupName());
+        } catch (A3NoGroupDescriptionException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -438,9 +459,22 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         return supervisorId;
     }
 
+    /** The current supervisor id **/
+    private String supervisorId = null;
+
     public boolean isSupervisor(){
         return supervisor;
     }
+
+    /** Indicates if this channel is a supervisor **/
+    private boolean supervisor = false;
+
+    public Hierarchy getHierarchy() {
+        return hierarchy;
+    }
+
+    /** Stores the hierarchy on top of this group for this node **/
+    private Hierarchy hierarchy = null;
 
     /**
      * The object we use in notifications to indicate that a channel must be setup.
