@@ -360,7 +360,7 @@ public class Service extends HandlerThread implements BusObject,
 								break;
 
 							case Constants.SPLIT:
-								// Random split operation.
+								// Random requestSplit operation.
 
 								A3Message newGroupMessage = new A3Message(
 										Constants.NEW_SPLITTED_GROUP, "");

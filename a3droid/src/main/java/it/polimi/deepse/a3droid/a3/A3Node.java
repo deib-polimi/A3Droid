@@ -6,9 +6,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.Constants;
 import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
+import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
 
@@ -92,36 +92,39 @@ public class A3Node implements A3NodeInterface{
      * @param parentGroupName The name of the parent group.
      * @param childGroupName The name of the son group.
      */
-    public void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters {
+    public void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException,
+            A3InvalidOperationParameters, A3InvalidOperationRole {
         Log.i(TAG, "stack(" + parentGroupName + ", " + childGroupName + ")");
-        boolean disconnect = true;
         if(parentGroupName != null && childGroupName != null &&
                 !(parentGroupName.equals("") || childGroupName.equals(""))){
-            if(isSupervisor(childGroupName)) {
-                //TODO I'm not disconnecting the childGroup supervisor anymore. Should I?
-                disconnect = false;
-                stackReply(parentGroupName, childGroupName, actualStack(parentGroupName, childGroupName), disconnect);
-            }else if(isSupervisor(parentGroupName)){
+            if(isSupervisor(parentGroupName) || isSupervisor(childGroupName)) {
+                boolean disconnect = true;
+                if (isSupervisor(childGroupName)) {
+                    //TODO I'm not disconnecting the childGroup supervisor anymore. Should I?
+                    disconnect = false;
+                    stackReply(parentGroupName, childGroupName, actualStack(parentGroupName, childGroupName), disconnect);
+                } else if (isSupervisor(parentGroupName)) {
                     //TODO not connected for application, but for control
                     //TODO should we use a control channel for all groups?
                     //TODO maybe the discovery channel could become control channel
-                    if(connect(childGroupName)){
+                    if (connect(childGroupName)) {
                         A3Channel channel = null;
-                        try{
+                        try {
                             channel = getChannel(childGroupName);
                             channel.requestStack(parentGroupName);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    }
-                    else
+                    } else
                         stackReply(parentGroupName, childGroupName, false, disconnect);
-                }else{
+                } else {
                     stackReply(parentGroupName, childGroupName, false, disconnect);
                 }
+            }else
+                throw new A3InvalidOperationRole("Stack operation requires a node to be the supervisor of one of the groups.");
         }
         else
-            throw new A3InvalidOperationParameters("Stack operation requires non empty parent/child group names");
+            throw new A3InvalidOperationParameters("Stack operation requires non empty parent/child group names.");
     }
 
     /**
@@ -142,7 +145,7 @@ public class A3Node implements A3NodeInterface{
             A3Channel channel = null;
             try {
                 channel = getChannel(childGroupName);
-                channel.notifyStack(parentGroupName);
+                channel.requestHierarchyAdd(parentGroupName);
                 return true;//TODO implement real verification of the result
             } catch (Exception e) {
                 e.printStackTrace();
@@ -166,6 +169,76 @@ public class A3Node implements A3NodeInterface{
     }
 
     /**
+     * It tries to destroy the hierarchical relationship between the two specified groups.
+     * This is only possible if this node is the supervisor of at least one of the two groups.
+     * If this node is the supervisor of the group "childGroupName",
+     * the effects of this method are the ones of method "actualReverseStack(parentGroupName, childGroupName)".
+     * If this node is the supervisor of the group "parentGroupName",
+     * and if it has the right roles to joinGroup to the group "childGroupName",
+     * this node send the latter the order to execute "actualReverseStack(parentGroupName, childGroupName)".
+     * Such operation is always possible, so notifying its result is unuseful.
+     *
+     * @param parentGroupName The name of the group to disconnect from.
+     * @param childGroupName The name of the group to disconnect from group "parentGroupName".
+     */
+    public void reverseStack(String parentGroupName, String childGroupName){
+        boolean ok = false;
+        if(!(parentGroupName.equals("") || childGroupName.equals(""))){
+
+            if(isSupervisor(parentGroupName)){
+                try {
+                    ok = connect(childGroupName);
+                    if(ok){
+                        try{
+                            A3Channel channel = getChannel(childGroupName);
+                            channel.requestReverseStack(parentGroupName);
+                            disconnect(childGroupName);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else
+                        disconnect(childGroupName);
+                } catch (Exception e) {}
+            } else if(isSupervisor(childGroupName)){
+                    actualReverseStack(parentGroupName, childGroupName);
+                    ok = true;
+                }
+            }
+        reverseStackReply(parentGroupName, childGroupName, ok);
+    }
+
+    /**
+     * It destroys the hierarchical relationship between the two specified groups,
+     * by telling all the nodes of the child group to remove the parent group from their hierarchies
+     * and by disconnecting the channel to the parent group if it isn't connected for other reasons.
+     *
+     * @param parentGroupName The name of the group to disconnect from.
+     * @param childGroupName The name of the group to disconnect from group "parentGroupName".
+     */
+    public void actualReverseStack(String parentGroupName, String childGroupName) {
+        assert(!parentGroupName.isEmpty());
+        assert(!childGroupName.isEmpty());
+        try{
+            A3Channel channel = getChannel(childGroupName);
+            channel.requestHierarchyRemove(parentGroupName);
+            disconnect(parentGroupName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * It notifies this node with the result of a reverse requestStack operation.
+     *
+     * @param parentGroupName The name of the parent group.
+     * @param childGroupName The name of the child group.
+     * @param ok true if the reverse requestStack operation was successful, false otherwise.
+     */
+    private void reverseStackReply(String parentGroupName, String childGroupName, boolean ok) {
+        Log.i(TAG, "reverseStackReply(" + parentGroupName + ", " + childGroupName + ", " + ok + ")");
+    }
+
+    /**
      * It transfers the nodes in group "groupName2" to group "groupName1" and destroys group "groupName2".
      * The nodes which don't have the right roles to joinGroup to "groupName1"
      * won't be there after this operation.
@@ -176,46 +249,33 @@ public class A3Node implements A3NodeInterface{
     public void merge(String groupName1, String groupName2) throws A3NoGroupDescriptionException, A3InvalidOperationParameters {
 
         boolean ok = false;
-
         if(groupName1 != null && groupName2 != null &&
                 !(groupName1.equals("") || groupName2.equals(""))){
-
-            if(isSupervisor(groupName1)){
-
-                if(connect(groupName2)){
-                    try {
-                        A3Channel channel = getChannel(groupName2);
-                        channel.notifyMerge(groupName1);
+            try {
+                A3Channel channel;
+                if(isSupervisor(groupName1)){
+                    if(connect(groupName2)){
+                        channel = getChannel(groupName2);
+                        channel.requestMerge(groupName1);
                         ok = true;
                         disconnect(groupName2);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    }else
+                        disconnect(groupName2);
+                }else if(isSupervisor(groupName2)){
+                    channel = getChannel(groupName2);
+                    channel.requestMerge(groupName1);
+                    ok = true;
+                    /** I don't need to execute "disconnect(groupName2, false);" here,
+                     * because I will disconnect from group "groupName2"
+                     * when I will receive message "CONTROL_MERGE groupName2".
+                     **/
                 }
-                else
-                    disconnect(groupName2);
+                mergeReply(groupName1, groupName2, ok);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            else{
-                if(isSupervisor(groupName2)){
-
-                    try {
-                        A3Channel channel = getChannel(groupName2);
-                        channel.notifyMerge(groupName1);
-                        ok = true;
-                        /** I don't need to execute "disconnect(groupName2, false);" here,
-                         * because I will disconnect from group "groupName2"
-                         * when I will receive message "CONTROL_MERGE groupName2".
-                         **/
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            mergeReply(groupName1, groupName2, ok);
-        }else {
+        }else
             throw new A3InvalidOperationParameters("Merge operation requires non empty parent/child group names");
-        }
-
     }
 
     /**
@@ -262,6 +322,29 @@ public class A3Node implements A3NodeInterface{
         Log.i(TAG, "mergeReply(" + groupName1 + ", " + groupName2 + ", " + ok + ")");
     }
 
+    /**If this node is the supervisor of the group "groupName",
+     * this method splits a new group from group "groupName"
+     * and transfers there the specified number of nodes previously in "groupName".
+     * Such nodes are selected randomly, but the supervisor of group "groupName" can't be transfered.
+     * The new group has name "groupName_n", with integer n.
+     *
+     * @param groupName The name of the group whose nodes must be transfered in the new group.
+     * @param nodesToTransfer The number of nodes to transfer from group "groupName" to the new group.
+     */
+    public void split(String groupName, int nodesToTransfer) throws A3InvalidOperationRole {
+
+        if(isSupervisor(groupName)){
+
+            A3Channel channel;
+            try{
+                channel = getChannel(groupName);
+                channel.requestSplit(nodesToTransfer);
+            }catch(Exception e){}
+        } else
+            throw new A3InvalidOperationRole("Split failed: I'm not the supervisor.");
+    }
+
+    /** Communication methods **/
     public void sendUnicast(A3Message message, String groupName, String address){
         try {
             A3Channel channel = getChannel(groupName);

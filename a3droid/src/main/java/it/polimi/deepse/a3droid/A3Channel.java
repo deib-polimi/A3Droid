@@ -675,7 +675,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 			break;
 
 		case Constants.INTEGER_SPLIT_FITNESS_FUNCTION:
-			// I send my integer split fitness function value to the Service.
+			// I send my integer requestSplit fitness function value to the Service.
 			hierarchy.incrementSubgroupsCounter();
 			if (!isSupervisor) {
 				message = new A3Message(
@@ -687,7 +687,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 		case Constants.NEW_SPLITTED_GROUP:
 			/*
-			 * The supervisor triggered a random split command: a new group is
+			 * The supervisor triggered a random requestSplit command: a new group is
 			 * created and I get notified of it.
 			 */
 			hierarchy.incrementSubgroupsCounter();
@@ -701,7 +701,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 		case Constants.SPLIT:
 
 			/*
-			 * I will joinGroup to a group splitted by this group, which has the
+			 * I will joinGroup to a group split from this group, which has the
 			 * same roles of this group, so I don't need to check for right
 			 * roles here.
 			 */
@@ -1219,7 +1219,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	}
 
 	/**
-	 * @return The value of an integer fitness function used for split, as
+	 * @return The value of an integer fitness function used for requestSplit, as
 	 *         defined in the group descriptor class.
 	 * @throws Exception
 	 *             The integer fitness function is not implemented in the group
@@ -1232,7 +1232,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	}
 
 	/**
-	 * @return The value of the boolean fitness function used for split, as
+	 * @return The value of the boolean fitness function used for requestSplit, as
 	 *         defined in the group descriptor class.
 	 * @throws Exception
 	 *             The integer fitness function is not implemented in the group
@@ -1271,7 +1271,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 
 	/**
 	 * It sends a message to the Service, in order for it to start a random
-	 * split operation.
+	 * requestSplit operation.
 	 * 
 	 * @param nodesToTransfer
 	 *            The number of nodes to translate to the new group.
@@ -1285,7 +1285,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	}
 
 	/**
-	 * It broadcasts a message, in order to collect the integer split fitness
+	 * It broadcasts a message, in order to collect the integer requestSplit fitness
 	 * functions of the nodes. It is called only if this node is the supervisor.
 	 * 
 	 * @param nodesToTransfer
@@ -1307,7 +1307,7 @@ public class A3Channel extends Thread implements BusObject, TimerInterface,
 	}
 
 	/**
-	 * It broadcasts a message, in order to start a boolean split operation. It
+	 * It broadcasts a message, in order to start a boolean requestSplit operation. It
 	 * is called only if this node is the supervisor.
 	 */
 	public void splitWithBooleanFitnessFunction() throws Exception {

@@ -5,10 +5,12 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.Constants;
 import it.polimi.deepse.a3droid.GroupDescriptor;
+import it.polimi.deepse.a3droid.View;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
@@ -42,6 +44,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     protected A3Role activeRole;
 
     protected A3NodeInterface node;
+
+    /** The list of the group members and all the methods to manage it. */
+    private View view;
 
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
@@ -158,7 +163,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * role (if it is active) and it activates the follower role.
      */
     private void becomeFollower(){
-        assert (hasFollowerRole);
+        assert hasFollowerRole;
+        assert supervisorId != null;
         supervisor = false;
         if(hasSupervisorRole)
             supervisorRole.setActive(false);
@@ -236,6 +242,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     /**
      * TODO: describe
      * @param parentGroupName
+     */
+    protected void requestReverseStack(String parentGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REQUEST, parentGroupName, new String[]{getSupervisorId()}));
+    }
+
+    /**
+     * TODO: describe
+     * @param parentGroupName
      * @param result
      * @param address
      */
@@ -244,11 +258,11 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**
-     * TODO: describe
+     * Broadcasts to all group members about a hierarchy addition request.
      * @param parentGroupName The name of the parent group.
      * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
      */
-    protected void notifyStack(String parentGroupName){
+    protected void requestHierarchyAdd(String parentGroupName){
         enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
     }
 
@@ -266,8 +280,19 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * TODO describe
      * @param receiverGroupName
      */
-    protected void notifyMerge(String receiverGroupName){
+    protected void requestMerge(String receiverGroupName){
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE, receiverGroupName));
+    }
+
+    /**
+     * It sends a message to the Service, in order for it to start a random
+     * split operation.
+     *
+     * @param nodesToTransfer
+     *            The number of nodes to translate to the new group.
+     */
+    public void requestSplit(int nodesToTransfer) {
+        enqueueControl(new A3Message(A3Constants.CONTROL_SPLIT, String.valueOf(nodesToTransfer), new String[]{getSupervisorId()}));
     }
 
     /**
@@ -324,6 +349,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
             case A3Constants.CONTROL_STACK_REPLY:
                 handleStackReply(message);
                 break;
+            case A3Constants.CONTROL_REVERSE_STACK_REQUEST:
+                handleReverseStackRequest(message);
+                break;
             case A3Constants.CONTROL_GET_HIERARCHY:
             case A3Constants.CONTROL_HIERARCHY_REPLY:
             case A3Constants.CONTROL_ADD_TO_HIERARCHY:
@@ -332,6 +360,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
                 break;
             case A3Constants.CONTROL_MERGE:
                 handleMergeRequest(message);
+                break;
+            case A3Constants.CONTROL_SPLIT:
+                handleSplitRequest(message);
                 break;
             default:
                 break;
@@ -371,6 +402,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     /** Stack operation handlers **/
     private void handleStackRequest(A3Message message){
+        assert isSupervisor();
         try{
             boolean ok = node.actualStack(message.object, getGroupName());
             replyStack(message.object, ok, message.senderAddress);
@@ -384,6 +416,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
+    private void handleReverseStackRequest(A3Message message){
+        //"senderAddress Constants.REVERSE_STACK parentGroupName".
+        assert isSupervisor();
+        node.actualReverseStack(message.object, getGroupName());
+    }
+
     /** Merge operation handlers **/
     private void handleMergeRequest(A3Message message){
         try {
@@ -391,6 +429,60 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         }
+    }
+
+    /** Split operation handlers **/
+    private void handleSplitRequest(A3Message message){
+        if(isSupervisor()) {
+            // Random requestSplit operation.
+            A3Message newGroupMessage = new A3Message(
+                    Constants.NEW_SPLITTED_GROUP, "");
+            enqueueControl(newGroupMessage);
+
+            int nodesToTransfer = Integer.valueOf(message.object);
+            ArrayList<String> selectedNodes = new ArrayList<String>();
+            int numberOfNodes = view.getNumberOfNodes();
+            String[] splittedView = view.getView()
+                    .substring(1, view.getView().length() - 1)
+                    .split(", ");
+            Random randomNumberGenerator = new Random();
+            String tempAddress;
+
+            /*
+             * I can't move the supervisor in another group, so the
+             * supervisor never sends its integer fitness function
+             * value. I can't move more nodes than I have.
+             */
+            if (nodesToTransfer < numberOfNodes) {
+
+                for (int i = 0; i < nodesToTransfer; i++) {
+
+                    do {
+                        tempAddress = splittedView[randomNumberGenerator
+                                .nextInt(numberOfNodes)];
+                    } while (tempAddress.equals(supervisorId)
+                            || selectedNodes.contains(tempAddress));
+
+                    selectedNodes.add(tempAddress);
+                }
+
+                for (String address : selectedNodes)
+                    enqueueControl(new A3Message(
+                            Constants.SPLIT, "", new String[]{address}));
+            }
+        }else
+            /*
+			 * I will joinGroup to a group split from this group, which has the
+			 * same roles of this group, so I don't need to check for right
+			 * roles here.
+			 */
+            try {
+                node.actualMerge(
+                        getGroupName() + "_" + hierarchy.getSubgroupsCounter(),
+                        getGroupName());
+            } catch (A3NoGroupDescriptionException e) {
+                e.printStackTrace();
+            }
     }
 
     /**

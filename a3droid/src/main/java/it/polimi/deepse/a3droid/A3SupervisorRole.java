@@ -11,7 +11,7 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
  */
 public abstract class A3SupervisorRole extends A3Role implements BusObject, TimerInterface{
 
-	/**The object that collects integer fitness function values for random split.*/
+	/**The object that collects integer fitness function values for random requestSplit.*/
 	private FitnessFunctionManager fitnessFunctions;
 	
 	/**The number of nodes to transfer in the new group.*/
@@ -123,7 +123,7 @@ public abstract class A3SupervisorRole extends A3Role implements BusObject, Time
 		} catch (Exception e) {}
 	}
 
-	/**It starts collecting integer fitness function values for random split. 
+	/**It starts collecting integer fitness function values for random requestSplit.
 	 */
 	public void startSplit(int nodesToTransfer) {
 		// TODO Auto-generated method stub
@@ -133,7 +133,7 @@ public abstract class A3SupervisorRole extends A3Role implements BusObject, Time
 
 	@Override
 	public void timerFired(int reason) {
-		// I can only have a split operation, so I don't check the value of reason.
+		// I can only have a requestSplit operation, so I don't check the value of reason.
 		try {
 			String[] selectedNodes = fitnessFunctions.getBest(nodesToTransfer);
 			A3Message message = new A3Message(Constants.SPLIT, "");
