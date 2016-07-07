@@ -1028,28 +1028,26 @@ public class AlljoynBus extends A3Bus {
 
             if (status == Status.OK) {
                 channel.setSessionId(sessionId.value);
-                channel.handleEvent(A3Event.GROUP_JOINT);
                 Log.i(TAG, "doJoinSession(): use sessionId is " + sessionId.value);
+                //TODO: Used by a follower to send signals to the bus
+                /** The Service proxy to communicate with. */
+                ProxyBusObject mProxyObj;
+                mProxyObj = channel.getBus().getProxyBusObject(SERVICE_PATH + "." + channel.getGroupName(), OBJECT_PATH,
+                        channel.getSessionId(), new Class<?>[]{AlljoynServiceInterface.class});
+                channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), true);
+
+                //TODO: Original chat way of getting the service interface. But as a follower, channel.getService() won't be registered as object
+                //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
+                //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
+
+                channel.setChannelState(AlljoynChannelState.JOINED);
+                channel.handleEvent(A3Event.GROUP_JOINT);
             } else {
                 a3Application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
                 channel.handleError(status, AlljoynErrorHandler.CHANNEL);
                 return;
             }
         }
-
-        //TODO: Used by a follower to send signals to the bus
-        /** The Service proxy to communicate with. */
-        ProxyBusObject mProxyObj;
-        mProxyObj = channel.getBus().getProxyBusObject(SERVICE_PATH + "." + channel.getGroupName(), OBJECT_PATH,
-                channel.getSessionId(), new Class<?>[]{AlljoynServiceInterface.class});
-        channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), true);
-
-        //TODO: Original chat way of getting the service interface. But as a follower, channel.getService() won't be registered as object
-        //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
-        //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
-
-        channel.setChannelState(AlljoynChannelState.JOINED);
-
     }
 
     /**

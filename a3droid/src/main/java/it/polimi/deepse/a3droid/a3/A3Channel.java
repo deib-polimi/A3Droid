@@ -84,6 +84,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     public void disconnect(){
+        deactivateActiveRole();
         notifyObservers(A3Channel.DISCONNECT_EVENT);
         clearObservers();
     }

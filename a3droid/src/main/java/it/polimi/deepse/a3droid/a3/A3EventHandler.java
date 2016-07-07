@@ -49,15 +49,19 @@ public class A3EventHandler extends Handler implements TimerInterface{
                 notifyView(event, (String) obj);
                 break;
             case SUPERVISOR_LEFT:
-                channel.deactivateActiveRole();
-                channel.clearSupervisor();
-                new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
-                        randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
-                ).start();
+                handleSupervisorLeftEvent();
                 break;
             default:
                 break;
         }
+    }
+
+    private void handleSupervisorLeftEvent(){
+        channel.deactivateActiveRole();
+        channel.clearSupervisor();
+        new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
+                randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
+        ).start();
     }
 
     public void handleTimeEvent(int reason){
@@ -65,7 +69,6 @@ public class A3EventHandler extends Handler implements TimerInterface{
             case WAIT_AND_QUERY_ROLE_EVENT:
                 channel.queryRole();
                 break;
-
             default:
                 break;
         }
