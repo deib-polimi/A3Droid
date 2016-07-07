@@ -156,7 +156,6 @@ public class A3Application extends Application implements Observable{
         Log.i(TAG, "addFoundGroup(" + groupName + ")");
         removeFoundGroup(groupName);
         mGroups.add(groupName);
-        groupsMembers.put(groupName, new HashSet<String>());
 
         Log.i(TAG, "addFoundGroup(): added " + groupName);
     }
@@ -174,7 +173,6 @@ public class A3Application extends Application implements Observable{
             if (string.equals(groupName)) {
                 Log.i(TAG, "removeFoundGroup(): removed " + groupName);
                 i.remove();
-                groupsMembers.remove(groupName);
             }
         }
     }
@@ -207,38 +205,6 @@ public class A3Application extends Application implements Observable{
      * eventually result in a joinSession call out from the AllJoyn Service
      */
     private List<String> mGroups = new ArrayList<String>();
-
-    public synchronized void addGroupMember(String groupName,String id) {
-        Log.i(TAG, "addGroupMember(" + groupName + ":" + id + ")");
-        if (groupsMembers.containsKey(groupName)) {
-            groupsMembers.get(groupName).add(id);
-        }
-    }
-
-    public synchronized void deleteGroupMember(String groupName,String id) {
-        Log.i(TAG, "deleteGroupMember(" + groupName + ":" + id + ")");
-        if (groupsMembers.containsKey(groupName)) {
-            groupsMembers.get(groupName).remove(id);
-        }
-    }
-
-    public boolean isGroupEmpty(String groupName){
-        return !groupsMembers.containsKey(groupName)
-                || groupsMembers.get(groupName).isEmpty();
-    }
-
-    public boolean isGroupMemberIn(String groupName, String id){
-        return groupsMembers.containsKey(groupName) &&
-                groupsMembers.get(groupName).contains(id);
-    }
-
-    public boolean isGroupMemberAlone(String groupName, String id){
-        return groupsMembers.containsKey(groupName) &&
-                groupsMembers.get(groupName).contains(id) &&
-                groupsMembers.get(groupName).size() == 1;
-    }
-
-    private Map<String, Set<String>> groupsMembers = new HashMap<String, Set<String>>();
 
     /**
      * This object is really the model of a model-view-controller architecture.

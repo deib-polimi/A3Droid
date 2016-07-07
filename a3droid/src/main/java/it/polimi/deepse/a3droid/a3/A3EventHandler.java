@@ -23,32 +23,37 @@ public class A3EventHandler extends Handler implements TimerInterface{
     }
 
     public void handleMessage(Message msg) {
-        handleEvent((A3Bus.A3Event) msg.obj);
+        handleEvent(A3Bus.A3Event.values()[msg.what], msg.obj);
     }
 
-    public void handleEvent(A3Bus.A3Event event){
+    public void handleEvent(A3Bus.A3Event event, Object obj){
         switch (event) {
             case GROUP_CREATED:
                 //A node also needs to join the group it has created
                 channel.joinGroup();
                 break;
             case GROUP_DESTROYED:
+                //TODO
                 break;
             case GROUP_LOST:
-                if(channel.isSupervisor())
-                    channel.deactivateSupervisor();
-                else
-                    channel.deactivateFollower();
+                channel.deactivateActiveRole();
                 break;
             case GROUP_JOINT:
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
+                channel.deactivateActiveRole();
                 break;
+            case MEMBER_JOINT:
             case MEMBER_LEFT:
+                notifyView(event, (String) obj);
+                break;
+            case SUPERVISOR_LEFT:
+                channel.deactivateActiveRole();
+                channel.clearSupervisor();
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
                         randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
-                        ).start();
+                ).start();
                 break;
             default:
                 break;
@@ -66,11 +71,18 @@ public class A3EventHandler extends Handler implements TimerInterface{
         }
     }
 
+    private void notifyView(A3Bus.A3Event event, String memberId){
+        Message msg = channel.getView().obtainMessage();
+        msg.what = event.ordinal();
+        msg.obj = memberId;
+        channel.getView().sendMessage(msg);
+    }
+
     private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
     /** Used as fixed time after a GROUP_JOINT event **/
-    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 1000;
+    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 3000;
     /** Used as fixed time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;
     /** Used as random time part after a MEMBER_LEFT event **/
-    private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 2000;
+    private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 1000;
 }

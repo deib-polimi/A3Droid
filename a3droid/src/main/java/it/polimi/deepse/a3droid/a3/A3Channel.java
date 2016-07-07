@@ -10,7 +10,6 @@ import java.util.Random;
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.Constants;
 import it.polimi.deepse.a3droid.GroupDescriptor;
-import it.polimi.deepse.a3droid.View;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
@@ -20,6 +19,8 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
+import it.polimi.deepse.a3droid.pattern.Timer;
+import it.polimi.deepse.a3droid.pattern.TimerInterface;
 
 /**
  * This is the A3 layer class responsible for group management, A3 application/control communication,
@@ -27,7 +28,7 @@ import it.polimi.deepse.a3droid.pattern.Observer;
  * for the actual communication between nodes must extend this class and implement its logic in its
  * own layer.
  */
-public abstract class A3Channel implements A3ChannelInterface, Observable {
+public abstract class A3Channel implements A3ChannelInterface, Observable, TimerInterface {
 
     protected static final String TAG = "a3droid.A3Channel";
 
@@ -45,9 +46,6 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     protected A3NodeInterface node;
 
-    /** The list of the group members and all the methods to manage it. */
-    private View view;
-
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
@@ -62,11 +60,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         this.setGroupName(groupName);
         this.application = application;
         this.node = node;
-        this.groupDescriptor = descriptor;
         this.hasFollowerRole = hasFollowerRole;
         this.hasSupervisorRole = hasSupervisorRole;
+        this.groupDescriptor = descriptor;
         eventHandler = new A3EventHandler(application, this);
         hierarchy = new Hierarchy(this);
+        view = new A3View(this);
     }
 
     protected A3Application application;
@@ -108,7 +107,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     /** A3Channel methods used internally**/
     public void handleEvent(A3Bus.A3Event event){
         Message msg = eventHandler.obtainMessage();
-        msg.obj = event;
+        msg.what = event.ordinal();
+        eventHandler.sendMessage(msg);
+    }
+
+    public void handleEvent(A3Bus.A3Event event, Object arg){
+        Message msg = eventHandler.obtainMessage();
+        msg.what = event.ordinal();
+        msg.obj = arg;
         eventHandler.sendMessage(msg);
     }
 
@@ -130,10 +136,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
      * Check for the condition to become a supervisor or to query for existing one.
      */
     protected void queryRole(){
-        if((application.isGroupEmpty(groupName) ||
-                application.isGroupMemberAlone(groupName, channelId) ||
-                !application.isGroupMemberIn(groupName, supervisorId)
-                ) &&
+        if((getView().isViewEmpty() ||
+                getView().isAloneInView(channelId)
+        ) &&
                 hasSupervisorRole)
             becomeSupervisor();
         else
@@ -176,7 +181,17 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**
-     * Removes the supervisor role by deactivating it and seting supervisor false.
+     * Deactivates the current active role
+     */
+    protected void deactivateActiveRole(){
+        if(isSupervisor())
+            deactivateSupervisor();
+        else if(hasFollowerRole)
+            deactivateFollower();
+    }
+
+    /**
+     * Removes the supervisor role by deactivating it and setting supervisor false
      */
     protected void deactivateSupervisor(){
         assert (hasSupervisorRole);
@@ -185,7 +200,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**
-     * Removes the follower role by deactivating it and seting supervisor false.
+     * Clears the information regarding the current supervisor ID
+     */
+    protected void clearSupervisor(){
+        supervisorId = null;
+    }
+
+    /**
+     * Removes the follower role by deactivating it and setting supervisor false
      */
     protected void deactivateFollower(){
         assert (hasFollowerRole);
@@ -227,7 +249,19 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     private void querySupervisor(){
         A3Message m = new A3Message(A3Constants.CONTROL_GET_SUPERVISOR, "");
         enqueueControl(m);
+        supervisorQueryTimer = new Timer(this, SUPERVISOR_NOT_FOUND_EVENT, SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT);
     }
+
+    /**
+     * Aborts the current supervisor query timer if it is active
+     */
+    private synchronized void clearSupervisorQueryTimer(){
+        if(supervisorQueryTimer != null)
+            supervisorQueryTimer.abort();
+    }
+
+    /** Timer object for the supervisor query **/
+    private Timer supervisorQueryTimer = null;
 
     /** Stack methods **/
 
@@ -296,6 +330,24 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**
+     * Handles events triggered after a certain amount of time past from a message been sent.
+     * @param reason It indicates which timeout fired. The taken action will depend on this.
+     */
+    public void handleTimeEvent(int reason){
+        switch (reason){
+            case SUPERVISOR_NOT_FOUND_EVENT:
+                handleSupervisorNotFoundEvent();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static final int SUPERVISOR_NOT_FOUND_EVENT = 0;
+    /** Used as fixed time after a CONTROL_GET_SUPERVISOR query message **/
+    private static final int SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT = 2000;
+
+    /**
      * Enqueue a control message
      * @param message
      */
@@ -332,17 +384,19 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
         Log.i(TAG, "CONTROL : " + (String) message.object);
         switch (message.reason){
             /** Supervisor election **/
+            case A3Constants.CONTROL_GET_SUPERVISOR:
+                handleGetSupervisorQuery(message);
+                break;
             case A3Constants.CONTROL_NEW_SUPERVISOR:
+                handleNewSupervisorNotification(message);
+                break;
             case A3Constants.CONTROL_CURRENT_SUPERVISOR:
-                handleCurrentSupervisorNotification(message);
+                handleCurrentSupervisorReply(message);
                 break;
             case A3Constants.CONTROL_NO_SUPERVISOR:
                 handleNoSupervisorNotification(message);
                 break;
-            case A3Constants.CONTROL_GET_SUPERVISOR:
-                handleGetSupervisorQuery(message);
-                break;
-            /** Stack operation **/
+            /** TCO operations **/
             case A3Constants.CONTROL_STACK_REQUEST:
                 handleStackRequest(message);
                 break;
@@ -370,7 +424,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
     }
 
     /**Supervisor election handlers**/
-    private void handleCurrentSupervisorNotification(A3Message message){
+    private void handleNewSupervisorNotification(A3Message message) {
         supervisorId = message.senderAddress;
         if(!channelId.equals(supervisorId)){
             float supervisorFF = Float.parseFloat(message.object);
@@ -385,6 +439,22 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
                 }
             }else if(hasFollowerRole)
                 becomeFollower();
+        }
+    }
+
+    private void handleCurrentSupervisorReply(A3Message message){
+        clearSupervisorQueryTimer();
+        handleNewSupervisorNotification(message);
+    }
+
+    /**
+     * Whenever an existing group without supervisor is joint by this node, it becomes the
+     * supervisor if it has the role for it.
+     */
+    private void handleSupervisorNotFoundEvent(){
+        if(supervisorId == null){
+            if(hasSupervisorRole)
+                becomeSupervisor();
         }
     }
 
@@ -567,6 +637,13 @@ public abstract class A3Channel implements A3ChannelInterface, Observable {
 
     /** Stores the hierarchy on top of this group for this node **/
     private Hierarchy hierarchy = null;
+
+    public A3View getView(){
+        return view;
+    }
+
+    /** The list of the group members and all the methods to manage it. */
+    public A3View view = null;
 
     /**
      * The object we use in notifications to indicate that a channel must be setup.

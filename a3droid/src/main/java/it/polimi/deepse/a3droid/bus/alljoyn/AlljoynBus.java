@@ -1015,13 +1015,14 @@ public class AlljoynBus extends A3Bus {
 
                 @Override
                 public void sessionMemberAdded(int sessionId, String uniqueName) {
-                    a3Application.addGroupMember(channel.getGroupName(), uniqueName);
+                    Log.i(TAG, "BusListener.sessionMemberAdded(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
+                    channel.handleEvent(A3Event.MEMBER_JOINT, uniqueName);
                 }
 
                 @Override
                 public void sessionMemberRemoved(int sessionId, String uniqueName) {
-                    a3Application.deleteGroupMember(channel.getGroupName(), uniqueName);
-                    channel.handleEvent(A3Event.MEMBER_LEFT);
+                    Log.i(TAG, "BusListener.sessionMemberRemoved(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
+                    channel.handleEvent(A3Event.MEMBER_LEFT, uniqueName);
                 }
             });
 

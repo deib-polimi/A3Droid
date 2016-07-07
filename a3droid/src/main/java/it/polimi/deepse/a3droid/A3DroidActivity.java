@@ -38,6 +38,7 @@ public abstract class A3DroidActivity extends Activity implements UserInterface{
 
 		@Override
 		public void uncaughtException(Thread thread, Throwable throwable) {
+			throwable.printStackTrace();
 			Toast.makeText(getApplication(), thread + " " + throwable.getLocalizedMessage(), Toast.LENGTH_LONG).show();
 		}
 	}
