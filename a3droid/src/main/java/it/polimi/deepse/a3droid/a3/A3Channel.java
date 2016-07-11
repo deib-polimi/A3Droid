@@ -153,6 +153,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     private void becomeSupervisor() {
         Log.i(TAG, "becomeSupervisor()");
         assert (hasSupervisorRole);
+        handleEvent(A3Bus.A3Event.SUPERVISOR_ELECTED);
         supervisor = true;
         supervisorId = channelId;
         if(hasFollowerRole)

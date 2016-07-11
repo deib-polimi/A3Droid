@@ -1110,7 +1110,7 @@ public class AlljoynBus extends A3Bus {
      * There are separate variables describing the states of the client
      * ("use") and service ("host") pieces.
      */
-    public static enum BusState {
+    public enum BusState {
         DISCONNECTED, /**
          * The bus attachment is not connected to the AllJoyn bus
          */
@@ -1127,7 +1127,7 @@ public class AlljoynBus extends A3Bus {
      * service.  In order to be out of the IDLE state, the BusAttachment state
      * must be at least CONNECTED.
      */
-    public static enum AlljoynServiceState {
+    public enum AlljoynServiceState {
         IDLE, /**
          * There is no hosted chat channel
          */
@@ -1150,7 +1150,7 @@ public class AlljoynBus extends A3Bus {
      * service.  In order to be out of the IDLE state, the BusAttachment state
      * must be at least CONNECTED.
      */
-    public static enum AlljoynChannelState {
+    public enum AlljoynChannelState {
         IDLE, /**
          * There is no used chat channel
          */
@@ -1163,7 +1163,7 @@ public class AlljoynBus extends A3Bus {
     /**
      * The session with a service has been lost.
      */
-    public static enum AlljoynEvent {
+    public enum AlljoynEvent {
         SESSION_CREATED,
         SESSION_DESTROYED,
         SESSION_JOINED,

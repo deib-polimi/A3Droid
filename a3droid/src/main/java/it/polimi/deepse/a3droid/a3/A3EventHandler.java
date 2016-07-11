@@ -34,14 +34,12 @@ public class A3EventHandler extends Handler implements TimerInterface{
                 channel.joinGroup();
                 break;
             case GROUP_DESTROYED:
-                channel.setGroupState(A3Bus.A3GroupState.IDLE);
-                break;
             case GROUP_LOST:
                 channel.setGroupState(A3Bus.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
             case GROUP_JOINED:
-                channel.setGroupState(A3Bus.A3GroupState.JOINT);
+                channel.setGroupState(A3Bus.A3GroupState.ELECTION);
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
@@ -53,10 +51,14 @@ public class A3EventHandler extends Handler implements TimerInterface{
                 notifyView(event, (String) obj);
                 break;
             case SUPERVISOR_LEFT:
-                if(channel.getGroupState() == A3Bus.A3GroupState.JOINT) {
+                if(channel.getGroupState() == A3Bus.A3GroupState.ACTIVE) {
+                    channel.setGroupState(A3Bus.A3GroupState.ELECTION);
                     channel.setGroupState(A3Bus.A3GroupState.CREATED);
                     handleSupervisorLeftEvent();
                 }
+                break;
+            case SUPERVISOR_ELECTED:
+                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
                 break;
             default:
                 break;

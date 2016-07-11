@@ -57,16 +57,17 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
     /**
      * The session with a service has been lost.
      */
-    public static enum A3GroupState {
+    public enum A3GroupState {
         IDLE,
         CREATED,
-        JOINT
+        ELECTION,
+        ACTIVE
     }
 
     /**
      * The session with a service has been lost.
      */
-    public static enum A3Event {
+    public enum A3Event {
         GROUP_CREATED,
         GROUP_DESTROYED,
         GROUP_LOST,
@@ -74,6 +75,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         GROUP_LEFT,
         MEMBER_LEFT,
         MEMBER_JOINED,
-        SUPERVISOR_LEFT
+        SUPERVISOR_LEFT,
+        SUPERVISOR_ELECTED
     }
 }
