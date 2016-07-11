@@ -23,9 +23,6 @@ public interface AlljoynServiceInterface{
      * service implementation.
      */
     @BusMethod(signature = "(sisayas)", replySignature = "b")
-    boolean sendToSupervisor(A3Message message) throws BusException;
-
-    @BusMethod(signature = "(sisayas)", replySignature = "b")
     boolean sendUnicast(A3Message message) throws BusException;
 
     @BusMethod(signature = "(sisayas)", replySignature = "b")

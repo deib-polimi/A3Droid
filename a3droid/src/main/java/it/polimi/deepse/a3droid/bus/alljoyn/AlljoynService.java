@@ -21,11 +21,6 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
     //TODO: add group management methods
     /** Service methods handled by this instance**/
     @Override
-    public boolean sendToSupervisor(A3Message message) throws BusException {
-        return true;
-    }
-
-    @Override
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     public boolean sendUnicast(A3Message message) throws BusException {
         this.serviceSignalEmitterInterface.ReceiveUnicast(message);

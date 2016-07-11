@@ -444,6 +444,10 @@ public class A3Node implements A3NodeInterface{
         //throw new Exception("NO GROUP WITH NAME " + groupName + ".");
     }
 
+    public ArrayList<GroupDescriptor> getGroupDescriptors(){
+        return groupDescriptors;
+    }
+
     /**The list of the descriptors of the groups that can be present in the system.
      * The groups splitted by other groups have their same descriptors.
      */
@@ -517,4 +521,24 @@ public class A3Node implements A3NodeInterface{
      * In such case, a channel to the group "wait" is connected and in this list.*/
     private ArrayList<A3Channel> mChannels = new ArrayList<A3Channel>();
 
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        for(GroupDescriptor g : groupDescriptors)
+            hash += g.hashCode();
+        for(String r : roles)
+            hash += r.hashCode();
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (!(o instanceof A3Node))
+            return false;
+        if (o == this)
+            return true;
+
+        return this.groupDescriptors.equals(((A3Node) o).getGroupDescriptors()) &&
+                this.roles.equals(((A3Node) o).roles);
+    }
 }

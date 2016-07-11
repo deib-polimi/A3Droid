@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
@@ -205,6 +206,61 @@ public class A3Application extends Application implements Observable{
      * eventually result in a joinSession call out from the AllJoyn Service
      */
     private List<String> mGroups = new ArrayList<String>();
+
+    /**
+     * Either creates a node or fetches an existing node whose hash equals the one to be created.
+     * @see this#hashCode()
+     * @see GroupDescriptor#hashCode()
+     * @param groupDescriptors
+     * @param roles
+     * @return
+     */
+    public A3Node createNode(ArrayList<GroupDescriptor> groupDescriptors,
+                             ArrayList<String> roles){
+
+        A3Node node = new A3Node(this, groupDescriptors, roles);
+        if(getNodes().contains(node)) {
+            return getNodes().get(getNodes().indexOf(node));
+        }else {
+            addNode(node);
+            return node;
+        }
+    }
+
+    /**
+     * TODO describe
+     */
+    private synchronized void addNode(A3Node node) {
+        Log.i(TAG, "addNode(" + node + ")");
+        mNodes.add(node);
+    }
+
+    /**
+     * TODO describe
+     */
+    private synchronized void removeNode(A3Node node) {
+        Log.i(TAG, "removeNode(" + node + ")");
+        for (Iterator<A3Node> i = mNodes.iterator(); i.hasNext();) {
+            A3Node n = i.next();
+            if (n.equals(node)) {
+                Log.i(TAG, "removeFoundGroup(): removed " + node);
+                i.remove();
+            }
+        }
+    }
+
+    /**
+     * TODO describe
+     */
+    public synchronized List<A3Node> getNodes() {
+        Log.i(TAG, "getFoundGroups()");
+        return mNodes;
+    }
+
+    /**
+     * TODO describe
+     */
+    private List<A3Node> mNodes = new ArrayList<A3Node>();
 
     /**
      * This object is really the model of a model-view-controller architecture.

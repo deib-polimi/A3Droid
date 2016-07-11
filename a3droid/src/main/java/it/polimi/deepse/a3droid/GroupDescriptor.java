@@ -94,5 +94,22 @@ public abstract class GroupDescriptor {
 	public void setFollowerRoleId(String followerRoleId) {
 		this.followerRoleId = followerRoleId;
 	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode() + supervisorRoleId.hashCode() + followerRoleId.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object o){
+		if (!(o instanceof GroupDescriptor))
+			return false;
+		if (o == this)
+			return true;
+
+		return this.name.equals(((GroupDescriptor) o).name) &&
+				this.supervisorRoleId.equals(((GroupDescriptor) o).supervisorRoleId) &&
+				this.followerRoleId.equals(((GroupDescriptor) o).followerRoleId);
+	}
 	
 }
