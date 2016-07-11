@@ -6,8 +6,6 @@ import android.os.Message;
 
 import java.util.ArrayList;
 
-import it.polimi.deepse.a3droid.Constants;
-import it.polimi.deepse.a3droid.Service;
 import it.polimi.deepse.a3droid.TimerInterface;
 
 /**This class resides on a Service.
@@ -71,7 +69,7 @@ public class A3View extends HandlerThread implements TimerInterface{
 				A3Bus.A3Event event = A3Bus.A3Event.values()[msg.what];
 				String memberName = (String) msg.obj;
 				switch(event){
-					case MEMBER_JOINT:
+					case MEMBER_JOINED:
 						addGroupMember(memberName);
 						break;
 

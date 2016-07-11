@@ -50,7 +50,7 @@ public class A3Application extends Application implements Observable{
      * Since our application is "rooted" in this class derived from Appliation
      * and we have a long-running service, we can't just call finish in one of
      * the Activities.  We have to orchestrate it from here.  We send an event
-     * notification out to all of our obsservers which tells them to exit.
+     * notification out to all of our observers which tells them to exit.
      *
      * Note that as a result of the notification, all of the observers will
      * stop -- as they should.  One of the things that will stop is the AllJoyn

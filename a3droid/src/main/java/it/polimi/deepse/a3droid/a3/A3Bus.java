@@ -60,7 +60,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
     public static enum A3GroupState {
         IDLE,
         CREATED,
-        JOINED
+        JOINT
     }
 
     /**
@@ -70,10 +70,10 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         GROUP_CREATED,
         GROUP_DESTROYED,
         GROUP_LOST,
-        GROUP_JOINT,
+        GROUP_JOINED,
         GROUP_LEFT,
         MEMBER_LEFT,
-        MEMBER_JOINT,
+        MEMBER_JOINED,
         SUPERVISOR_LEFT
     }
 }

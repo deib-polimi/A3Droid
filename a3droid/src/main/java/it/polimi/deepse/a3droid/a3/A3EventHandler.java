@@ -30,25 +30,30 @@ public class A3EventHandler extends Handler implements TimerInterface{
         switch (event) {
             case GROUP_CREATED:
                 //A node also needs to join the group it has created
+                channel.setGroupState(A3Bus.A3GroupState.CREATED);
                 channel.joinGroup();
                 break;
             case GROUP_DESTROYED:
-                //TODO
+                channel.setGroupState(A3Bus.A3GroupState.IDLE);
                 break;
             case GROUP_LOST:
+                channel.setGroupState(A3Bus.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
-            case GROUP_JOINT:
+            case GROUP_JOINED:
+                channel.setGroupState(A3Bus.A3GroupState.JOINT);
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
+                channel.setGroupState(A3Bus.A3GroupState.CREATED);
                 channel.deactivateActiveRole();
                 break;
-            case MEMBER_JOINT:
+            case MEMBER_JOINED:
             case MEMBER_LEFT:
                 notifyView(event, (String) obj);
                 break;
             case SUPERVISOR_LEFT:
+                channel.setGroupState(A3Bus.A3GroupState.CREATED);
                 handleSupervisorLeftEvent();
                 break;
             default:
@@ -82,7 +87,7 @@ public class A3EventHandler extends Handler implements TimerInterface{
     }
 
     private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
-    /** Used as fixed time after a GROUP_JOINT event **/
+    /** Used as fixed time after a GROUP_JOINED event **/
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 3000;
     /** Used as fixed time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;

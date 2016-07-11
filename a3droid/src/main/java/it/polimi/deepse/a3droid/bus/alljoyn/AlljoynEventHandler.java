@@ -5,9 +5,9 @@ import android.os.Message;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
-import it.polimi.deepse.a3droid.utility.RandomWait;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
+import it.polimi.deepse.a3droid.utility.RandomWait;
 
 /**
  * Handles three types of error: from service setup, from channel setup and from the bus.
@@ -25,13 +25,37 @@ public class AlljoynEventHandler extends Handler implements TimerInterface{
     }
 
     public void handleMessage(Message msg) {
-        handleEvent((AlljoynBus.AlljoynEvent) msg.obj, msg.arg1);
+        handleEvent((AlljoynBus.AlljoynEvent) AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);
     }
 
-    public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
+    public void handleEvent(AlljoynBus.AlljoynEvent event, Object arg){
         switch (event){
+            case SESSION_CREATED:
+                channel.handleEvent(A3Bus.A3Event.GROUP_CREATED);
+                channel.setServiceState(AlljoynBus.AlljoynServiceState.ADVERTISED);
+                break;
+            case SESSION_DESTROYED:
+                channel.handleEvent(A3Bus.A3Event.GROUP_DESTROYED);
+                channel.setServiceState(AlljoynBus.AlljoynServiceState.BOUND);
+                break;
+            case SESSION_JOINED:
+                channel.handleEvent(A3Bus.A3Event.GROUP_JOINED);
+                channel.setChannelState(AlljoynBus.AlljoynChannelState.JOINED);
+                break;
             case SESSION_LOST:
+                channel.handleEvent(A3Bus.A3Event.GROUP_LOST);
+                channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
                 new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
+                break;
+            case SESSION_LEFT:
+                channel.handleEvent(A3Bus.A3Event.GROUP_LEFT);
+                channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
+                break;
+            case MEMBER_JOINED:
+                channel.handleEvent(A3Bus.A3Event.MEMBER_JOINED, arg);
+                break;
+            case MEMBER_LEFT:
+                channel.handleEvent(A3Bus.A3Event.MEMBER_LEFT, arg);
                 break;
             default:
                 break;

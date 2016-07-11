@@ -11,6 +11,7 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
+import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
@@ -92,10 +93,10 @@ public class AlljoynChannel extends A3Channel implements BusObject {
         super.leaveGroup();
     }
 
-    public void handleEvent(AlljoynBus.AlljoynEvent event, int arg){
+    public void handleEvent(AlljoynBus.AlljoynEvent event, Object arg){
         Message msg = eventHandler.obtainMessage();
-        msg.obj = event;
-        msg.arg1 = arg;
+        msg.what = event.ordinal();
+        msg.obj = arg;
         eventHandler.sendMessage(msg);
     }
 
@@ -311,9 +312,14 @@ public class AlljoynChannel extends A3Channel implements BusObject {
 
     public synchronized void setBusState(AlljoynBus.BusState state) {
         mBusState = state;
-        //TODO
-        //notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
+        notifyObservers(BUS_STATE_CHANGED_EVENT);
     }
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "use" channel or its name has changed.
+     */
+    public static final String BUS_STATE_CHANGED_EVENT = "BUS_STATE_CHANGED_EVENT";
 
     public AlljoynBus.BusState getBusState() {
         return mBusState;

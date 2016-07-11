@@ -62,7 +62,7 @@ public class AlljoynBus extends A3Bus {
          * is starting up.
          */
         DiscoveryDescriptor discoveryDescriptor = new DiscoveryDescriptor();
-        mDiscoveryChannel = new AlljoynChannel((A3Application)getApplication(),
+        mDiscoveryChannel = new AlljoynChannel((A3Application) getApplication(),
                 null,
                 discoveryDescriptor,
                 discoveryDescriptor.getName(),
@@ -90,7 +90,7 @@ public class AlljoynBus extends A3Bus {
      * Whenever an interesting event happens in our appliation, the Model (the
      * source of the event) notifies registered observers, resulting in this
      * method being called since we registered as an Observer in onCreate().
-     *
+     * <p/>
      * This method will be called in the context of the Model, which is, in
      * turn the context of an event source.  This will either be the single
      * Android application framework thread if the source is one of the
@@ -99,20 +99,20 @@ public class AlljoynBus extends A3Bus {
      * framework is a fundamentally single threaded thing, we avoid multithread
      * issues and deadlocks by immediately getting this event into a separate
      * execution in the context of the Service message pump.
-     *
+     * <p/>
      * We do this by taking the event from the calling component and queueing
      * it onto a "handler" in our Service and returning to the caller.  When
      * the calling componenet finishes what ever caused the event notification,
      * we expect the Android application framework to notice our pending
      * message and run our handler in the context of the single application
      * thread.
-     *
+     * <p/>
      * In reality, both events are executed in the context of the single
      * Android thread.
      */
     public synchronized void update(Observable o, Object arg) {
         Log.i(TAG, "update(" + arg + ")");
-        String qualifier = (String)arg;
+        String qualifier = (String) arg;
 
         if (qualifier.equals(A3Application.APPLICATION_QUIT_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_APPLICATION_QUIT_EVENT);
@@ -150,7 +150,7 @@ public class AlljoynBus extends A3Bus {
             mHandler.sendMessage(message);
         }
 
-        //In both cases, try to send a message if channel state is JOINED.
+        //In both cases, try to send a message if channel state is JOINT.
         if (qualifier.equals(A3Channel.OUTBOUND_CHANGED_EVENT) ||
                 qualifier.equals(AlljoynChannel.CHANNEL_STATE_CHANGED_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_OUTBOUND_CHANGED_EVENT);
@@ -160,14 +160,14 @@ public class AlljoynBus extends A3Bus {
     }
 
     @Override
-    public void connect(A3Channel channel){
+    public void connect(A3Channel channel) {
         Message message = mHandler.obtainMessage(HANDLE_CONNECT_EVENT);
         message.obj = channel;
         mHandler.sendMessage(message);
     }
 
     @Override
-    public void disconnect(A3Channel channel){
+    public void disconnect(A3Channel channel) {
         Message message = mHandler.obtainMessage(HANDLE_DISCONNECT_EVENT);
         message.obj = channel;
         mHandler.sendMessage(message);
@@ -177,38 +177,35 @@ public class AlljoynBus extends A3Bus {
      * This is the Android Service message handler.  It runs in the context of the
      * main Android Service thread, which is also shared with Activities since
      * Android is a fundamentally single-threaded system.
-     *
+     * <p/>
      * The important thing for us is to note that this thread cannot be blocked for
      * a significant amount of time or we risk the dreaded "force close" message.
      * We can run relatively short-lived operations here, but we need to run our
      * distributed system calls in a background thread.
-     *
+     * <p/>
      * This handler serves translates from UI-related events into AllJoyn events
      * and decides whether functions can be handled in the context of the
      * Android main thread or if they must be dispatched to a background thread
      * which can take as much time as needed to accomplish a task.
      */
-    public  Handler mHandler = new Handler() {
+    public Handler mHandler = new Handler() {
         public void handleMessage(Message msg) {
             AlljoynChannel channel = null;
-            if(msg.obj != null)
+            if (msg.obj != null)
                 channel = (AlljoynChannel) msg.obj;
             switch (msg.what) {
-                case HANDLE_APPLICATION_QUIT_EVENT:
-                {
+                case HANDLE_APPLICATION_QUIT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): APPLICATION_QUIT_EVENT");
                     mBackgroundHandler.exit();
                     stopSelf();
                 }
                 break;
-                case HANDLE_CONNECT_EVENT:
-                {
+                case HANDLE_CONNECT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): HANDLE_CONNECT_EVENT");
                     mBackgroundHandler.connect(channel);
                 }
                 break;
-                case HANDLE_DISCONNECT_EVENT:
-                {
+                case HANDLE_DISCONNECT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): HANDLE_CONNECT_EVENT");
                     mBackgroundHandler.leaveSession(channel);
                     mBackgroundHandler.cancelAdvertise(channel);
@@ -217,8 +214,7 @@ public class AlljoynBus extends A3Bus {
                     mBackgroundHandler.disconnect(channel);
                 }
                 break;
-                case HANDLE_JOIN_CHANNEL_EVENT:
-                {
+                case HANDLE_JOIN_CHANNEL_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): JOIN_CHANNEL_EVENT");
                     //TODO: why to add service here?
                     //mBackgroundHandler.addService(channel);
@@ -226,15 +222,13 @@ public class AlljoynBus extends A3Bus {
                     mBackgroundHandler.joinSession(channel);
                 }
                 break;
-                case HANDLE_LEAVE_CHANNEL_EVENT:
-                {
+                case HANDLE_LEAVE_CHANNEL_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): USE_LEAVE_CHANNEL_EVENT");
                     mBackgroundHandler.leaveSession(channel);
                     mBackgroundHandler.removeChannel(channel);
                 }
                 break;
-                case HANDLE_START_SERVICE_EVENT:
-                {
+                case HANDLE_START_SERVICE_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): START_SERVICE_EVENT");
                     switch (channel.getServiceState()) {
                         case IDLE:
@@ -248,22 +242,20 @@ public class AlljoynBus extends A3Bus {
                             //This channel also needs to be connected to the new service
                             //mBackgroundHandler.addChannel(channel);
                             //mBackgroundHandler.joinSession(channel);
-                        break;
+                            break;
                     }
                 }
                 break;
-                case HANDLE_STOP_SERVICE_EVENT:
-                {
+                case HANDLE_STOP_SERVICE_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): STOP_SERVICE_EVENT");
                     mBackgroundHandler.cancelAdvertise(channel);
                     mBackgroundHandler.unbindSession(channel);
                     mBackgroundHandler.releaseName(channel);
                 }
                 break;
-                case HANDLE_OUTBOUND_CHANGED_EVENT:
-                {
+                case HANDLE_OUTBOUND_CHANGED_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): OUTBOUND_CHANGED_EVENT");
-                    if(channel.getChannelState() == AlljoynChannelState.JOINED)
+                    if (channel.getChannelState() == AlljoynChannelState.JOINED)
                         mBackgroundHandler.sendMessages(channel);
                 }
                 break;
@@ -327,7 +319,7 @@ public class AlljoynBus extends A3Bus {
      * network to respond, so we need to run our calls in the context of a
      * background thread.  This is the class that provides that background
      * thread implementation.
-     *
+     * <p/>
      * When we need to do some possibly long-lived task, we just pass a message
      * to an object implementing this class telling it what needs to be done.
      * There are two main parts to this class:  an external API and the actual
@@ -650,22 +642,21 @@ public class AlljoynBus extends A3Bus {
         BusAttachment mBus = channel.getBus();
 
         org.alljoyn.bus.alljoyn.DaemonInit.PrepareDaemon(getApplicationContext());
-        assert(channel.getBusState() == BusState.DISCONNECTED);
+        assert (channel.getBusState() == BusState.DISCONNECTED);
         mBus.useOSLogging(true);
         mBus.setDebugLevel("ALLJOYN_JAVA", 7);
         mBus.registerBusListener(mBusListener);
 
         Status status = mBus.connect();
-        if (status != Status.OK) {
+        if (status == Status.OK) {
+            channel.setBusState(BusState.CONNECTED);
+        }else {
             a3Application.busError(A3Application.Module.GENERAL, "Unable to joinGroup to the bus: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
-            return;
         }
-
-        channel.setBusState(BusState.CONNECTED);
     }
 
-    private void doAddService(AlljoynChannel channel){
+    private void doAddService(AlljoynChannel channel) {
 
         //int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
         //assert(stateRelation > 0);
@@ -676,31 +667,29 @@ public class AlljoynBus extends A3Bus {
          * BusObject found at the "/a3GroupService" object path.
          */
         Status status = channel.getBus().registerBusObject(channel.getService(), OBJECT_PATH);
-        if (Status.OK != status) {
+        if (Status.OK == status) {
+            channel.setServiceState(AlljoynServiceState.REGISTERED);
+        } else {
             a3Application.busError(A3Application.Module.HOST, "Unable to register the service bus object: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
-            return;
-        }else{
-            channel.setServiceState(AlljoynServiceState.REGISTERED);
         }
     }
 
-    private void doAddChannel(AlljoynChannel channel){
+    private void doAddChannel(AlljoynChannel channel) {
         int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
-        assert(stateRelation > 0);
+        assert (stateRelation > 0);
         Status status = channel.getBus().registerSignalHandlers(channel);
-        if (status != Status.OK) {
+        if (status == Status.OK) {
+            channel.setChannelState(AlljoynChannelState.REGISTERED);
+        } else {
             a3Application.busError(A3Application.Module.USE, "Unable to register channel signal handlers: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
-            return;
-        }else{
-            channel.setChannelState(AlljoynChannelState.REGISTERED);
         }
     }
 
-    private void doRemoveChannel(AlljoynChannel channel){
+    private void doRemoveChannel(AlljoynChannel channel) {
         int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
-        assert(stateRelation > 0);
+        assert (stateRelation > 0);
         channel.getBus().unregisterSignalHandlers(channel);
         channel.setChannelState(AlljoynChannelState.IDLE);
     }
@@ -714,7 +703,7 @@ public class AlljoynBus extends A3Bus {
      */
     private boolean doDisconnect(AlljoynChannel channel) {
         Log.i(TAG, "doDisonnect()");
-        assert(channel.getBusState() == BusState.CONNECTED);
+        assert (channel.getBusState() == BusState.CONNECTED);
         channel.getBus().unregisterBusListener(mBusListener);
         channel.getBus().disconnect();
         channel.setBusState(BusState.DISCONNECTED);
@@ -730,7 +719,7 @@ public class AlljoynBus extends A3Bus {
      */
     private void doStartDiscovery(AlljoynChannel channel) {
         Log.i(TAG, "doStartDiscovery()");
-        assert(channel.getBusState() == BusState.CONNECTED);
+        assert (channel.getBusState() == BusState.CONNECTED);
         Status status = channel.getBus().findAdvertisedName(SERVICE_PATH);
         if (status == Status.OK) {
             channel.setBusState(BusState.DISCOVERING);
@@ -748,7 +737,7 @@ public class AlljoynBus extends A3Bus {
      */
     private void doStopDiscovery(AlljoynChannel channel) {
         Log.i(TAG, "doStopDiscovery()");
-        assert(channel.getBusState() == BusState.CONNECTED);
+        assert (channel.getBusState() == BusState.CONNECTED);
         channel.getBus().cancelFindAdvertisedName(SERVICE_PATH);
         channel.setBusState(BusState.CONNECTED);
     }
@@ -786,7 +775,7 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doReleaseName()");
 
         int stateRelation = channel.getServiceState().compareTo(AlljoynServiceState.NAMED);
-        if(stateRelation >= 0) {
+        if (stateRelation >= 0) {
             /*
              * In order to release a name, the bus attachment must at least be
              * connected.
@@ -815,7 +804,6 @@ public class AlljoynBus extends A3Bus {
              */
             channel.getBus().releaseName(wellKnownName);
             channel.setServiceState(AlljoynServiceState.REGISTERED);
-            channel.handleEvent(A3Event.GROUP_DESTROYED);
         }
     }
 
@@ -877,8 +865,6 @@ public class AlljoynBus extends A3Bus {
                 SignalEmitter emitter = new SignalEmitter(channel.getService(), sessionId, SignalEmitter.GlobalBroadcast.Off);
                 channel.getService().setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class));
             }
-
-
         });
 
         if (status == Status.OK) {
@@ -897,7 +883,7 @@ public class AlljoynBus extends A3Bus {
     private void doUnbindSession(AlljoynChannel channel) {
         Log.i(TAG, "doUnbindSession()");
         int stateRelation = channel.getServiceState().compareTo(AlljoynServiceState.BOUND);
-        if(stateRelation >= 0) {
+        if (stateRelation >= 0) {
             /*
              * There's not a lot we can do if the bus attachment refuses to unbind
              * our port.
@@ -923,8 +909,7 @@ public class AlljoynBus extends A3Bus {
         Status status = channel.getBus().advertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
 
         if (status == Status.OK) {
-            channel.setServiceState(AlljoynServiceState.ADVERTISED);
-            channel.handleEvent(A3Event.GROUP_CREATED);
+            channel.handleEvent(AlljoynEvent.SESSION_CREATED, null);
         } else {
             a3Application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
@@ -940,7 +925,7 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doCancelAdvertise()");
 
         int stateRelation = channel.getServiceState().compareTo(AlljoynServiceState.ADVERTISED);
-        if(stateRelation >= 0) {
+        if (stateRelation >= 0) {
             /*
              * We depend on the user interface and model to work together to not
              * change the name out from under us while we are running.
@@ -958,7 +943,7 @@ public class AlljoynBus extends A3Bus {
              * There's not a lot we can do if the bus attachment refuses to cancel
              * our advertisement, so we don't bother to even get the status.
              */
-            channel.setServiceState(AlljoynServiceState.BOUND);
+            channel.handleEvent(AlljoynEvent.SESSION_DESTROYED, null);
         }
     }
 
@@ -982,7 +967,7 @@ public class AlljoynBus extends A3Bus {
         channel.setChannelId(channelId);
 
 
-        if(channel.getSessionId() == -1) {
+        if (channel.getSessionId() == -1) {
 
             /*e
              * Since we can act as the host of a channel, we know what the other
@@ -1010,19 +995,18 @@ public class AlljoynBus extends A3Bus {
                     channel.setChannelState(AlljoynChannelState.REGISTERED);
                     channel.setSessionId(-1);
                     channel.handleEvent(AlljoynEvent.SESSION_LOST, reason);
-                    channel.handleEvent(A3Event.GROUP_LOST);
                 }
 
                 @Override
                 public void sessionMemberAdded(int sessionId, String uniqueName) {
                     Log.i(TAG, "BusListener.sessionMemberAdded(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-                    channel.handleEvent(A3Event.MEMBER_JOINT, uniqueName);
+                    channel.handleEvent(AlljoynEvent.MEMBER_JOINED, uniqueName);
                 }
 
                 @Override
                 public void sessionMemberRemoved(int sessionId, String uniqueName) {
                     Log.i(TAG, "BusListener.sessionMemberRemoved(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-                    channel.handleEvent(A3Event.MEMBER_LEFT, uniqueName);
+                    channel.handleEvent(AlljoynEvent.SESSION_LOST, uniqueName);
                 }
             });
 
@@ -1039,9 +1023,7 @@ public class AlljoynBus extends A3Bus {
                 //TODO: Original chat way of getting the service interface. But as a follower, channel.getService() won't be registered as object
                 //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
                 //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
-
-                channel.setChannelState(AlljoynChannelState.JOINED);
-                channel.handleEvent(A3Event.GROUP_JOINT);
+                channel.handleEvent(AlljoynEvent.SESSION_JOINED, null);
             } else {
                 a3Application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
                 channel.handleError(status, AlljoynErrorHandler.CHANNEL);
@@ -1057,11 +1039,11 @@ public class AlljoynBus extends A3Bus {
     private void doLeaveSession(AlljoynChannel channel) {
         Log.i(TAG, "doLeaveSession()");
         //TODO: Is this the right place for this verification? Why it is here?
-        if(channel.getChannelState() == AlljoynChannelState.JOINED) {
+        if (channel.getChannelState() == AlljoynChannelState.JOINED) {
             channel.getBus().leaveSession(channel.getSessionId());
             channel.setSessionId(-1);
             channel.setChannelState(AlljoynChannelState.REGISTERED);
-            channel.handleEvent(A3Event.GROUP_LEFT);
+            channel.handleEvent(AlljoynEvent.SESSION_LEFT, null);
         }
     }
 
@@ -1087,7 +1069,7 @@ public class AlljoynBus extends A3Bus {
              * SessionPortListener, so we have to check for it.
              */
             try {
-                switch (messageItem.getType()){
+                switch (messageItem.getType()) {
                     case A3Channel.BROADCAST_MSG:
                         channel.sendBroadcast(message);
                         break;
@@ -1118,19 +1100,23 @@ public class AlljoynBus extends A3Bus {
      * lets us make a note to ourselves regarding where we are in the process
      * of preparing and tearing down the fundamental connection to the AllJoyn
      * bus.
-     *
+     * <p/>
      * This should really be a more protected think, but for the sample we want
      * to show the user the states we are running through.  Because we are
      * really making a data hiding exception, and because we trust ourselves,
      * we don't go to any effort to prevent the UI from changing our state out
      * from under us.
-     *
+     * <p/>
      * There are separate variables describing the states of the client
      * ("use") and service ("host") pieces.
      */
     public static enum BusState {
-        DISCONNECTED,    /** The bus attachment is not connected to the AllJoyn bus */
-        CONNECTED,        /** The  bus attachment is connected to the AllJoyn bus */
+        DISCONNECTED, /**
+         * The bus attachment is not connected to the AllJoyn bus
+         */
+        CONNECTED, /**
+         * The  bus attachment is connected to the AllJoyn bus
+         */
         DISCOVERING        /** The bus attachment is discovering remote attachments hosting chat channels */
     }
 
@@ -1142,10 +1128,18 @@ public class AlljoynBus extends A3Bus {
      * must be at least CONNECTED.
      */
     public static enum AlljoynServiceState {
-        IDLE,            /** There is no hosted chat channel */
-        REGISTERED,       /** The service has been registered to the bus */
-        NAMED,            /** The well-known name for the channel has been successfully acquired */
-        BOUND,            /** A session port has been bound for the channel */
+        IDLE, /**
+         * There is no hosted chat channel
+         */
+        REGISTERED, /**
+         * The service has been registered to the bus
+         */
+        NAMED, /**
+         * The well-known name for the channel has been successfully acquired
+         */
+        BOUND, /**
+         * A session port has been bound for the channel
+         */
         ADVERTISED,        /** The bus attachment has advertised itself as hosting an chat channel */
     }
 
@@ -1157,8 +1151,12 @@ public class AlljoynBus extends A3Bus {
      * must be at least CONNECTED.
      */
     public static enum AlljoynChannelState {
-        IDLE,            /** There is no used chat channel */
-        REGISTERED,       /** The channel has been registered to the bus */
+        IDLE, /**
+         * There is no used chat channel
+         */
+        REGISTERED, /**
+         * The channel has been registered to the bus
+         */
         JOINED,            /** The session for the channel has been successfully joined */
     }
 
@@ -1166,11 +1164,17 @@ public class AlljoynBus extends A3Bus {
      * The session with a service has been lost.
      */
     public static enum AlljoynEvent {
-        SESSION_LOST
+        SESSION_CREATED,
+        SESSION_DESTROYED,
+        SESSION_JOINED,
+        SESSION_LEFT,
+        SESSION_LOST,
+        MEMBER_JOINED,
+        MEMBER_LEFT
     }
 
-    public class DiscoveryDescriptor extends GroupDescriptor{
-        public DiscoveryDescriptor(){
+    public class DiscoveryDescriptor extends GroupDescriptor {
+        public DiscoveryDescriptor() {
             super("DISCOVERY", null, null);
         }
 

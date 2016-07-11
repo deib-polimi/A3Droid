@@ -121,7 +121,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
     public void handleError(A3Exception ex){
         if(ex instanceof A3GroupDuplicationException){
-            reconnect();
+            reconnect(); //TODO handle duplication
         }else if(ex instanceof A3GroupDisconnectedException){
             //TODO raise this to the application?
         }else if(ex instanceof A3GroupCreateException){
@@ -772,6 +772,19 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * by our local user and are designed for the outside world.
      */
     private List<A3MessageItem> mOutbound = new ArrayList<A3MessageItem>();
+
+    public void setGroupState(A3Bus.A3GroupState state){
+        this.mGroupState = state;
+        notifyObservers(GROUP_STATE_CHANGED_EVENT);
+    }
+
+    private A3Bus.A3GroupState mGroupState = A3Bus.A3GroupState.IDLE;
+
+    /**
+     * The object we use in notifications to indicate that the state of the
+     * "host" channel or its name has changed.
+     */
+    public static final String GROUP_STATE_CHANGED_EVENT = "GROUP_STATE_CHANGED_EVENT";
 
     public static final int BROADCAST_MSG = 0;
     public static final int UNICAST_MSG = 1;
