@@ -53,7 +53,6 @@ public class A3EventHandler extends Handler implements TimerInterface{
             case SUPERVISOR_LEFT:
                 if(channel.getGroupState() == A3Bus.A3GroupState.ACTIVE) {
                     channel.setGroupState(A3Bus.A3GroupState.ELECTION);
-                    channel.setGroupState(A3Bus.A3GroupState.CREATED);
                     handleSupervisorLeftEvent();
                 }
                 break;
