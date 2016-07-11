@@ -11,3 +11,6 @@ An A3Group is active only after a supervisor has been elected for that group. Un
 ![State Machine for A3 Group](https://raw.githubusercontent.com/deib-polimi/A3Droid/master/docs/a3/A3GroupStateMachine.png)
 
 ## Alljoyn framework layer
+
+The state machine diagram bellow shows the different states of an AlljoynService and an AlljoynChannel. 
+![State Machine for A3 Group](https://raw.githubusercontent.com/deib-polimi/A3Droid/master/docs/alljoyn/AlljoynStateMachines.png)
