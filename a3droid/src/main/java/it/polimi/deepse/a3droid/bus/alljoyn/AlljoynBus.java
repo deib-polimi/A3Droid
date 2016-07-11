@@ -255,7 +255,7 @@ public class AlljoynBus extends A3Bus {
                 break;
                 case HANDLE_OUTBOUND_CHANGED_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): OUTBOUND_CHANGED_EVENT");
-                    if (channel.getChannelState() == AlljoynChannelState.JOINED)
+                    if (channel.getChannelState() == AlljoynChannelState.JOINT)
                         mBackgroundHandler.sendMessages(channel);
                 }
                 break;
@@ -992,7 +992,6 @@ public class AlljoynBus extends A3Bus {
                 public void sessionLost(int sessionId, int reason) {
                     Log.i(TAG, "BusListener.sessionLost(sessionId=" + sessionId + ",reason=" + reason + ")");
                     a3Application.busError(A3Application.Module.USE, "The session has been lost");
-                    channel.setChannelState(AlljoynChannelState.REGISTERED);
                     channel.setSessionId(-1);
                     channel.handleEvent(AlljoynEvent.SESSION_LOST, reason);
                 }
@@ -1039,10 +1038,9 @@ public class AlljoynBus extends A3Bus {
     private void doLeaveSession(AlljoynChannel channel) {
         Log.i(TAG, "doLeaveSession()");
         //TODO: Is this the right place for this verification? Why it is here?
-        if (channel.getChannelState() == AlljoynChannelState.JOINED) {
+        if (channel.getChannelState() == AlljoynChannelState.JOINT) {
             channel.getBus().leaveSession(channel.getSessionId());
             channel.setSessionId(-1);
-            channel.setChannelState(AlljoynChannelState.REGISTERED);
             channel.handleEvent(AlljoynEvent.SESSION_LEFT, null);
         }
     }
@@ -1157,7 +1155,7 @@ public class AlljoynBus extends A3Bus {
         REGISTERED, /**
          * The channel has been registered to the bus
          */
-        JOINED,            /** The session for the channel has been successfully joined */
+        JOINT,            /** The session for the channel has been successfully joined */
     }
 
     /**

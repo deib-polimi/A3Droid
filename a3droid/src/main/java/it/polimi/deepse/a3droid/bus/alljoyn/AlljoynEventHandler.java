@@ -40,7 +40,7 @@ public class AlljoynEventHandler extends Handler implements TimerInterface{
                 break;
             case SESSION_JOINED:
                 channel.handleEvent(A3Bus.A3Event.GROUP_JOINED);
-                channel.setChannelState(AlljoynBus.AlljoynChannelState.JOINED);
+                channel.setChannelState(AlljoynBus.AlljoynChannelState.JOINT);
                 break;
             case SESSION_LOST:
                 channel.handleEvent(A3Bus.A3Event.GROUP_LOST);

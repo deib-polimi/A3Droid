@@ -90,7 +90,7 @@ public class AlljoynErrorHandler extends Handler {
                         break;
                 }
                 break;
-            case JOINED:
+            case JOINT:
 
                 break;
             default:

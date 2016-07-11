@@ -11,7 +11,6 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
@@ -299,7 +298,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * Get the state of the "use" channel.
      */
     public boolean isConnected() {
-        return getChannelState().equals(AlljoynBus.AlljoynChannelState.JOINED);
+        return getChannelState().equals(AlljoynBus.AlljoynChannelState.JOINT);
     }
 
     /**
