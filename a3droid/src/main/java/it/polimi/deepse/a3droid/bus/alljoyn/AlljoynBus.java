@@ -1006,7 +1006,7 @@ public class AlljoynBus extends A3Bus {
                 @Override
                 public void sessionMemberRemoved(int sessionId, String uniqueName) {
                     Log.i(TAG, "BusListener.sessionMemberRemoved(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-                    channel.handleEvent(AlljoynEvent.SESSION_LOST, uniqueName);
+                    channel.handleEvent(AlljoynEvent.MEMBER_LEFT, uniqueName);
                 }
             });
 

@@ -151,6 +151,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * role (if it is active) and it activates the supervisor role.
      */
     private void becomeSupervisor() {
+        Log.i(TAG, "becomeSupervisor()");
         assert (hasSupervisorRole);
         supervisor = true;
         supervisorId = channelId;
@@ -169,6 +170,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * role (if it is active) and it activates the follower role.
      */
     private void becomeFollower(){
+        Log.i(TAG, "becomeFollower()");
         assert hasFollowerRole;
         assert supervisorId != null;
         supervisor = false;
@@ -772,6 +774,10 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * by our local user and are designed for the outside world.
      */
     private List<A3MessageItem> mOutbound = new ArrayList<A3MessageItem>();
+
+    public A3Bus.A3GroupState getGroupState(){
+        return mGroupState;
+    }
 
     public void setGroupState(A3Bus.A3GroupState state){
         this.mGroupState = state;
