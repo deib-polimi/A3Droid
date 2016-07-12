@@ -315,11 +315,30 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
+     * Sends a BROADCAST message requesting for subgroup increment.
+     */
+    private void requestNewSubgroup() {
+        A3Message newGroupMessage = new A3Message(
+                A3Constants.CONTROL_INCREASE_SUBGROUPS, "");
+        enqueueControl(newGroupMessage);
+    }
+
+    /**
      * TODO describe
      * @param receiverGroupName
      */
     protected void requestMerge(String receiverGroupName){
-        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE, receiverGroupName));
+        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REQUEST, receiverGroupName));
+    }
+
+    /**
+     * TODO: describe
+     * @param parentGroupName
+     * @param result
+     * @param address
+     */
+    protected void replyMerge(String parentGroupName, boolean result, String address){
+        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
     }
 
     /**
@@ -410,14 +429,19 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
             case A3Constants.CONTROL_REVERSE_STACK_REQUEST:
                 handleReverseStackRequest(message);
                 break;
+
             case A3Constants.CONTROL_GET_HIERARCHY:
             case A3Constants.CONTROL_HIERARCHY_REPLY:
             case A3Constants.CONTROL_ADD_TO_HIERARCHY:
             case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
+            case A3Constants.CONTROL_INCREASE_SUBGROUPS:
                 hierarchy.onMessage(message);
                 break;
-            case A3Constants.CONTROL_MERGE:
+            case A3Constants.CONTROL_MERGE_REQUEST:
                 handleMergeRequest(message);
+                break;
+            case A3Constants.CONTROL_MERGE_REPLY:
+                handleMergeReply(message);
                 break;
             case A3Constants.CONTROL_SPLIT:
                 handleSplitRequest(message);
@@ -474,14 +498,18 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
           //  notifyNoSupervisor(message.senderAddress);
     }
 
+    /** Two groups operations **/
     /** Stack operation handlers **/
     private void handleStackRequest(A3Message message){
         assert isSupervisor();
         try{
+            handleEvent(A3Bus.A3Event.STACK_STARTED);
             boolean ok = node.actualStack(message.object, getGroupName());
             replyStack(message.object, ok, message.senderAddress);
         } catch (Exception e) {
             e.printStackTrace();
+        }finally {
+            handleEvent(A3Bus.A3Event.STACK_FINISHED);
         }
     }
 
@@ -499,20 +527,28 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** Merge operation handlers **/
     private void handleMergeRequest(A3Message message){
         try {
+            handleEvent(A3Bus.A3Event.MERGE_STARTED);
             node.actualMerge(message.object, getGroupName());
+            replyMerge(message.object, true, message.senderAddress);
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
+        }finally {
+            handleEvent(A3Bus.A3Event.MERGE_FINISHED);
         }
     }
 
+    private void handleMergeReply(A3Message message){
+        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        node.mergeReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
+    }
+
+    /** One group operations **/
     /** Split operation handlers **/
     private void handleSplitRequest(A3Message message){
+        handleEvent(A3Bus.A3Event.SPLIT_STARTED);
         if(isSupervisor()) {
             // Random requestSplit operation.
-            A3Message newGroupMessage = new A3Message(
-                    Constants.NEW_SPLITTED_GROUP, "");
-            enqueueControl(newGroupMessage);
-
+            requestNewSubgroup();
             int nodesToTransfer = Integer.valueOf(message.object);
             ArrayList<String> selectedNodes = new ArrayList<String>();
             int numberOfNodes = view.getNumberOfNodes();
@@ -542,7 +578,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
                 for (String address : selectedNodes)
                     enqueueControl(new A3Message(
-                            Constants.SPLIT, "", new String[]{address}));
+                            A3Constants.CONTROL_SPLIT, "", new String[]{address}));
             }
         }else
             /*
@@ -557,6 +593,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
             } catch (A3NoGroupDescriptionException e) {
                 e.printStackTrace();
             }
+        handleEvent(A3Bus.A3Event.SPLIT_FINISHED);
     }
 
     /**
@@ -780,7 +817,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         return mGroupState;
     }
 
-    public void setGroupState(A3Bus.A3GroupState state){
+    public synchronized void setGroupState(A3Bus.A3GroupState state){
         this.mGroupState = state;
         notifyObservers(GROUP_STATE_CHANGED_EVENT);
     }

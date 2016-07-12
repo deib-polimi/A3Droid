@@ -43,61 +43,65 @@ public class Hierarchy {
 	 */
 	public void onMessage(A3Message message){
 		try{
-		switch(message.reason){
+			switch(message.reason){
+				case A3Constants.CONTROL_HIERARCHY_REPLY:
 
-		case A3Constants.CONTROL_HIERARCHY_REPLY:
+					/* This message is like
+					 * "senderAddress Constants.CONTROL_HIERARCHY_REPLY numberOfSubgroups name1 name2 ..."
+					 * or "Constants.CONTROL_HIERARCHY_REPLY numberOfSubgroups", if the hierarchy is empty.
+					 *
+					 * If I receive this message, I am the channel.
+					 * This message is the supervisor's answer to the hierarchy request I made when I joined the session:
+					 * I set my hierarchy as the one received by the supervisor.
+					 */
+					hierarchy = new ArrayList<String>();
 
-			/* This message is like
-			 * "senderAddress Constants.CONTROL_HIERARCHY_REPLY numberOfSubgroups name1 name2 ..."
-			 * or "Constants.CONTROL_HIERARCHY_REPLY numberOfSubgroups", if the hierarchy is empty.
-			 * 
-			 * If I receive this message, I am the channel.
-			 * This message is the supervisor's answer to the hierarchy request I made when I joined the session:
-			 * I set my hierarchy as the one received by the supervisor.
-			 */
-			hierarchy = new ArrayList<String>();
+					if(!message.object.equals("")){
 
-			if(!message.object.equals("")){
+						String[] splittedHierarchy = message.object.split(Constants.A3_SEPARATOR);
+						numberOfSplittedGroups = Integer.valueOf(splittedHierarchy[0]);
 
-				String[] splittedHierarchy = message.object.split(Constants.A3_SEPARATOR);
-				numberOfSplittedGroups = Integer.valueOf(splittedHierarchy[0]);
-				
-				for(int i = 1; i < splittedHierarchy.length; i++)
-					hierarchy.add(splittedHierarchy[i]);
+						for(int i = 1; i < splittedHierarchy.length; i++)
+							hierarchy.add(splittedHierarchy[i]);
+					}
+
+					break;
+
+				case A3Constants.CONTROL_ADD_TO_HIERARCHY:
+
+					/* This message is like
+					 * "senderAddress Constants.CONTROL_ADD_TO_HIERARCHY groupName".
+					 *
+					 * It is sent by the node on which the supervisor resides,
+					 * to notify that my group has another parent group.
+					 *
+					 * I add the new parent group's information to my hierarchy.
+					 */
+					synchronized(hierarchy){
+						hierarchy.add(message.object);
+					}
+					break;
+
+				case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
+
+					/* This message is like
+					 * "senderAddress Constants.CONTROL_REMOVE_FROM_HIERARCHY groupName".
+					 *
+					 * It is sent by the node on which the supervisor resides,
+					 * to notify that the group "groupName" is no longer parent of my group.
+					 *
+					 * I remove the "groupName" group's information from my hierarchy.
+					 */
+					synchronized(hierarchy){
+						hierarchy.remove(message.object);
+					}
+					break;
+				case A3Constants.CONTROL_INCREASE_SUBGROUPS:
+					this.incrementSubgroupsCounter();
+					break;
+				default:
+					break;
 			}
-
-			break;
-
-		case A3Constants.CONTROL_ADD_TO_HIERARCHY:
-
-			/* This message is like
-			 * "senderAddress Constants.CONTROL_ADD_TO_HIERARCHY groupName".
-			 * 
-			 * It is sent by the node on which the supervisor resides,
-			 * to notify that my group has another parent group.
-			 * 
-			 * I add the new parent group's information to my hierarchy.
-			 */
-			synchronized(hierarchy){
-				hierarchy.add(message.object);
-			}
-			break;
-
-		case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
-
-			/* This message is like
-			 * "senderAddress Constants.CONTROL_REMOVE_FROM_HIERARCHY groupName".
-			 * 
-			 * It is sent by the node on which the supervisor resides,
-			 * to notify that the group "groupName" is no longer parent of my group.
-			 * 
-			 * I remove the "groupName" group's information from my hierarchy.
-			 */
-			synchronized(hierarchy){
-				hierarchy.remove(message.object);
-			}
-			break;
-		}
 		} catch (Exception e) {}
 	}
 

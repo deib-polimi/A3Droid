@@ -254,9 +254,10 @@ public class AlljoynBus extends A3Bus {
                 }
                 break;
                 case HANDLE_OUTBOUND_CHANGED_EVENT: {
-                    Log.i(TAG, "mHandler.handleMessage(): OUTBOUND_CHANGED_EVENT");
-                    if (channel.getChannelState() == AlljoynChannelState.JOINT)
+                    if (channel.getChannelState() == AlljoynChannelState.JOINT) {
+                        Log.i(TAG, "mHandler.handleMessage(): OUTBOUND_CHANGED_EVENT");
                         mBackgroundHandler.sendMessages(channel);
+                    }
                 }
                 break;
                 default:

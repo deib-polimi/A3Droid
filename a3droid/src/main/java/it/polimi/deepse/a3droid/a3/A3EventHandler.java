@@ -59,6 +59,24 @@ public class A3EventHandler extends Handler implements TimerInterface{
             case SUPERVISOR_ELECTED:
                 channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
                 break;
+            case STACK_STARTED:
+                channel.setGroupState(A3Bus.A3GroupState.STACK);
+                break;
+            case STACK_FINISHED:
+                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                break;
+            case MERGE_STARTED:
+                channel.setGroupState(A3Bus.A3GroupState.MERGE);
+                break;
+            case MERGE_FINISHED:
+                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                break;
+            case SPLIT_STARTED:
+                channel.setGroupState(A3Bus.A3GroupState.SPLIT);
+                break;
+            case SPLIT_FINISHED:
+                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                break;
             default:
                 break;
         }

@@ -26,7 +26,9 @@ public interface A3NodeInterface {
 
     void actualReverseStack(String parentGroupName, String childGroupName);
 
-    void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters;
+    void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole;
 
-    void actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException;
+    boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException;
+
+    void mergeReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect);
 }

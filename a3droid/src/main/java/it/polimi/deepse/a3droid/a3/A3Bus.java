@@ -61,7 +61,12 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         IDLE,
         CREATED,
         ELECTION,
-        ACTIVE
+        ACTIVE,
+        STACK,
+        UNSTACK,
+        PEER,
+        MERGE,
+        SPLIT
     }
 
     /**
@@ -76,6 +81,12 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         MEMBER_LEFT,
         MEMBER_JOINED,
         SUPERVISOR_LEFT,
-        SUPERVISOR_ELECTED
+        SUPERVISOR_ELECTED,
+        STACK_STARTED,
+        STACK_FINISHED,
+        MERGE_STARTED,
+        MERGE_FINISHED,
+        SPLIT_STARTED,
+        SPLIT_FINISHED
     }
 }

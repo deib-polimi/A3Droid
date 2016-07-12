@@ -246,34 +246,33 @@ public class A3Node implements A3NodeInterface{
      * @param groupName1 The name of the group which will receive the nodes in group "groupName2".
      * @param groupName2 The group whose nodes should be transferred to "groupName1". It is destroyed.
      */
-    public void merge(String groupName1, String groupName2) throws A3NoGroupDescriptionException, A3InvalidOperationParameters {
+    public void merge(String groupName1, String groupName2) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole {
 
         boolean ok = false;
         if(groupName1 != null && groupName2 != null &&
                 !(groupName1.equals("") || groupName2.equals(""))){
-            try {
-                A3Channel channel;
-                if(isSupervisor(groupName1)){
-                    if(connect(groupName2)){
-                        channel = getChannel(groupName2);
-                        channel.requestMerge(groupName1);
-                        ok = true;
-                        disconnect(groupName2);
-                    }else
-                        disconnect(groupName2);
-                }else if(isSupervisor(groupName2)){
-                    channel = getChannel(groupName2);
-                    channel.requestMerge(groupName1);
-                    ok = true;
-                    /** I don't need to execute "disconnect(groupName2, false);" here,
-                     * because I will disconnect from group "groupName2"
-                     * when I will receive message "CONTROL_MERGE groupName2".
-                     **/
+            if(isSupervisor(groupName1) || isSupervisor(groupName2)){
+                try {
+                    A3Channel channel;
+                    if (isSupervisor(groupName2)) {
+                        /** I don't need to execute "disconnect(groupName2, false);" here,
+                         * because I will disconnect from group "groupName2"
+                         * when I will receive message "CONTROL_MERGE_REQUEST groupName2".
+                         **/
+                        mergeReply(groupName1, groupName2, actualMerge(groupName1, groupName2), false);
+                    } else if (isSupervisor(groupName1)) {
+                        if (connect(groupName2)) {
+                            channel = getChannel(groupName2);
+                            channel.requestMerge(groupName1);
+                            ok = true;
+                        } else
+                            disconnect(groupName2);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                mergeReply(groupName1, groupName2, ok);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            }else
+                throw new A3InvalidOperationRole("Merge operation requires supervisor role in at least one of the groups");
         }else
             throw new A3InvalidOperationParameters("Merge operation requires non empty parent/child group names");
     }
@@ -285,7 +284,7 @@ public class A3Node implements A3NodeInterface{
      * @param newGroupName The name of the group to joinGroup to.
      * @param oldGroupName The name of the group to disconnect from.
      */
-    public void actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
+    public boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
 
         if(isSupervisor(oldGroupName)){
             try {
@@ -308,7 +307,7 @@ public class A3Node implements A3NodeInterface{
                 }
             }
         }
-        connect(newGroupName);
+        return connect(newGroupName);
     }
 
     /**
@@ -318,8 +317,10 @@ public class A3Node implements A3NodeInterface{
      * @param groupName2 The name of the destroyed group.
      * @param ok true if the merge operation was successful, false otherwise.
      */
-    private void mergeReply(String groupName1, String groupName2, boolean ok) {
+    public void mergeReply(String groupName1, String groupName2, boolean ok, boolean disconnect) {
         Log.i(TAG, "mergeReply(" + groupName1 + ", " + groupName2 + ", " + ok + ")");
+        if(disconnect)
+            disconnect(groupName2);
     }
 
     /**If this node is the supervisor of the group "groupName",
