@@ -11,6 +11,7 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
+import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
@@ -276,7 +277,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public synchronized void setChannelState(AlljoynBus.AlljoynChannelState state) {
+    public void setChannelState(AlljoynBus.AlljoynChannelState state) {
         mChannelState = state;
         notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
     }

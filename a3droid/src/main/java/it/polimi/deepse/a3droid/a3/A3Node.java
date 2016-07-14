@@ -10,6 +10,7 @@ import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
 
 /**
@@ -34,7 +35,7 @@ public class A3Node implements A3NodeInterface{
         this.roles = roles;
     }
 
-    public boolean connect(String groupName) throws A3NoGroupDescriptionException {
+    public synchronized boolean connect(String groupName) throws A3NoGroupDescriptionException {
         if(this.isConnectedForApplication(groupName))
             return true;
 
@@ -60,11 +61,22 @@ public class A3Node implements A3NodeInterface{
                     hasFollowerRole, hasSupervisorRole);
             channel.connect(followerRole, supervisorRole);
             addChannel(channel);
+            synchronized (waiter) {
+                while (channel.getGroupState().compareTo(A3Bus.A3GroupState.ACTIVE) < 0) {
+                    try {
+                        waiter.wait();
+                        wait(POS_CONNECTION_WAIT_TIME);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
             return true;
         }else{
             throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
         }
     }
+
+    private static int POS_CONNECTION_WAIT_TIME = 1000;
 
     public void disconnect(String groupName){
         A3Channel channel = null;
@@ -285,29 +297,34 @@ public class A3Node implements A3NodeInterface{
      * @param oldGroupName The name of the group to disconnect from.
      */
     public boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
-
-        if(isSupervisor(oldGroupName)){
-            try {
-                ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchy().getHierarchy();
-                synchronized(oldHierarchy){
-                    for(String s : oldHierarchy){
-                        disconnect(s);
+        if(!isConnectedForApplication(newGroupName)) {
+            /** Hierarchy above the old group **/
+            if (isSupervisor(oldGroupName)) {
+                try {
+                    ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchy().getHierarchy();
+                    synchronized (oldHierarchy) {
+                        for (String s : oldHierarchy) {
+                            disconnect(s);
+                        }
                     }
-                }
-            } catch (Exception e) {}
-        }
-
-        disconnect(oldGroupName);
-
-        synchronized(mChannels){
-            for(A3Channel c : mChannels){
-                if(c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)){
-                    c.requestHierarchyRemove(oldGroupName);
-                    disconnect(oldGroupName);
+                } catch (Exception e) {
                 }
             }
-        }
-        return connect(newGroupName);
+
+            disconnect(oldGroupName);
+
+            /** Hierarchy bellow the old group **/
+            synchronized (mChannels) {
+                for (A3Channel c : mChannels) {
+                    if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
+                        c.requestHierarchyRemove(oldGroupName);
+                        //disconnect(oldGroupName);
+                    }
+                }
+            }
+            return connect(newGroupName);
+        }else
+            return true;
     }
 
     /**

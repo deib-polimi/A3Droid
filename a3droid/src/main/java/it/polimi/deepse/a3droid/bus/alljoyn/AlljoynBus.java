@@ -588,7 +588,7 @@ public class AlljoynBus extends A3Bus {
      * handle long-lived remote operations, we provide this method to do so.
      */
     private void startBusThread() {
-        HandlerThread busThread = new HandlerThread("BackgroundHandler");
+        HandlerThread busThread = new HandlerThread("AlljoynBusBackgroundHandler");
         busThread.start();
         mBackgroundHandler = new BackgroundHandler(busThread.getLooper());
     }

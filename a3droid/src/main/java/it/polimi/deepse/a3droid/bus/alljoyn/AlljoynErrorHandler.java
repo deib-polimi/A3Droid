@@ -1,6 +1,7 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 
 import org.alljoyn.bus.BusException;
@@ -9,8 +10,8 @@ import org.alljoyn.bus.Status;
 import java.util.HashMap;
 import java.util.Map;
 
-import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
 import it.polimi.deepse.a3droid.utility.Fibonacci;
@@ -19,8 +20,9 @@ import it.polimi.deepse.a3droid.utility.Fibonacci;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class AlljoynErrorHandler extends Handler {
+public class AlljoynErrorHandler extends HandlerThread {
 
+    private Handler mHandler;
     private AlljoynChannel channel;
     private Map<AlljoynBus.AlljoynChannelState, Integer> channelRetries;
     private Map<AlljoynBus.AlljoynServiceState, Integer> serviceRetries;
@@ -29,6 +31,7 @@ public class AlljoynErrorHandler extends Handler {
 
 
     public AlljoynErrorHandler(AlljoynChannel channel){
+        super("AlljoynErrorHandler_" + channel.getGroupName());
         this.channel = channel;
         channelRetries = new HashMap<AlljoynBus.AlljoynChannelState, Integer>();
         resetChannelRetry();
@@ -36,17 +39,41 @@ public class AlljoynErrorHandler extends Handler {
         resetServiceRetry();
     }
 
+    public Message obtainMessage() {
+        return mHandler.obtainMessage();
+    }
+
+    public Message obtainMessage(int what) {
+        return mHandler.obtainMessage(what);
+    }
+
+    public void sendMessage(Message msg) {
+        mHandler.sendMessage(msg);
+    }
+
     @Override
-    public void handleMessage(Message msg) {
-        switch (msg.what){
+    protected void onLooperPrepared() {
+        super.onLooperPrepared();
+
+        mHandler = new Handler(getLooper()) {
+
+            @Override
+            public void handleMessage(Message msg) {
+                handleError(msg.what, msg.obj);
+            }
+        };
+    }
+
+    public void handleError(int errorSource, Object arg) {
+        switch (errorSource){
             case CHANNEL:
-                handleChannelError((Status) msg.obj);
+                handleChannelError((Status) arg);
                 break;
             case SERVICE:
-                handleServiceError((Status) msg.obj);
+                handleServiceError((Status) arg);
                 break;
             case BUS:
-                handleBusError((BusException) msg.obj);
+                handleBusError((BusException) arg);
                 break;
             default:
                 break;

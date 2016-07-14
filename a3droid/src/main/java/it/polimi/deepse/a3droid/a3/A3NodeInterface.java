@@ -31,4 +31,6 @@ public interface A3NodeInterface {
     boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException;
 
     void mergeReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect);
+
+    Object waiter = new Object();
 }

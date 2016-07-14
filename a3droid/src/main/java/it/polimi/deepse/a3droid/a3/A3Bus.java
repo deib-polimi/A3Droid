@@ -59,7 +59,6 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
      */
     public enum A3GroupState {
         IDLE,
-        CREATED,
         ELECTION,
         ACTIVE,
         STACK,

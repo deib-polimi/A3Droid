@@ -1,6 +1,7 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
@@ -13,19 +14,40 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class AlljoynEventHandler extends Handler implements TimerInterface{
+public class AlljoynEventHandler extends HandlerThread implements TimerInterface{
 
+    private Handler mHandler;
     private A3Application application;
     private AlljoynChannel channel;
     private RandomWait randomWait = new RandomWait();
 
     public AlljoynEventHandler(A3Application application, AlljoynChannel channel){
+        super("AlljoynEventHandler_" + channel.getGroupName());
         this.application = application;
         this.channel = channel;
+        start();
     }
 
-    public void handleMessage(Message msg) {
-        handleEvent((AlljoynBus.AlljoynEvent) AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);
+    public Message obtainMessage() {
+        return mHandler.obtainMessage();
+    }
+
+    public void sendMessage(Message msg) {
+        mHandler.sendMessage(msg);
+    }
+
+
+    @Override
+    protected void onLooperPrepared() {
+        super.onLooperPrepared();
+
+        mHandler = new Handler(getLooper()) {
+
+            @Override
+            public void handleMessage(Message msg) {
+                handleEvent((AlljoynBus.AlljoynEvent) AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);
+            }
+        };
     }
 
     public void handleEvent(AlljoynBus.AlljoynEvent event, Object arg){
