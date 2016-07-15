@@ -10,15 +10,13 @@ import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
 
 /**
  * This class represent a device, with the roles it can play in each group.
  * It contains the methods to join and create a group, to disconnect from them,
  * to send messages to their members and to manage groups hierarchy.
- * @author Danilo F. M. (refactored)
- * @author Francesco (original)
+ * @author Danilo F. M.
  *
  */
 public class A3Node implements A3NodeInterface{
@@ -35,27 +33,32 @@ public class A3Node implements A3NodeInterface{
         this.roles = roles;
     }
 
+    /**
+     * TODO
+     * @param groupName name of the group to be connected with
+     * @return a boolean condition indicating if connection succeeded
+     * @throws A3NoGroupDescriptionException
+     */
     public synchronized boolean connect(String groupName) throws A3NoGroupDescriptionException {
         if(this.isConnectedForApplication(groupName))
             return true;
 
         GroupDescriptor descriptor = getGroupDescriptor(groupName);
         boolean hasFollowerRole = false, hasSupervisorRole = false;
-        A3FollowerRole followerRole = null;
-        A3SupervisorRole supervisorRole = null;
+        A3FollowerRole followerRole;
+        A3SupervisorRole supervisorRole;
         if(descriptor != null) {
-            followerRole = (A3FollowerRole)getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
+            followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
             if(followerRole != null) {
                 hasFollowerRole = true;
                 followerRole.setNode(this);
             }
 
-            supervisorRole = (A3SupervisorRole)getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
+            supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
             if(supervisorRole != null) {
                 hasSupervisorRole = true;
                 supervisorRole.setNode(this);
             }
-            int myFF = descriptor.getSupervisorFitnessFunction();
             A3Channel channel = new AlljoynChannel(application,
                     this, descriptor, groupName,
                     hasFollowerRole, hasSupervisorRole);
@@ -65,8 +68,8 @@ public class A3Node implements A3NodeInterface{
                 while (channel.getGroupState().compareTo(A3Bus.A3GroupState.ACTIVE) < 0) {
                     try {
                         waiter.wait();
-                        wait(POS_CONNECTION_WAIT_TIME);
                     } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -76,10 +79,8 @@ public class A3Node implements A3NodeInterface{
         }
     }
 
-    private static int POS_CONNECTION_WAIT_TIME = 1000;
-
     public void disconnect(String groupName){
-        A3Channel channel = null;
+        A3Channel channel;
         try{
             channel = getChannel(groupName);
             channel.disconnect();
@@ -110,17 +111,15 @@ public class A3Node implements A3NodeInterface{
         if(parentGroupName != null && childGroupName != null &&
                 !(parentGroupName.equals("") || childGroupName.equals(""))){
             if(isSupervisor(parentGroupName) || isSupervisor(childGroupName)) {
-                boolean disconnect = true;
                 if (isSupervisor(childGroupName)) {
                     //TODO I'm not disconnecting the childGroup supervisor anymore. Should I?
-                    disconnect = false;
-                    stackReply(parentGroupName, childGroupName, actualStack(parentGroupName, childGroupName), disconnect);
+                    stackReply(parentGroupName, childGroupName, actualStack(parentGroupName, childGroupName), false);
                 } else if (isSupervisor(parentGroupName)) {
                     //TODO not connected for application, but for control
                     //TODO should we use a control channel for all groups?
                     //TODO maybe the discovery channel could become control channel
                     if (connect(childGroupName)) {
-                        A3Channel channel = null;
+                        A3Channel channel;
                         try {
                             channel = getChannel(childGroupName);
                             channel.requestStack(parentGroupName);
@@ -128,9 +127,9 @@ public class A3Node implements A3NodeInterface{
                             e.printStackTrace();
                         }
                     } else
-                        stackReply(parentGroupName, childGroupName, false, disconnect);
+                        stackReply(parentGroupName, childGroupName, false, true);
                 } else {
-                    stackReply(parentGroupName, childGroupName, false, disconnect);
+                    stackReply(parentGroupName, childGroupName, false, true);
                 }
             }else
                 throw new A3InvalidOperationRole("Stack operation requires a node to be the supervisor of one of the groups.");
@@ -154,7 +153,7 @@ public class A3Node implements A3NodeInterface{
         assert(!parentGroupName.isEmpty());
         assert(!childGroupName.isEmpty());
         if(connect(parentGroupName)) {
-            A3Channel channel = null;
+            A3Channel channel;
             try {
                 channel = getChannel(childGroupName);
                 channel.requestHierarchyAdd(parentGroupName);
@@ -193,24 +192,22 @@ public class A3Node implements A3NodeInterface{
      * @param parentGroupName The name of the group to disconnect from.
      * @param childGroupName The name of the group to disconnect from group "parentGroupName".
      */
-    public void reverseStack(String parentGroupName, String childGroupName){
+    public void reverseStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException {
         boolean ok = false;
         if(!(parentGroupName.equals("") || childGroupName.equals(""))){
 
             if(isSupervisor(parentGroupName)){
-                try {
-                    ok = connect(childGroupName);
-                    if(ok){
-                        try{
-                            A3Channel channel = getChannel(childGroupName);
-                            channel.requestReverseStack(parentGroupName);
-                            disconnect(childGroupName);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    } else
+                ok = connect(childGroupName);
+                if(ok){
+                    try{
+                        A3Channel channel = getChannel(childGroupName);
+                        channel.requestReverseStack(parentGroupName);
                         disconnect(childGroupName);
-                } catch (Exception e) {}
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else
+                    disconnect(childGroupName);
             } else if(isSupervisor(childGroupName)){
                     actualReverseStack(parentGroupName, childGroupName);
                     ok = true;
@@ -276,7 +273,6 @@ public class A3Node implements A3NodeInterface{
                         if (connect(groupName2)) {
                             channel = getChannel(groupName2);
                             channel.requestMerge(groupName1);
-                            ok = true;
                         } else
                             disconnect(groupName2);
                     }
@@ -296,30 +292,27 @@ public class A3Node implements A3NodeInterface{
      * @param newGroupName The name of the group to joinGroup to.
      * @param oldGroupName The name of the group to disconnect from.
      */
-    public boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
+    public synchronized boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
         if(!isConnectedForApplication(newGroupName)) {
             /** Hierarchy above the old group **/
             if (isSupervisor(oldGroupName)) {
                 try {
                     ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchy().getHierarchy();
-                    synchronized (oldHierarchy) {
-                        for (String s : oldHierarchy) {
-                            disconnect(s);
-                        }
+                    for (String s : oldHierarchy) {
+                        disconnect(s);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
 
             disconnect(oldGroupName);
 
             /** Hierarchy bellow the old group **/
-            synchronized (mChannels) {
-                for (A3Channel c : mChannels) {
-                    if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
-                        c.requestHierarchyRemove(oldGroupName);
-                        //disconnect(oldGroupName);
-                    }
+            for (A3Channel c : mChannels) {
+                if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
+                    c.requestHierarchyRemove(oldGroupName);
+                    //disconnect(oldGroupName);
                 }
             }
             return connect(newGroupName);
@@ -352,12 +345,13 @@ public class A3Node implements A3NodeInterface{
     public void split(String groupName, int nodesToTransfer) throws A3InvalidOperationRole {
 
         if(isSupervisor(groupName)){
-
             A3Channel channel;
             try{
                 channel = getChannel(groupName);
                 channel.requestSplit(nodesToTransfer);
-            }catch(Exception e){}
+            }catch(Exception e){
+                e.printStackTrace();
+            }
         } else
             throw new A3InvalidOperationRole("Split failed: I'm not the supervisor.");
     }
@@ -439,8 +433,6 @@ public class A3Node implements A3NodeInterface{
      *
      * @param groupName The name of the group whose descriptor is requested.
      * @return The descriptor of the group "groupName".
-     * @throws Exception The descriptor of the group "groupName" doesn't exist,
-     * i.e. the group "groupName" and its subgroups don't exist in the system.
      */
     public GroupDescriptor getGroupDescriptor(String groupName){
         GroupDescriptor descriptor;
@@ -488,10 +480,15 @@ public class A3Node implements A3NodeInterface{
                         A3Role a3Role = (A3Role) Class.forName(roleId).getConstructor().newInstance();
                         return type.cast(a3Role);
                     } catch (InstantiationException e) {
+                        e.printStackTrace();
                     } catch (IllegalAccessException e) {
+                        e.printStackTrace();
                     } catch (InvocationTargetException e) {
+                        e.printStackTrace();
                     } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
                     } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
                     }
             }
         }
@@ -537,7 +534,7 @@ public class A3Node implements A3NodeInterface{
     /**The list of the mChannels to communicate with the groups this node is connected to.
      * There are also mChannels that are disconnected because they are in "wait" group.
      * In such case, a channel to the group "wait" is connected and in this list.*/
-    private ArrayList<A3Channel> mChannels = new ArrayList<A3Channel>();
+    private ArrayList<A3Channel> mChannels = new ArrayList<>();
 
     @Override
     public int hashCode() {
@@ -551,12 +548,7 @@ public class A3Node implements A3NodeInterface{
 
     @Override
     public boolean equals(Object o){
-        if (!(o instanceof A3Node))
-            return false;
-        if (o == this)
-            return true;
-
-        return this.groupDescriptors.equals(((A3Node) o).getGroupDescriptors()) &&
-                this.roles.equals(((A3Node) o).roles);
+        return o instanceof A3Node && (o == this || this.groupDescriptors.equals(((A3Node) o).getGroupDescriptors()) &&
+                this.roles.equals(((A3Node) o).roles));
     }
 }

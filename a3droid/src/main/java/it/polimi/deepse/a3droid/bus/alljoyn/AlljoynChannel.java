@@ -20,7 +20,7 @@ import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
 /**
  * TODO: Describe
  */
-public class AlljoynChannel extends A3Channel implements BusObject {
+public class AlljoynChannel extends A3Channel{
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
@@ -103,7 +103,8 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     /**
      * Handles Alljoyn error events. If an A3Exception is trowed, it was not possible to handle the
      * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
-     * @param status
+     * @param status the (error) status returned by Alljoyn
+     * @param errorSide identifies where the error occurred, i.e., at channel, service or bus setup
      */
     public void handleError(Status status, int errorSide){
         assert (errorSide == AlljoynErrorHandler.CHANNEL ||
@@ -116,7 +117,7 @@ public class AlljoynChannel extends A3Channel implements BusObject {
     /**
      * Handles Alljoyn errors. If an A3Exception is trowed, it was not possible to handle the
      * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
-     * @param ex
+     * @param ex the exception trowed by the bus
      */
     public void handleError(BusException ex, int errorSide){
         assert (errorSide == AlljoynErrorHandler.BUS);

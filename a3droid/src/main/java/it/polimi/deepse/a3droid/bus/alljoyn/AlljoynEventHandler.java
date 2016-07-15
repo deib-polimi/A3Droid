@@ -45,7 +45,7 @@ public class AlljoynEventHandler extends HandlerThread implements TimerInterface
 
             @Override
             public void handleMessage(Message msg) {
-                handleEvent((AlljoynBus.AlljoynEvent) AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);
+                handleEvent(AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);
             }
         };
     }

@@ -125,7 +125,7 @@ public class A3Application extends Application implements Observable{
      * Enumeration of the high-level moudules in the system.  There is one
      * value per module.
      */
-    public static enum Module {
+    public enum Module {
         NONE,
         GENERAL,
         USE,
@@ -186,11 +186,9 @@ public class A3Application extends Application implements Observable{
      */
     public synchronized List<String> getFoundGroups() {
         Log.i(TAG, "getFoundGroups()");
-        List<String> clone = new ArrayList<String>(mGroups.size());
-        for (String string : mGroups) {
-            Log.i(TAG, "getFoundGroups(): added " + string);
-            clone.add(new String(string));
-        }
+        List<String> clone = new ArrayList<>(mGroups.size());
+        for (String name : mGroups)
+            clone.add(name);
         return clone;
     }
 
@@ -205,22 +203,23 @@ public class A3Application extends Application implements Observable{
      * "join channel" dialog, whereupon she will choose one.  This will
      * eventually result in a joinSession call out from the AllJoyn Service
      */
-    private List<String> mGroups = new ArrayList<String>();
+    private List<String> mGroups = new ArrayList<>();
 
     /**
-     * Either creates a node or fetches an existing node whose hash equals the one to be created.
-     * @see this#hashCode()
+     * A singleton method for creating of fetching an existing node, which is identified by the
+     * group descriptors and roles
+     * @see A3Node#hashCode()
      * @see GroupDescriptor#hashCode()
-     * @param groupDescriptors
-     * @param roles
-     * @return
+     * @param groupDescriptors a list of GroupDescriptor instances for the node to be created
+     * @param roles a list of A3Role instances for the node to be created
+     * @return the created node or the existing node instance
      */
     public A3Node createNode(ArrayList<GroupDescriptor> groupDescriptors,
                              ArrayList<String> roles){
 
         A3Node node = new A3Node(this, groupDescriptors, roles);
-        if(getNodes().contains(node)) {
-            return getNodes().get(getNodes().indexOf(node));
+        if(mNodes.contains(node)) {
+            return mNodes.get(mNodes.indexOf(node));
         }else {
             addNode(node);
             return node;
@@ -228,7 +227,7 @@ public class A3Application extends Application implements Observable{
     }
 
     /**
-     * TODO describe
+     * Adds a node to the list of created nodes
      */
     private synchronized void addNode(A3Node node) {
         Log.i(TAG, "addNode(" + node + ")");
@@ -236,7 +235,7 @@ public class A3Application extends Application implements Observable{
     }
 
     /**
-     * TODO describe
+     * Removes a node from the list of created nodes
      */
     private synchronized void removeNode(A3Node node) {
         Log.i(TAG, "removeNode(" + node + ")");
@@ -250,17 +249,9 @@ public class A3Application extends Application implements Observable{
     }
 
     /**
-     * TODO describe
+     * The list of created nodes within this application scope
      */
-    public synchronized List<A3Node> getNodes() {
-        Log.i(TAG, "getFoundGroups()");
-        return mNodes;
-    }
-
-    /**
-     * TODO describe
-     */
-    private List<A3Node> mNodes = new ArrayList<A3Node>();
+    private List<A3Node> mNodes = new ArrayList<>();
 
     /**
      * This object is really the model of a model-view-controller architecture.
@@ -317,5 +308,5 @@ public class A3Application extends Application implements Observable{
      * The observers list is the list of all objects that have registered with
      * us as observers in order to get notifications of interesting events.
      */
-    private List<Observer> mObservers = new ArrayList<Observer>();
+    private List<Observer> mObservers = new ArrayList<>();
 }

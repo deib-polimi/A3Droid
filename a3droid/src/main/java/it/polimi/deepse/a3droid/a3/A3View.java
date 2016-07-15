@@ -33,25 +33,23 @@ public class A3View extends HandlerThread implements TimerInterface{
 
 	private Handler mHandler;
 
-	/**The Service on which this View resides.
-	 * @param channel
+	/**The Service on which this View resides
+	 * @param channel this view's channel
 	 */
 	public A3View(A3Channel channel) {
 		super("View_" + channel.getGroupName());
 		this.channel = channel;
-		groupMembers = new ArrayList<String>();
+		groupMembers = new ArrayList<>();
 		temporaryViewIsActive = false;
 		numberOfNodes = 0;
 		start();
 	}
 
 	public Message obtainMessage() {
-		// TODO Auto-generated method stub
 		return mHandler.obtainMessage();
 	}
 
 	public void sendMessage(Message msg) {
-		// TODO Auto-generated method stub
 		mHandler.sendMessage(msg);
 	}
 
@@ -90,20 +88,13 @@ public class A3View extends HandlerThread implements TimerInterface{
 	 * and it is notified about it.
 	 * @param memberName The address of the channel that joined the group.
 	 */
-	private void addGroupMember(String memberName) {
-		// TODO Auto-generated method stub
+	private synchronized void addGroupMember(String memberName) {
 
-		synchronized(groupMembers){
-			groupMembers.add(memberName);
-		}
+		groupMembers.add(memberName);
 
-		if(temporaryViewIsActive){
-			synchronized(temporaryView){
-				temporaryView.add(memberName);
-			}
-		}
+		if(temporaryViewIsActive)
+			temporaryView.add(memberName);
 		numberOfNodes = numberOfNodes + 1;
-		//service.showOnScreen("View: " + getView());
 	}
 
 	/**
@@ -114,20 +105,14 @@ public class A3View extends HandlerThread implements TimerInterface{
 	 * @param memberName The address of the channel which left the group.
 	 */
 	public synchronized void removeGroupMember(String memberName) {
-		// TODO Auto-generated method stub
 
-		synchronized(groupMembers){
-			groupMembers.remove(memberName);
-		}
+		groupMembers.remove(memberName);
 
 		if(temporaryViewIsActive){
-			synchronized(temporaryView){
-				temporaryView.remove(memberName);
-			}
+			temporaryView.remove(memberName);
 		}
 		numberOfNodes = numberOfNodes - 1;
 
-		// If the old supervisor left, then I must elect a new one.
 		String supervisorId = channel.getSupervisorId();
 		if(supervisorId != null && supervisorId.equals(memberName))
 			channel.handleEvent(A3Bus.A3Event.SUPERVISOR_LEFT);
@@ -137,7 +122,6 @@ public class A3View extends HandlerThread implements TimerInterface{
 	 * @return The string representation of the list of the group members, in the form "[member1, member2, ...]".
 	 */
 	public synchronized String getView() {
-		// TODO Auto-generated method stub
 		return groupMembers.toString();
 	}
 
@@ -168,17 +152,11 @@ public class A3View extends HandlerThread implements TimerInterface{
 	 * false otherwise.
 	 */
 	public synchronized boolean isInView(String address){
-
-		if(groupMembers.contains(address))
-			return true;
-		if(temporaryViewIsActive && temporaryView.contains(address))
-			return true;
-		return false;
+		return groupMembers.contains(address) || temporaryViewIsActive && temporaryView.contains(address);
 	}
 
 	@Override
 	public void timerFired(int reason) {
-		// TODO Auto-generated method stub
 		temporaryViewIsActive = false;
 		groupMembers = temporaryView;
 	}

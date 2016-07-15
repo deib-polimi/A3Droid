@@ -231,20 +231,10 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
     /**
      * Notifies @address of the current supervisor
-     * @param address
+     * @param address the address to send the current supervisor id
      */
     private void notifyCurrentSupervisor(String address){
         A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
-        m.addresses = new String[]{address};
-        enqueueControl(m);
-    }
-
-    /**
-     * Notifies @address of no existing supervisor
-     * @param address
-     */
-    private void notifyNoSupervisor(String address){
-        A3Message m = new A3Message(A3Constants.CONTROL_NO_SUPERVISOR, channelId);
         m.addresses = new String[]{address};
         enqueueControl(m);
     }
@@ -269,11 +259,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** Timer object for the supervisor query **/
     private Timer supervisorQueryTimer = null;
 
-    /** Stack methods **/
-
     /**
-     * TODO: describe
-     * @param parentGroupName
+     * Sends a stack request to the supervisor of this channel's group
+     * @param parentGroupName the group name that should receive the stack request
      */
     protected void requestStack(String parentGroupName){
         assert getSupervisorId() != null;
@@ -281,9 +269,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
-     * TODO: describe
-     * @param result
-     * @param address
+     * Replies to a stack request
+     * @param result the boolean result indicating the success of the stack operation
+     * @param address the address of the node that should receive the stack reply
      */
     protected void replyStack(boolean result, String address){
         enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
@@ -291,8 +279,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
 
     /**
-     * TODO: describe
-     * @param parentGroupName
+     * Send a reverse stack request to the supervisor of this channel's group
+     * @param parentGroupName the group name that should receive the stack request
      */
     protected void requestReverseStack(String parentGroupName){
         assert getSupervisorId() != null;
@@ -300,26 +288,24 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
-     * Broadcasts to all group members about a hierarchy addition request.
-     * @param parentGroupName The name of the parent group.
-     * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
+     * Sends a broadcast request to add a given group to the hierarchy
+     * @param parentGroupName The name of the group to be added to the hierarchy
      */
     protected void requestHierarchyAdd(String parentGroupName){
         enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
     }
 
-    /** Merge methods **/
-
     /**
-     * TODO describe
-     * @param oldGroupName
+     * Sends a broadcast request to remove a given group from the hierarchy
+     * @param oldGroupName the name of the group to be removed from the hierarchy
      */
     protected void requestHierarchyRemove(String oldGroupName){
         enqueueControl(new A3Message(A3Constants.CONTROL_REMOVE_FROM_HIERARCHY, oldGroupName));
     }
 
     /**
-     * Sends a BROADCAST message requesting for subgroup increment.
+     * Sends a broadcast request for subgroup counter increment. Subgroup counter is used to create
+     * new subgroups named after the original group's name with subgroup counter appended
      */
     private void requestNewSubgroup() {
         A3Message newGroupMessage = new A3Message(
@@ -328,8 +314,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
-     * TODO describe
-     * @param receiverGroupName
+     * Sends a merge request to the supervisor of this channel's group
+     * @param receiverGroupName the name of the group to receive merged nodes
      */
     protected void requestMerge(String receiverGroupName){
         assert getSupervisorId() != null;
@@ -337,28 +323,25 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
-     * TODO describe
-     * @param receiverGroupName
-     */
-    protected void notifyMerge(String receiverGroupName){
-        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE, receiverGroupName));
-    }
-
-    /**
-     * TODO: describe
-     * @param result
-     * @param address
+     * Replies to a merge request
+     * @param result the result of the merge operation
+     * @param address the address of the node that should receive the merge reply
      */
     protected void replyMerge(String parentGroupName, boolean result, String address){
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REPLY, parentGroupName + Constants.A3_SEPARATOR + result, new String[]{address}));
     }
 
     /**
-     * It sends a message to the Service, in order for it to start a random
-     * split operation.
-     *
-     * @param nodesToTransfer
-     *            The number of nodes to translate to the new group.
+     * Sends a merge notification to this group nodes, which will initiate their merge procedure
+     * @param receiverGroupName The destination group name, to which the nodes should be merged with
+     */
+    protected void notifyMerge(String receiverGroupName){
+        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE, receiverGroupName));
+    }
+
+    /**
+     * Sends a split request to the supervisor of this channel's group
+     * @param nodesToTransfer The number of nodes to be transferred to the new group
      */
     public void requestSplit(int nodesToTransfer) {
         enqueueControl(new A3Message(A3Constants.CONTROL_SPLIT, String.valueOf(nodesToTransfer), new String[]{getSupervisorId()}));
@@ -379,12 +362,11 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     private static final int SUPERVISOR_NOT_FOUND_EVENT = 0;
-    /** Used as fixed time after a CONTROL_GET_SUPERVISOR query message **/
     private static final int SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT = 2000;
 
     /**
      * Enqueue a control message
-     * @param message
+     * @param message the control message to be sent
      */
     private void enqueueControl(A3Message message){
         try {
@@ -397,32 +379,30 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** A3ChannelInterface for application communication **/
     @Override
     public void receiveUnicast(A3Message message) {
-        Log.i(TAG, "UNICAST : " + (String) message.object + " TO " + message.addresses);
+        Log.i(TAG, "UNICAST : " + message.object + " TO " + message.getAddresses());
         activeRole.onMessage(message);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
-        Log.i(TAG, "MULTICAST : " + (String) message.object + " TO " + message.addresses);
+        Log.i(TAG, "MULTICAST : " + message.object + " TO " + message.getAddresses());
         activeRole.onMessage(message);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
-        Log.i(TAG, "BROADCAST : " + (String) message.object);
+        Log.i(TAG, "BROADCAST : " + message.object);
         activeRole.onMessage(message);
     }
 
     /** A3ChannelInterface for control **/
     @Override
     public void receiveControl(A3Message message) {
-        Log.i(TAG, "CONTROL : " + (String) message.object);
+        Log.i(TAG, "CONTROL : " + message.object + " TO " + message.getAddresses());
         Message msg = controlHandler.obtainMessage();
         msg.obj = message;
         controlHandler.sendMessage(msg);
     }
-
-    private RoleMessageHandler controlHandler = null;
 
     /**Thread responsible for handling messages**/
     private class RoleMessageHandler extends HandlerThread {
@@ -507,6 +487,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
             };
         }
     }
+
+    private RoleMessageHandler controlHandler = null;
 
     /**Supervisor election handlers**/
     private void handleNewSupervisorNotification(A3Message message) {
@@ -615,7 +597,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
             // Random requestSplit operation.
             requestNewSubgroup();
             int nodesToTransfer = Integer.valueOf(message.object);
-            ArrayList<String> selectedNodes = new ArrayList<String>();
+            ArrayList<String> selectedNodes = new ArrayList<>();
             int numberOfNodes = view.getNumberOfNodes();
             String[] splittedView = view.getView()
                     .substring(1, view.getView().length() - 1)
@@ -850,7 +832,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * The observers list is the list of all objects that have registered with
      * us as observers in order to get notifications of interesting events.
      */
-    private List<Observer> mObservers = new ArrayList<Observer>();
+    private List<Observer> mObservers = new ArrayList<>();
 
     public synchronized A3MessageItem getOutboundItem() {
         if (mOutbound.isEmpty()) {
@@ -882,7 +864,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * The outbound list is the list of all messages that have been originated
      * by our local user and are designed for the outside world.
      */
-    private List<A3MessageItem> mOutbound = new ArrayList<A3MessageItem>();
+    private List<A3MessageItem> mOutbound = new ArrayList<>();
 
     public A3Bus.A3GroupState getGroupState(){
         return mGroupState;
@@ -891,8 +873,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     public void setGroupState(A3Bus.A3GroupState state){
         this.mGroupState = state;
         notifyObservers(GROUP_STATE_CHANGED_EVENT);
-        synchronized (node.waiter) {
-            node.waiter.notifyAll();
+        synchronized (A3NodeInterface.waiter) {
+            A3NodeInterface.waiter.notifyAll();
         }
     }
 
