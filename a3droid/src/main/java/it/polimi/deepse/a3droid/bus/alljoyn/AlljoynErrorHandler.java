@@ -33,10 +33,11 @@ public class AlljoynErrorHandler extends HandlerThread {
     public AlljoynErrorHandler(AlljoynChannel channel){
         super("AlljoynErrorHandler_" + channel.getGroupName());
         this.channel = channel;
-        channelRetries = new HashMap<AlljoynBus.AlljoynChannelState, Integer>();
+        channelRetries = new HashMap<>();
         resetChannelRetry();
-        serviceRetries = new HashMap<AlljoynBus.AlljoynServiceState, Integer>();
+        serviceRetries = new HashMap<>();
         resetServiceRetry();
+        start();
     }
 
     public Message obtainMessage() {
@@ -51,12 +52,8 @@ public class AlljoynErrorHandler extends HandlerThread {
         mHandler.sendMessage(msg);
     }
 
-    @Override
-    protected void onLooperPrepared() {
-        super.onLooperPrepared();
-
+    public void prepareHandler(){
         mHandler = new Handler(getLooper()) {
-
             @Override
             public void handleMessage(Message msg) {
                 handleError(msg.what, msg.obj);

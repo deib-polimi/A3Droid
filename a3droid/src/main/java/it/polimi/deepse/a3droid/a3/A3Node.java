@@ -156,7 +156,7 @@ public class A3Node implements A3NodeInterface{
             A3Channel channel;
             try {
                 channel = getChannel(childGroupName);
-                channel.requestHierarchyAdd(parentGroupName);
+                channel.notifyHierarchyAdd(parentGroupName);
                 return true;//TODO implement real verification of the result
             } catch (Exception e) {
                 e.printStackTrace();
@@ -229,7 +229,7 @@ public class A3Node implements A3NodeInterface{
         assert(!childGroupName.isEmpty());
         try{
             A3Channel channel = getChannel(childGroupName);
-            channel.requestHierarchyRemove(parentGroupName);
+            channel.notifyHierarchyRemove(parentGroupName);
             disconnect(parentGroupName);
         } catch (Exception e) {
             e.printStackTrace();
@@ -257,9 +257,8 @@ public class A3Node implements A3NodeInterface{
      */
     public void merge(String groupName1, String groupName2) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole {
 
-        boolean ok = false;
         if(groupName1 != null && groupName2 != null &&
-                !(groupName1.equals("") || groupName2.equals(""))){
+                !(groupName1.isEmpty() || groupName2.isEmpty())){
             if(isSupervisor(groupName1) || isSupervisor(groupName2)){
                 try {
                     A3Channel channel;
@@ -311,7 +310,7 @@ public class A3Node implements A3NodeInterface{
             /** Hierarchy bellow the old group **/
             for (A3Channel c : mChannels) {
                 if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
-                    c.requestHierarchyRemove(oldGroupName);
+                    c.notifyHierarchyRemove(oldGroupName);
                     //disconnect(oldGroupName);
                 }
             }
@@ -323,14 +322,14 @@ public class A3Node implements A3NodeInterface{
     /**
      * It notifies this node with the result of a merge operation.
      *
-     * @param groupName1 The name of the group in which nodes in group "groupName2" were transfered.
-     * @param groupName2 The name of the destroyed group.
-     * @param ok true if the merge operation was successful, false otherwise.
+     * @param destinationGroupName The name of the group to which nodes should be transferred to
+     * @param originGroupName The name of the group from which the groups will be transferred from
+     * @param ok true if the merge operation was successful, false otherwise
      */
-    public void mergeReply(String groupName1, String groupName2, boolean ok, boolean disconnect) {
-        Log.i(TAG, "mergeReply(" + groupName1 + ", " + groupName2 + ", " + ok + ")");
+    public void mergeReply(String destinationGroupName, String originGroupName, boolean ok, boolean disconnect) {
+        Log.i(TAG, "mergeReply(" + destinationGroupName + ", " + originGroupName + ", " + ok + ")");
         if(disconnect)
-            disconnect(groupName2);
+            disconnect(originGroupName);
     }
 
     /**If this node is the supervisor of the group "groupName",
@@ -342,18 +341,22 @@ public class A3Node implements A3NodeInterface{
      * @param groupName The name of the group whose nodes must be transfered in the new group.
      * @param nodesToTransfer The number of nodes to transfer from group "groupName" to the new group.
      */
-    public void split(String groupName, int nodesToTransfer) throws A3InvalidOperationRole {
+    public void split(String groupName, int nodesToTransfer) throws A3InvalidOperationRole, A3InvalidOperationParameters {
 
-        if(isSupervisor(groupName)){
-            A3Channel channel;
-            try{
-                channel = getChannel(groupName);
-                channel.requestSplit(nodesToTransfer);
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        } else
-            throw new A3InvalidOperationRole("Split failed: I'm not the supervisor.");
+        Log.i(TAG, "split(" + groupName + ", " + nodesToTransfer + ")");
+        if(groupName != null && !groupName.isEmpty()) {
+            if (isSupervisor(groupName)) {
+                A3Channel channel;
+                try {
+                    channel = getChannel(groupName);
+                    channel.notifySplit(nodesToTransfer);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else
+                throw new A3InvalidOperationRole("Split operation can only be triggered by the group's supervisor");
+        }else
+            throw new A3InvalidOperationParameters("Invalid group name or invalid nunber of number of nodes to transfer");
     }
 
     /** Communication methods **/
@@ -396,7 +399,8 @@ public class A3Node implements A3NodeInterface{
         }
     }
 
-    /**Called by the user interface to determine if the channel "groupName" is used by the application or not.
+    /**
+     * Called by the user interface to determine if the channel "groupName" is used by the application or not.
      * TODO: Not yet checking if connected 'for application'
      * @param groupName The name of the target channel.
      * @return true, if the channel "groupName" is used by the application, false otherwise.

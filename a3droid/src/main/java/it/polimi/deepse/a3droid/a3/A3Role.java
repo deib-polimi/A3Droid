@@ -3,11 +3,16 @@ package it.polimi.deepse.a3droid.a3;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
+
+import java.lang.ref.WeakReference;
 
 import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.UserInterface;
 
-/**This class represents the role that the Node can play in a group.
+/**
+ * TODO
+ * This class represents the role that the Node can play in a group.
  * A list of the roles a node can play resides on A3Node, it is fixed at node creation time and it can't change.
  * The A3Node constructor automatically sets the field "node" of the role to itself,
  * and the "className" field of the role to the canonical name of the role class.
@@ -31,6 +36,8 @@ import it.polimi.deepse.a3droid.UserInterface;
  *
  */
 public abstract class A3Role implements Runnable {
+
+	protected static final String TAG = "a3droid.A3Role";
 
 	/**It indicates if this role is currently active or not.*/
 	protected boolean active;
@@ -89,7 +96,7 @@ public abstract class A3Role implements Runnable {
 		this.active = active;
 
 		if(active){
-			handler = new RoleMessageHandler();
+			handler = new RoleMessageHandler(this);
 		}
 	}
 
@@ -169,19 +176,15 @@ public abstract class A3Role implements Runnable {
 		channel = a3channel;
 	}
 
-	//TODO: remove this method
-	public void showOnScreen(String message){
-        if(ui != null)
-		    ui.showOnScreen(message);
-	}
-
 	/**Thread responsible for handling messages**/
-	private class RoleMessageHandler extends HandlerThread {
+	private static class RoleMessageHandler extends HandlerThread {
 
+		private final WeakReference<A3Role> mRole;
 		private Handler mHandler;
 
-		public RoleMessageHandler() {
-			super("RoleMessageHandler_" + getGroupName());
+		public RoleMessageHandler(A3Role role) {
+			super("RoleMessageHandler_" + role.getGroupName());
+			mRole = new WeakReference<>(role);
 			start();
 		}
 
@@ -197,17 +200,18 @@ public abstract class A3Role implements Runnable {
 		protected void onLooperPrepared() {
 			super.onLooperPrepared();
 
+			final A3Role role = mRole.get();
+
 			mHandler = new Handler(getLooper()) {
-				/**
-				 * There are system messages whose management doesn't depend on the application:
-				 * they are filtered and managed here.
-				 * @param msg The incoming message.
-				 */
 				@Override
 				public void handleMessage(Message msg) {
-					A3Role.this.receiveApplicationMessage((A3Message) msg.obj);
+					role.receiveApplicationMessage((A3Message) msg.obj);
 				}
 			};
 		}
+	}
+
+	public void showOnScreen(String msg){
+		Log.i(TAG, msg);
 	}
 }

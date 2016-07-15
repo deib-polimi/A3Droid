@@ -65,7 +65,7 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
         return groupName;
     }
 
-    protected String groupName = null;
+    protected String groupName;
 
     public void setServiceSignalEmitterInterface(AlljoynServiceInterface serviceSignalEmitterInterface) {
         this.serviceSignalEmitterInterface = serviceSignalEmitterInterface;

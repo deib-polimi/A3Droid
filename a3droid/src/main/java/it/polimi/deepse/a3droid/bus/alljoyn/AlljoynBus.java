@@ -1003,7 +1003,9 @@ public class AlljoynBus extends A3Bus {
      */
     private void postJoinWait(int time){
         try {
-            this.wait(time);
+            synchronized (this) {
+                this.wait(time);
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

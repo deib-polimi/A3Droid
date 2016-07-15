@@ -1,7 +1,7 @@
 package it.polimi.deepse.a3droid.a3;
 
 /**
- * Created by seadev on 6/20/16.
+ * TODO
  */
 public class A3Constants {
 
@@ -21,7 +21,7 @@ public class A3Constants {
     public static final int CONTROL_INCREASE_SUBGROUPS = 24;
 
     public static final int CONTROL_MERGE_REQUEST = 30;
-    public static final int CONTROL_MERGE = 31;
+    public static final int CONTROL_MERGE_NOTIFICATION = 31;
     public static final int CONTROL_MERGE_REPLY = 32;
     public static final int CONTROL_SPLIT = 33;
 }

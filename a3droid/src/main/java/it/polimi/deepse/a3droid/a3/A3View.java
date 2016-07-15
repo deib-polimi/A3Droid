@@ -8,11 +8,8 @@ import java.util.ArrayList;
 
 import it.polimi.deepse.a3droid.TimerInterface;
 
-/**This class resides on a Service.
- * It manages the list of the channels currently in the group (called "view")
- * and all the messages and the callbacks to update it runtime.
- * @author Francesco
- *
+/**
+ * TODO
  */
 public class A3View extends HandlerThread implements TimerInterface{
 

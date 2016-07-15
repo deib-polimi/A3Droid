@@ -36,13 +36,8 @@ public class AlljoynEventHandler extends HandlerThread implements TimerInterface
         mHandler.sendMessage(msg);
     }
 
-
-    @Override
-    protected void onLooperPrepared() {
-        super.onLooperPrepared();
-
+    public void prepareHandler(){
         mHandler = new Handler(getLooper()) {
-
             @Override
             public void handleMessage(Message msg) {
                 handleEvent(AlljoynBus.AlljoynEvent.values()[msg.what], msg.obj);

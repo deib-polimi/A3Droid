@@ -37,7 +37,9 @@ public class AlljoynChannel extends A3Channel{
         assert(descriptor != null);
         setService(new AlljoynService(descriptor.getName()));
         errorHandler = new AlljoynErrorHandler(this);
+        errorHandler.prepareHandler();
         eventHandler = new AlljoynEventHandler(application, this);
+        eventHandler.prepareHandler();
     }
 
     /**
