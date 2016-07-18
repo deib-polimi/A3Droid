@@ -292,8 +292,17 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param result the boolean result indicating the success of the stack operation
      * @param address the address of the node that should receive the stack reply
      */
-    protected void replyStack(boolean result, String address){
+    protected void replyStack(String parentGroupName, boolean result, String address){
         enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
+    }
+
+    /**
+     * Replies to a stack request
+     * @param result the boolean result indicating the success of the stack operation
+     * @param address the address of the node that should receive the stack reply
+     */
+    protected void replyStackRequest(String parentGroupName, boolean result, String address){
+        enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
     }
 
     /**
@@ -466,7 +475,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
                         case A3Constants.CONTROL_REVERSE_STACK_REQUEST:
                             channel.handleReverseStackRequest(message);
                             break;
-
+                        case A3Constants.CONTROL_REVERSE_STACK_REPLY:
+                            channel.handleReverseStackReply(message);
+                            break;
                         case A3Constants.CONTROL_GET_HIERARCHY:
                         case A3Constants.CONTROL_HIERARCHY_REPLY:
                         case A3Constants.CONTROL_ADD_TO_HIERARCHY:
@@ -567,7 +578,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         try{
             handleEvent(A3Bus.A3Event.STACK_STARTED);
             boolean ok = node.actualStack(message.object, getGroupName());
-            replyStack(ok, message.senderAddress);
+            replyStack(message.object, ok, message.senderAddress);
         } catch (Exception e) {
             e.printStackTrace();
         }finally {
@@ -581,7 +592,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      */
     private void handleStackReply(A3Message message){
         String [] reply = message.object.split(Constants.A3_SEPARATOR);
-        node.stackReply(getGroupName(), reply[0], Boolean.valueOf(reply[1]), true);
+        node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
     /**
@@ -590,7 +601,17 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      */
     private void handleReverseStackRequest(A3Message message){
         assert isSupervisor();
-        node.actualReverseStack(message.object, getGroupName());
+        boolean ok = node.actualReverseStack(message.object, getGroupName());
+        replyStackRequest(message.object, ok, message.senderAddress);
+    }
+
+    /**
+     *
+     * @param message
+     */
+    private void handleReverseStackReply(A3Message message){
+        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        node.reverseStackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
     /**
