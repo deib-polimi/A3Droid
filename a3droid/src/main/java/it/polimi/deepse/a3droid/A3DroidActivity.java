@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.provider.Settings.Secure;
 import android.widget.Toast;
 
-public abstract class A3DroidActivity extends Activity implements UserInterface{
+public abstract class A3DroidActivity extends Activity{
 	
 	/**The device's UUID*/
 	private String uuId;

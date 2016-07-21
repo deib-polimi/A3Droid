@@ -210,7 +210,7 @@ public class A3Node implements A3NodeInterface{
                 !(parentGroupName.equals("") || childGroupName.equals(""))){
             if(isSupervisor(parentGroupName) || isSupervisor(childGroupName)) {
                 if (isSupervisor(childGroupName)) {
-                    reverseStackReply(parentGroupName, childGroupName, actualReverseStack(parentGroupName, childGroupName));
+                    reverseStackReply(parentGroupName, childGroupName, actualReverseStack(parentGroupName, childGroupName), false);
                 } else if (isSupervisor(parentGroupName)) {
                     if (connectAndWait(childGroupName)) {
                         try {
@@ -257,8 +257,10 @@ public class A3Node implements A3NodeInterface{
      * @param childGroupName The name of the child group.
      * @param ok true if the reverse requestStack operation was successful, false otherwise.
      */
-    private void reverseStackReply(String parentGroupName, String childGroupName, boolean ok) {
+    public void reverseStackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) {
         Log.i(TAG, "reverseStackReply(" + parentGroupName + ", " + childGroupName + ", " + ok + ")");
+        if(disconnect)
+            disconnect(childGroupName);
     }
 
     /**

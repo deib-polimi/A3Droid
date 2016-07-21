@@ -6,12 +6,11 @@ import android.os.Message;
 
 import java.util.ArrayList;
 
-import it.polimi.deepse.a3droid.TimerInterface;
 
 /**
  * TODO
  */
-public class A3View extends HandlerThread implements TimerInterface{
+public class A3View extends HandlerThread{
 
 	/**The Service on which this View resides.*/
 	private A3Channel channel;
@@ -150,12 +149,6 @@ public class A3View extends HandlerThread implements TimerInterface{
 	 */
 	public synchronized boolean isInView(String address){
 		return groupMembers.contains(address) || temporaryViewIsActive && temporaryView.contains(address);
-	}
-
-	@Override
-	public void timerFired(int reason) {
-		temporaryViewIsActive = false;
-		groupMembers = temporaryView;
 	}
 
 	public int getNumberOfNodes() {

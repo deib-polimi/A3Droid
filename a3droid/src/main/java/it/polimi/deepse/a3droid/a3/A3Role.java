@@ -7,7 +7,6 @@ import android.util.Log;
 
 import java.lang.ref.WeakReference;
 
-import it.polimi.deepse.a3droid.UserInterface;
 
 /**
  * TODO
@@ -49,9 +48,6 @@ public abstract class A3Role implements Runnable {
 
 	/**The channel this role belongs to.*/
 	private A3Channel channel;
-
-	/**he user interface to interact with.*/
-	protected UserInterface ui;
 
 	private RoleMessageHandler handler;
 	/**

@@ -1,7 +1,12 @@
 package it.polimi.deepse.a3droid;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import it.polimi.deepse.a3droid.a3.A3Constants;
+import it.polimi.deepse.a3droid.a3.A3Message;
 
 /**
  * This class contains the logic and the data structures to manage subscriptions.
@@ -28,8 +33,7 @@ import java.util.HashMap;
  */
 public class Subscriptions {
 
-	/**The channel this Subscriptions belongs to.*/
-	private UserInterface channel;
+	protected static final String TAG = "a3droid.Subscriptions";
 	
 	/**The list of the kind of messages the channel "channel" is interested in receiving.
 	 * It is sent to the supervisor when the channel "channel" joins the session,
@@ -39,8 +43,7 @@ public class Subscriptions {
 	/**For each kind of message, the list of the addresses of the interested channels.*/
 	private HashMap<Integer, ArrayList<String>> groupSubscriptions;
 
-	public Subscriptions(UserInterface ui){
-		channel = ui;
+	public Subscriptions(){
 		mySubscriptions = new ArrayList<Integer>();
 		groupSubscriptions = new HashMap<Integer, ArrayList<String>>();
 	}
@@ -51,32 +54,29 @@ public class Subscriptions {
 	 */
 	public void onMessage(A3Message message){
 
-		try{
-			String address = message.senderAddress;
+		String address = message.senderAddress;
+		switch(message.reason){
+			case A3Constants.CONTROL_SUBSCRIBE:
 
-			switch(message.reason){
-			case Constants.SUBSCRIPTION:
-	
 				/* This message is like "senderAddress Constants.SUBSCRIPTION reason1 reason2 ..." or "".
 				 * It is sent by a channel in order to receive the multicast messages it is interested in,
 				 * when it joins the session or when it becomes interested in new kinds of message.
-				 * 
+				 *
 				 * If I receive this message, I am the supervisor:
 				 * for every kind of message the channel "senderAddress" is interested in,
 				 * I must retrieve the corresponding list of destinations and add "senderAddress" to it.
 				 */
 				String newSubscriptions = message.object;
-	
+
 				if(!newSubscriptions.equals("")){
-					String[] splittedSubscriptions = newSubscriptions.split(Constants.A3_SEPARATOR);
+					String[] splittedSubscriptions = newSubscriptions.split(A3Constants.SEPARATOR);
 					ArrayList<String> temp;
 					int reason;
-	
+
 					synchronized(groupSubscriptions){
 						for(int i = 0; i < splittedSubscriptions.length; i++){
-	
+
 							reason = Integer.valueOf(splittedSubscriptions[i]);
-	
 							if(groupSubscriptions.containsKey(reason)){
 								temp = groupSubscriptions.get(reason);
 								if(!temp.contains(address))
@@ -88,25 +88,25 @@ public class Subscriptions {
 								groupSubscriptions.put(reason, temp);
 							}
 						}
-						showOnScreen(groupSubscriptions.toString());
+						Log.i(TAG, "Subscriptions: " + groupSubscriptions.toString());
 					}
 				}
-	
+
 				break;
-	
-			case Constants.UNSUBSCRIPTION:
-	
+
+			case A3Constants.CONTROL_UNSUBSCRIBE:
+
 				/* This message is like "senderAddress Constants.UNSUBSCRIPTION reason".
 				 * It is sent by a channel in order to no longer receive the multicast messages of type "reason".
-				 * 
+				 *
 				 * If I receive this message, I am the supervisor:
 				 * I must retrieve the list of destinations of the messages of type "reason"
 				 * and remove "senderAddress" from it.
 				 */
 				String unsubscription = message.object;
-	
+
 				int reason = Integer.valueOf(unsubscription);
-	
+
 				synchronized(groupSubscriptions){
 					if(groupSubscriptions.containsKey(reason)){
 						ArrayList<String> temp = groupSubscriptions.get(reason);
@@ -114,9 +114,8 @@ public class Subscriptions {
 							temp.remove(address);
 					}
 				}
-				showOnScreen(groupSubscriptions.toString());
+				Log.i(TAG, "Subscriptions: " + groupSubscriptions.toString());
 			}
-		}catch(Exception e){}
 	}
 
 	/**
@@ -131,7 +130,7 @@ public class Subscriptions {
 		if(!mySubscriptions.isEmpty()){
 			result = result + mySubscriptions.get(0);
 			for(int i = 1; i < mySubscriptions.size(); i ++){
-				result = result + Constants.A3_SEPARATOR + mySubscriptions.get(i);
+				result = result + A3Constants.SEPARATOR + mySubscriptions.get(i);
 			}
 		}
 		return result;
@@ -152,8 +151,6 @@ public class Subscriptions {
 	 * @param removedMember The address of the channel which left the group.
 	 */
 	public synchronized void cancelSubscriptions(String removedMember) {
-		// TODO Auto-generated method stub
-		
 		ArrayList<String> temp;
 		
 		for(int i : groupSubscriptions.keySet()){
@@ -162,8 +159,6 @@ public class Subscriptions {
 			if(temp.isEmpty())
 				groupSubscriptions.remove(i);
 		}
-		showOnScreen(groupSubscriptions.toString());
-		
 	}
 	
 	/**
@@ -171,7 +166,6 @@ public class Subscriptions {
 	 * @param reason The subscription to add.
 	 */
 	public synchronized void subscribe(int reason){
-
 		if(!mySubscriptions.contains(reason)){
 			mySubscriptions.add(reason);
 		}
@@ -182,14 +176,8 @@ public class Subscriptions {
 	 * @param reason The subscription to remove.
 	 */
 	public synchronized void unsubscribe(int reason) {
-		// TODO Auto-generated method stub
 		if(mySubscriptions.contains(reason)){
 			mySubscriptions.remove((Object)reason);
 		}
-	}
-	
-	private void showOnScreen(String string) {
-		// TODO Auto-generated method stub
-		channel.showOnScreen(string);
 	}
 }

@@ -2,7 +2,6 @@ package it.polimi.deepse.a3droid.a3;
 
 import java.util.ArrayList;
 
-import it.polimi.deepse.a3droid.Constants;
 
 /**
  * This class is the list of the groups to which the supervisor of a group must be connected
@@ -57,7 +56,7 @@ public class A3Hierarchy {
 
 					if(!message.object.equals("")){
 
-						String[] splittedHierarchy = message.object.split(Constants.A3_SEPARATOR);
+						String[] splittedHierarchy = message.object.split(A3Constants.SEPARATOR);
 						numberOfSplittedGroups = Integer.valueOf(splittedHierarchy[0]);
 
 						for(int i = 1; i < splittedHierarchy.length; i++)
@@ -114,9 +113,9 @@ public class A3Hierarchy {
 		String result = String.valueOf(numberOfSplittedGroups);
 
 		if(!hierarchy.isEmpty()){
-			result = result + Constants.A3_SEPARATOR + hierarchy.get(0);
+			result = result + A3Constants.SEPARATOR + hierarchy.get(0);
 			for(int i = 1; i < hierarchy.size(); i ++){
-				result = result + Constants.A3_SEPARATOR + hierarchy.get(i);
+				result = result + A3Constants.SEPARATOR + hierarchy.get(i);
 			}
 		}
 		return result;

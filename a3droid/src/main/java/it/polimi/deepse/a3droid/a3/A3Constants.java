@@ -1,7 +1,7 @@
 package it.polimi.deepse.a3droid.a3;
 
 /**
- * TODO
+ * Used to define common constants for A3 layer
  */
 public class A3Constants {
 
@@ -22,10 +22,13 @@ public class A3Constants {
     public static final int CONTROL_ADD_TO_HIERARCHY = 22;
     public static final int CONTROL_REMOVE_FROM_HIERARCHY = 23;
     public static final int CONTROL_INCREASE_SUBGROUPS = 24;
+    public static final int CONTROL_SUBSCRIBE = 25;
+    public static final int CONTROL_UNSUBSCRIBE = 26;
 
     public static final int CONTROL_MERGE_REQUEST = 30;
     public static final int CONTROL_MERGE_NOTIFICATION = 31;
     public static final int CONTROL_MERGE_REPLY = 32;
     public static final int CONTROL_SPLIT = 33;
+
 }
 
