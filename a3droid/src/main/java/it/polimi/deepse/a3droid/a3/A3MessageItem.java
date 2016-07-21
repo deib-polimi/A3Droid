@@ -1,7 +1,5 @@
 package it.polimi.deepse.a3droid.a3;
 
-import it.polimi.deepse.a3droid.A3Message;
-
 /**
  *
  */

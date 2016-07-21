@@ -10,14 +10,13 @@ import org.alljoyn.bus.BusAttachment;
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Mutable;
 import org.alljoyn.bus.ProxyBusObject;
-import org.alljoyn.bus.SessionListener;
 import org.alljoyn.bus.SessionOpts;
 import org.alljoyn.bus.SessionPortListener;
 import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
 
-import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.GroupDescriptor;
+import it.polimi.deepse.a3droid.a3.A3Message;
+import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
@@ -61,7 +60,7 @@ public class AlljoynBus extends A3Bus {
          * remote channel instances in the background while the rest of the app
          * is starting up.
          */
-        DiscoveryDescriptor discoveryDescriptor = new DiscoveryDescriptor();
+        DiscoveryDescriptorA3 discoveryDescriptor = new DiscoveryDescriptorA3();
         mDiscoveryChannel = new AlljoynChannel((A3Application) getApplication(),
                 null,
                 discoveryDescriptor,
@@ -1151,8 +1150,8 @@ public class AlljoynBus extends A3Bus {
         MEMBER_LEFT
     }
 
-    public class DiscoveryDescriptor extends GroupDescriptor {
-        public DiscoveryDescriptor() {
+    public class DiscoveryDescriptorA3 extends A3GroupDescriptor {
+        public DiscoveryDescriptorA3() {
             super("DISCOVERY", null, null);
         }
 

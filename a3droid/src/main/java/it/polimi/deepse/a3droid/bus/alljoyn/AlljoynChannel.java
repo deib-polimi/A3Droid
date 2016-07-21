@@ -4,14 +4,12 @@ import android.os.Message;
 
 import org.alljoyn.bus.BusAttachment;
 import org.alljoyn.bus.BusException;
-import org.alljoyn.bus.BusObject;
 import org.alljoyn.bus.Status;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
-import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.GroupDescriptor;
+import it.polimi.deepse.a3droid.a3.A3Message;
+import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
@@ -28,7 +26,7 @@ public class AlljoynChannel extends A3Channel{
 
     public AlljoynChannel(A3Application application,
                           A3Node node,
-                          GroupDescriptor descriptor,
+                          A3GroupDescriptor descriptor,
                           String groupName,
                           boolean hasFollowerRole,
                           boolean hasSupervisorRole){

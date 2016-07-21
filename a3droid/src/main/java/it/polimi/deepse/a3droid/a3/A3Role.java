@@ -7,7 +7,6 @@ import android.util.Log;
 
 import java.lang.ref.WeakReference;
 
-import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.UserInterface;
 
 /**

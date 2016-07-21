@@ -5,8 +5,6 @@ import android.util.Log;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
-import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
@@ -26,10 +24,10 @@ public class A3Node implements A3NodeInterface{
     private A3Application application;
 
     public A3Node(A3Application application,
-                  ArrayList<GroupDescriptor> groupDescriptors,
+                  ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                   ArrayList<String> roles){
         this.application = application;
-        this.groupDescriptors = groupDescriptors;
+        this.a3GroupDescriptors = a3GroupDescriptors;
         this.roles = roles;
     }
 
@@ -70,7 +68,7 @@ public class A3Node implements A3NodeInterface{
         if(this.isConnectedForApplication(groupName))
             return true;
 
-        GroupDescriptor descriptor = getGroupDescriptor(groupName);
+        A3GroupDescriptor descriptor = getGroupDescriptor(groupName);
         boolean hasFollowerRole = false, hasSupervisorRole = false;
         A3FollowerRole followerRole;
         A3SupervisorRole supervisorRole;
@@ -309,7 +307,7 @@ public class A3Node implements A3NodeInterface{
      */
     public synchronized boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException {
         if(!isConnectedForApplication(newGroupName)) {
-            /** Hierarchy above the old group **/
+            /** A3Hierarchy above the old group **/
             if (isSupervisor(oldGroupName)) {
                 try {
                     ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchy().getHierarchy();
@@ -323,7 +321,7 @@ public class A3Node implements A3NodeInterface{
 
             disconnect(oldGroupName);
 
-            /** Hierarchy bellow the old group **/
+            /** A3Hierarchy bellow the old group **/
             for (A3Channel c : mChannels) {
                 if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
                     c.notifyHierarchyRemove(oldGroupName);
@@ -449,18 +447,18 @@ public class A3Node implements A3NodeInterface{
         return channel.isSupervisor();
     }
 
-    /**Looks for a group descriptor in the "groupDescriptors" list.
+    /**Looks for a group descriptor in the "a3GroupDescriptors" list.
      *
      * @param groupName The name of the group whose descriptor is requested.
      * @return The descriptor of the group "groupName".
      */
-    public GroupDescriptor getGroupDescriptor(String groupName){
-        GroupDescriptor descriptor;
+    public A3GroupDescriptor getGroupDescriptor(String groupName){
+        A3GroupDescriptor descriptor;
         String name;
 
-        synchronized(groupDescriptors){
-            for(int i = 0; i < groupDescriptors.size(); i++){
-                descriptor = groupDescriptors.get(i);
+        synchronized(a3GroupDescriptors){
+            for(int i = 0; i < a3GroupDescriptors.size(); i++){
+                descriptor = a3GroupDescriptors.get(i);
                 name = descriptor.getName();
 
 				/* Groups splitted by main groups have the same descriptor as their main groups
@@ -474,14 +472,14 @@ public class A3Node implements A3NodeInterface{
         //throw new Exception("NO GROUP WITH NAME " + groupName + ".");
     }
 
-    public ArrayList<GroupDescriptor> getGroupDescriptors(){
-        return groupDescriptors;
+    public ArrayList<A3GroupDescriptor> getA3GroupDescriptors(){
+        return a3GroupDescriptors;
     }
 
     /**The list of the descriptors of the groups that can be present in the system.
      * The groups splitted by other groups have their same descriptors.
      */
-    private final ArrayList<GroupDescriptor> groupDescriptors;
+    private final ArrayList<A3GroupDescriptor> a3GroupDescriptors;
 
     /**Looks for a role in the "roles" list.
      *
@@ -559,7 +557,7 @@ public class A3Node implements A3NodeInterface{
     @Override
     public int hashCode() {
         int hash = 0;
-        for(GroupDescriptor g : groupDescriptors)
+        for(A3GroupDescriptor g : a3GroupDescriptors)
             hash += g.hashCode();
         for(String r : roles)
             hash += r.hashCode();
@@ -568,7 +566,7 @@ public class A3Node implements A3NodeInterface{
 
     @Override
     public boolean equals(Object o){
-        return o instanceof A3Node && (o == this || this.groupDescriptors.equals(((A3Node) o).getGroupDescriptors()) &&
+        return o instanceof A3Node && (o == this || this.a3GroupDescriptors.equals(((A3Node) o).getA3GroupDescriptors()) &&
                 this.roles.equals(((A3Node) o).roles));
     }
 }

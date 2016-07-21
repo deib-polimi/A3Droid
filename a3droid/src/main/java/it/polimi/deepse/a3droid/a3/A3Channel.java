@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import it.polimi.deepse.a3droid.A3Message;
-import it.polimi.deepse.a3droid.Constants;
-import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
@@ -52,11 +49,11 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
-    private GroupDescriptor groupDescriptor;
+    private A3GroupDescriptor a3GroupDescriptor;
 
     public A3Channel(A3Application application,
                      A3Node node,
-                     GroupDescriptor descriptor,
+                     A3GroupDescriptor descriptor,
                      String groupName,
                      boolean hasFollowerRole,
                      boolean hasSupervisorRole){
@@ -65,9 +62,9 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         this.node = node;
         this.hasFollowerRole = hasFollowerRole;
         this.hasSupervisorRole = hasSupervisorRole;
-        this.groupDescriptor = descriptor;
+        this.a3GroupDescriptor = descriptor;
         eventHandler = new A3EventHandler(application, this);
-        hierarchy = new Hierarchy(this);
+        hierarchy = new A3Hierarchy(this);
         view = new A3View(this);
         controlHandler = new RoleMessageHandler(this);
     }
@@ -226,7 +223,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Broadcasts the election of a new supervisor
      */
     private void notifyNewSupervisor(){
-        A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, a3GroupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
@@ -235,7 +232,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param address the address to send the current supervisor id
      */
     private void notifyCurrentSupervisor(String address){
-        A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, a3GroupDescriptor.getSupervisorFitnessFunction() + "");
         m.addresses = new String[]{address};
         enqueueControl(m);
     }
@@ -293,7 +290,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param address the address of the node that should receive the stack reply
      */
     protected void replyStack(String parentGroupName, boolean result, String address){
-        enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
+        enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
@@ -302,7 +299,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param address the address of the node that should receive the stack reply
      */
     protected void replyStackRequest(String parentGroupName, boolean result, String address){
-        enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REPLY, groupName + Constants.A3_SEPARATOR + result, new String[]{address}));
+        enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REPLY, groupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
@@ -311,7 +308,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param address the address of the node that should receive the merge reply
      */
     protected void replyMerge(String parentGroupName, boolean result, String address){
-        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REPLY, parentGroupName + Constants.A3_SEPARATOR + result, new String[]{address}));
+        enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REPLY, parentGroupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
@@ -515,7 +512,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         if(!channelId.equals(supervisorId)){
             float supervisorFF = Float.parseFloat(message.object);
             if(hasSupervisorRole){
-                if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF)
+                if (a3GroupDescriptor.getSupervisorFitnessFunction() > supervisorFF)
                     becomeSupervisor();
                 else{
                     if(hasFollowerRole)
@@ -591,7 +588,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param message
      */
     private void handleStackReply(A3Message message){
-        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        String [] reply = message.object.split(A3Constants.SEPARATOR);
         node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
@@ -610,7 +607,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param message
      */
     private void handleReverseStackReply(A3Message message){
-        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        String [] reply = message.object.split(A3Constants.SEPARATOR);
         node.reverseStackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
@@ -646,7 +643,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * @param message
      */
     private void handleMergeReply(A3Message message){
-        String [] reply = message.object.split(Constants.A3_SEPARATOR);
+        String [] reply = message.object.split(A3Constants.SEPARATOR);
         node.mergeReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
     }
 
@@ -800,12 +797,12 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      *
      * @return this channel's hierarchy instance
      */
-    public Hierarchy getHierarchy() {
+    public A3Hierarchy getHierarchy() {
         return hierarchy;
     }
 
     /** Stores the hierarchy on top of this group for this node **/
-    private Hierarchy hierarchy = null;
+    private A3Hierarchy hierarchy = null;
 
     /**
      *

@@ -5,6 +5,8 @@ package it.polimi.deepse.a3droid.a3;
  */
 public class A3Constants {
 
+    public static final String SEPARATOR = " ";
+
     public static final int CONTROL_CURRENT_SUPERVISOR = 0;
     public static final int CONTROL_NEW_SUPERVISOR = 1;
     public static final int CONTROL_GET_SUPERVISOR = 2;

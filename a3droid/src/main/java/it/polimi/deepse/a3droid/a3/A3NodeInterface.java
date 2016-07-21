@@ -1,6 +1,5 @@
 package it.polimi.deepse.a3droid.a3;
 
-import it.polimi.deepse.a3droid.A3Message;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;

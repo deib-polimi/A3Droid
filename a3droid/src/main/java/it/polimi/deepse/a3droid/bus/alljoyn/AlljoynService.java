@@ -4,7 +4,7 @@ import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.BusObject;
 import org.alljoyn.bus.annotation.BusMethod;
 
-import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.a3.A3Message;
 
 /**
  * Our chat messages are going to be Bus Signals multicast out onto an

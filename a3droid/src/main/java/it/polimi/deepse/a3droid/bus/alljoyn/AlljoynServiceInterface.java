@@ -5,7 +5,7 @@ import org.alljoyn.bus.annotation.BusInterface;
 import org.alljoyn.bus.annotation.BusMethod;
 import org.alljoyn.bus.annotation.BusSignal;
 
-import it.polimi.deepse.a3droid.A3Message;
+import it.polimi.deepse.a3droid.a3.A3Message;
 
 /**
  * TODO: Describe

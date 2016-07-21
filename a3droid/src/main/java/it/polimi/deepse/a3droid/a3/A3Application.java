@@ -7,14 +7,9 @@ import android.provider.Settings;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import it.polimi.deepse.a3droid.GroupDescriptor;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
@@ -209,15 +204,15 @@ public class A3Application extends Application implements Observable{
      * A singleton method for creating of fetching an existing node, which is identified by the
      * group descriptors and roles
      * @see A3Node#hashCode()
-     * @see GroupDescriptor#hashCode()
-     * @param groupDescriptors a list of GroupDescriptor instances for the node to be created
+     * @see A3GroupDescriptor#hashCode()
+     * @param a3GroupDescriptors a list of A3GroupDescriptor instances for the node to be created
      * @param roles a list of A3Role instances for the node to be created
      * @return the created node or the existing node instance
      */
-    public A3Node createNode(ArrayList<GroupDescriptor> groupDescriptors,
+    public A3Node createNode(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                              ArrayList<String> roles){
 
-        A3Node node = new A3Node(this, groupDescriptors, roles);
+        A3Node node = new A3Node(this, a3GroupDescriptors, roles);
         if(mNodes.contains(node)) {
             return mNodes.get(mNodes.indexOf(node));
         }else {
