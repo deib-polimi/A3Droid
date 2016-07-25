@@ -1,5 +1,6 @@
 package it.polimi.deepse.a3droid.a3;
 
+import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
@@ -17,23 +18,25 @@ public interface A3NodeInterface {
 
     void sendToSupervisor(A3Message message, String groupName);
 
-    void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole;
+    void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
-    void stackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect);
+    void stackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
 
-    boolean actualStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException;
+    boolean performSupervisorStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
 
-    void reverseStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole;
+    void reverseStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
-    void reverseStackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect);
+    void reverseStackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
 
-    boolean actualReverseStack(String parentGroupName, String childGroupName);
+    boolean performSupervisorReverseStack(String parentGroupName, String childGroupName) throws A3ChannelNotFoundException;
 
-    void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole;
+    void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
-    boolean actualMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException;
+    boolean performSupervisorMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
 
-    void mergeReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect);
+    boolean performMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
+
+    void mergeReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
 
     Object waiter = new Object();
 }

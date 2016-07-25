@@ -79,7 +79,7 @@ public class AlljoynEventHandler extends HandlerThread implements TimerInterface
         }
     }
 
-    public void handleTimeEvent(int why){
+    public void handleTimeEvent(int why, Object object){
         switch (why){
             case WAIT_AND_RECONNECT_EVENT:
                 channel.reconnect();

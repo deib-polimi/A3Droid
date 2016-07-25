@@ -24,7 +24,7 @@ public class A3Hierarchy {
 	 * If a group "group" exists, and also its groups "group_0", "group_1" and "group_3" exist,
 	 * but group "group_2" doesn't exist, an eventual new splitted group will be named "group_4".
 	 */
-	private int numberOfSplittedGroups;
+	private int numberOfSplitGroups;
 
 	/**
 	 * @param a3channel The channel this hierarchy belongs to.
@@ -32,7 +32,7 @@ public class A3Hierarchy {
 	public A3Hierarchy(A3Channel a3channel){
 		channel = a3channel;
 		hierarchy = new ArrayList<String>();
-		numberOfSplittedGroups = 0;
+		numberOfSplitGroups = 0;
 	}
 
 	/**
@@ -57,7 +57,7 @@ public class A3Hierarchy {
 					if(!message.object.equals("")){
 
 						String[] splittedHierarchy = message.object.split(A3Constants.SEPARATOR);
-						numberOfSplittedGroups = Integer.valueOf(splittedHierarchy[0]);
+						numberOfSplitGroups = Integer.valueOf(splittedHierarchy[0]);
 
 						for(int i = 1; i < splittedHierarchy.length; i++)
 							hierarchy.add(splittedHierarchy[i]);
@@ -110,8 +110,7 @@ public class A3Hierarchy {
 	@Override
 	public synchronized String toString(){
 
-		String result = String.valueOf(numberOfSplittedGroups);
-
+		String result = String.valueOf(numberOfSplitGroups);
 		if(!hierarchy.isEmpty()){
 			result = result + A3Constants.SEPARATOR + hierarchy.get(0);
 			for(int i = 1; i < hierarchy.size(); i ++){
@@ -126,10 +125,10 @@ public class A3Hierarchy {
 	}
 
 	public synchronized void incrementSubgroupsCounter(){
-		numberOfSplittedGroups ++;
+		numberOfSplitGroups++;
 	}
 	
 	public synchronized int getSubgroupsCounter(){
-		return numberOfSplittedGroups;
+		return numberOfSplitGroups;
 	}
 }

@@ -117,7 +117,8 @@ public class A3View extends HandlerThread{
 	/**
 	 * @return The string representation of the list of the group members, in the form "[member1, member2, ...]".
 	 */
-	public synchronized String getView() {
+	@Override
+	public synchronized String toString() {
 		return groupMembers.toString();
 	}
 

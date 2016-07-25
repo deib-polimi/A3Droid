@@ -71,7 +71,7 @@ public abstract class A3GroupDescriptor {
 		return name + A3Constants.SEPARATOR + supervisorRoleId + A3Constants.SEPARATOR + followerRoleId;
 	}
 
-	public String getName() {
+	public String getGroupName() {
 		return name;
 	}
 

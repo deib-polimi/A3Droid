@@ -17,7 +17,6 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
     private Handler mHandler;
     private A3Application application;
     private A3Channel channel;
-    private RandomWait randomWait = new RandomWait();
 
     public A3EventHandler(A3Application application, A3Channel channel){
         super("A3EventHandler_" + channel.getGroupName());
@@ -112,7 +111,7 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
         ).start();
     }
 
-    public void handleTimeEvent(int reason) {
+    public void handleTimeEvent(int reason, Object object) {
         switch (reason) {
             case WAIT_AND_QUERY_ROLE_EVENT:
                 channel.queryRole();
@@ -122,12 +121,7 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
         }
     }
 
-    private void notifyView(A3Bus.A3Event event, String memberId) {
-        Message msg = channel.getView().obtainMessage();
-        msg.what = event.ordinal();
-        msg.obj = memberId;
-        channel.getView().sendMessage(msg);
-    }
+    private RandomWait randomWait = new RandomWait();
 
     private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
     /** Used as fixed time after a GROUP_JOINED event **/
@@ -136,4 +130,11 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;
     /** Used as random time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 1000;
+
+    private void notifyView(A3Bus.A3Event event, String memberId) {
+        Message msg = channel.getView().obtainMessage();
+        msg.what = event.ordinal();
+        msg.obj = memberId;
+        channel.getView().sendMessage(msg);
+    }
 }

@@ -19,6 +19,8 @@ public class Timer extends Thread {
 	/**The time to wait before timer firing.*/
 	private int timeToWait;
 
+	private Object object = null;
+
 	private boolean abort;
 
 	/**
@@ -44,6 +46,18 @@ public class Timer extends Thread {
 		timeToWait = timeout;
 	}
 
+	/**
+	 * @param timerInterface The TimerInterface to notify at timeout firing time.
+	 * @param reason It indicates why the timeout is needed on "channel".
+	 * @param timeout The time to wait before timer firing.
+	 */
+	public Timer(TimerInterface timerInterface, int reason, int timeout, Object object) {
+		// TODO Auto-generated constructor stub
+		this(timerInterface, reason);
+		timeToWait = timeout;
+		this.object = object;
+	}
+
 	public void abort(){
 		this.abort = true;
 	}
@@ -56,7 +70,7 @@ public class Timer extends Thread {
 		try {
 			sleep(timeToWait);
 			if(!abort)
-				channel.handleTimeEvent(reason);
+				channel.handleTimeEvent(reason, object);
 		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO Auto-generated catch block

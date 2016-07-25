@@ -1,22 +1,19 @@
 package it.polimi.deepse.a3droid.a3;
 
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreateException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
-import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 import it.polimi.deepse.a3droid.pattern.Timer;
@@ -32,41 +29,33 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
     protected static final String TAG = "a3droid.A3Channel";
 
-    /** Indicate if this node has follower and supervisor roles **/
-    private boolean hasSupervisorRole = false;
-    private boolean hasFollowerRole = false;
-
     /** The logic that is executed when this channel is a follower. */
     protected A3FollowerRole followerRole;
 
     /** The logic that is executed when this channel is the supervisor. */
     protected A3SupervisorRole supervisorRole;
 
+    /** The current active role, since follower and supervisor roles activation are mutually exclusive **/
     protected A3Role activeRole;
-
-    protected A3NodeInterface node;
 
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
-    private A3GroupDescriptor a3GroupDescriptor;
+    /** The descriptor instance of the group associated to this channel **/
+    private A3GroupDescriptor groupDescriptor;
 
     public A3Channel(A3Application application,
                      A3Node node,
-                     A3GroupDescriptor descriptor,
-                     String groupName,
-                     boolean hasFollowerRole,
-                     boolean hasSupervisorRole){
-        this.setGroupName(groupName);
+                     A3GroupDescriptor descriptor){
+        this.setGroupName(descriptor.getGroupName());
         this.application = application;
-        this.node = node;
-        this.hasFollowerRole = hasFollowerRole;
-        this.hasSupervisorRole = hasSupervisorRole;
-        this.a3GroupDescriptor = descriptor;
+        this.hasFollowerRole = descriptor.getFollowerRoleId() != null;
+        this.hasSupervisorRole = descriptor.getSupervisorRoleId() != null;
+        this.groupDescriptor = descriptor;
         eventHandler = new A3EventHandler(application, this);
         hierarchy = new A3Hierarchy(this);
         view = new A3View(this);
-        controlHandler = new RoleMessageHandler(this);
+        groupControl = new A3GroupControl(node, this);
     }
 
     protected A3Application application;
@@ -151,7 +140,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Called when this channels becomes supervisor. It deactivates the follower
      * role (if it is active) and it activates the supervisor role.
      */
-    private void becomeSupervisor() {
+    protected void becomeSupervisor() {
         Log.i(TAG, "becomeSupervisor()");
         assert (hasSupervisorRole);
         supervisor = true;
@@ -170,7 +159,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Called when this channels becomes a follower. It deactivates the supervisor
      * role (if it is active) and it activates the follower role.
      */
-    private void becomeFollower(){
+    protected void becomeFollower(){
         Log.i(TAG, "becomeFollower()");
         assert hasFollowerRole;
         assert supervisorId != null;
@@ -223,7 +212,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Broadcasts the election of a new supervisor
      */
     private void notifyNewSupervisor(){
-        A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, a3GroupDescriptor.getSupervisorFitnessFunction() + "");
+        A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
@@ -231,8 +220,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Notifies @address of the current supervisor
      * @param address the address to send the current supervisor id
      */
-    private void notifyCurrentSupervisor(String address){
-        A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, a3GroupDescriptor.getSupervisorFitnessFunction() + "");
+    protected void notifyCurrentSupervisor(String address){
+        A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         m.addresses = new String[]{address};
         enqueueControl(m);
     }
@@ -249,7 +238,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /**
      * Aborts the current supervisor query timer if it is active
      */
-    private synchronized void clearSupervisorQueryTimer(){
+    protected synchronized void clearSupervisorQueryTimer(){
         if(supervisorQueryTimer != null)
             supervisorQueryTimer.abort();
     }
@@ -328,10 +317,40 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     }
 
     /**
+     *
+     * @param nodesToTransfer
+     * @throws A3ChannelNotFoundException
+     */
+    protected void notifySplitRandomly(int nodesToTransfer) throws
+            A3ChannelNotFoundException {
+        ArrayList<String> selectedNodes = new ArrayList<>();
+        int numberOfNodes = getView().getNumberOfNodes();
+        String[] splitView = getView().toString()
+                .substring(1, getView().toString().length() - 1)
+                .split(", ");
+        Random randomNumberGenerator = new Random();
+        String tempAddress;
+        if (nodesToTransfer < numberOfNodes) {
+            for (int i = 0; i < nodesToTransfer; i++) {
+                do {
+                    tempAddress = splitView[randomNumberGenerator
+                            .nextInt(numberOfNodes)];
+                } while (tempAddress.equals(getSupervisorId())
+                        || selectedNodes.contains(tempAddress));
+                selectedNodes.add(tempAddress);
+            }
+
+            for (String address : selectedNodes)
+                enqueueControl(new A3Message(
+                        A3Constants.CONTROL_SPLIT, "", new String[]{address}));
+        }
+    }
+
+    /**
      * Sends a broadcast request for subgroup counter increment. Subgroup counter is used to create
      * new subgroups named after the original group's name with subgroup counter appended
      */
-    private void notifyNewSubgroup() {
+    protected void notifyNewSubgroup() {
         A3Message newGroupMessage = new A3Message(
                 A3Constants.CONTROL_INCREASE_SUBGROUPS, "");
         enqueueControl(newGroupMessage);
@@ -357,7 +376,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * Handles events triggered after a certain amount of time past from a message been sent.
      * @param reason It indicates which timeout fired. The taken action will depend on this.
      */
-    public void handleTimeEvent(int reason){
+    public void handleTimeEvent(int reason, Object object){
         switch (reason){
             case SUPERVISOR_NOT_FOUND_EVENT:
                 handleSupervisorNotFoundEvent();
@@ -371,10 +390,21 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     private static final int SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT = 2000;
 
     /**
+     * Whenever an existing group without supervisor is joint by this node, it becomes the
+     * supervisor if it has the role for it.
+     */
+    private void handleSupervisorNotFoundEvent(){
+        if(supervisorId == null){
+            if(hasSupervisorRole)
+                becomeSupervisor();
+        }
+    }
+
+    /**
      * Enqueue a control message
      * @param message the control message to be sent
      */
-    private void enqueueControl(A3Message message){
+    protected void enqueueControl(A3Message message){
         try {
             addOutboundItem(message, A3Channel.CONTROL_MSG);
         } catch (Exception e) {
@@ -405,303 +435,15 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     @Override
     public void receiveControl(A3Message message) {
         Log.i(TAG, "CONTROL : " + message.object + " TO " + message.getAddresses());
-        Message msg = controlHandler.obtainMessage();
+        Message msg = groupControl.obtainMessage();
         msg.obj = message;
-        controlHandler.sendMessage(msg);
+        groupControl.sendMessage(msg);
     }
 
     /**
      * Thread responsible for handling messages
      **/
-    private static class RoleMessageHandler extends HandlerThread {
-
-        private final WeakReference<A3Channel> mChannel;
-        private Handler mHandler;
-
-        public RoleMessageHandler(A3Channel channel) {
-            super("ControlRoleMessageHandler_" + channel.getGroupName());
-            mChannel = new WeakReference<>(channel);
-            start();
-        }
-
-        public Message obtainMessage() {
-            return mHandler.obtainMessage();
-        }
-
-        public void sendMessage(Message msg) {
-            mHandler.sendMessage(msg);
-        }
-
-        @Override
-        protected void onLooperPrepared() {
-            super.onLooperPrepared();
-
-            final A3Channel channel = mChannel.get();
-
-            mHandler = new Handler(getLooper()) {
-                /**
-                 * There are system messages whose management doesn't depend on the application:
-                 * they are filtered and managed here.
-                 * @param msg The incoming message.
-                 */
-                @Override
-                public void handleMessage(Message msg) {
-
-                    A3Message message = (A3Message) msg.obj;
-                    switch (message.reason){
-                        /** Supervisor election **/
-                        case A3Constants.CONTROL_GET_SUPERVISOR:
-                            channel.handleGetSupervisorQuery(message);
-                            break;
-                        case A3Constants.CONTROL_NEW_SUPERVISOR:
-                            channel.handleNewSupervisorNotification(message);
-                            break;
-                        case A3Constants.CONTROL_CURRENT_SUPERVISOR:
-                            channel.handleCurrentSupervisorReply(message);
-                            break;
-                        case A3Constants.CONTROL_NO_SUPERVISOR:
-                            channel.handleNoSupervisorNotification(message);
-                            break;
-                        /** TCO operations **/
-                        case A3Constants.CONTROL_STACK_REQUEST:
-                            channel.handleStackRequest(message);
-                            break;
-                        case A3Constants.CONTROL_STACK_REPLY:
-                            channel.handleStackReply(message);
-                            break;
-                        case A3Constants.CONTROL_REVERSE_STACK_REQUEST:
-                            channel.handleReverseStackRequest(message);
-                            break;
-                        case A3Constants.CONTROL_REVERSE_STACK_REPLY:
-                            channel.handleReverseStackReply(message);
-                            break;
-                        case A3Constants.CONTROL_GET_HIERARCHY:
-                        case A3Constants.CONTROL_HIERARCHY_REPLY:
-                        case A3Constants.CONTROL_ADD_TO_HIERARCHY:
-                        case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
-                        case A3Constants.CONTROL_INCREASE_SUBGROUPS:
-                            channel.getHierarchy().onMessage(message);
-                            break;
-                        case A3Constants.CONTROL_MERGE_REQUEST:
-                            channel.handleMergeRequest(message);
-                            break;
-                        case A3Constants.CONTROL_MERGE_NOTIFICATION:
-                            channel.handleMergeNotification(message);
-                            break;
-                        case A3Constants.CONTROL_MERGE_REPLY:
-                            channel.handleMergeReply(message);
-                            break;
-                        case A3Constants.CONTROL_SPLIT:
-                            channel.handleSplitNotification(message);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            };
-        }
-    }
-    private RoleMessageHandler controlHandler = null;
-
-    /**
-     *
-     * @param message
-     */
-    private void handleNewSupervisorNotification(A3Message message) {
-        setSupervisorId(message.senderAddress);
-        if(!channelId.equals(supervisorId)){
-            float supervisorFF = Float.parseFloat(message.object);
-            if(hasSupervisorRole){
-                if (a3GroupDescriptor.getSupervisorFitnessFunction() > supervisorFF)
-                    becomeSupervisor();
-                else{
-                    if(hasFollowerRole)
-                        becomeFollower();
-                    else if(supervisor)
-                        deactivateSupervisor();
-                }
-            }else if(hasFollowerRole)
-                becomeFollower();
-        }
-        handleEvent(A3Bus.A3Event.SUPERVISOR_ELECTED);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleCurrentSupervisorReply(A3Message message){
-        clearSupervisorQueryTimer();
-        handleNewSupervisorNotification(message);
-    }
-
-    /**
-     * Whenever an existing group without supervisor is joint by this node, it becomes the
-     * supervisor if it has the role for it.
-     */
-    private void handleSupervisorNotFoundEvent(){
-        if(supervisorId == null){
-            if(hasSupervisorRole)
-                becomeSupervisor();
-        }
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleNoSupervisorNotification(A3Message message){
-        if(hasSupervisorRole)
-            becomeSupervisor();
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleGetSupervisorQuery(A3Message message){
-        if(supervisor)
-            notifyCurrentSupervisor(message.senderAddress);
-        //else if(!message.senderAddress.equals(getChannelId()) && supervisorId == null)
-          //  notifyNoSupervisor(message.senderAddress);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleStackRequest(A3Message message){
-        assert isSupervisor();
-        try{
-            handleEvent(A3Bus.A3Event.STACK_STARTED);
-            boolean ok = node.actualStack(message.object, getGroupName());
-            replyStack(message.object, ok, message.senderAddress);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }finally {
-            handleEvent(A3Bus.A3Event.STACK_FINISHED);
-        }
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleStackReply(A3Message message){
-        String [] reply = message.object.split(A3Constants.SEPARATOR);
-        node.stackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleReverseStackRequest(A3Message message){
-        assert isSupervisor();
-        boolean ok = node.actualReverseStack(message.object, getGroupName());
-        replyStackRequest(message.object, ok, message.senderAddress);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleReverseStackReply(A3Message message){
-        String [] reply = message.object.split(A3Constants.SEPARATOR);
-        node.reverseStackReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleMergeRequest(A3Message message){
-        assert isSupervisor();
-        String receiverGroupName = message.object;
-        replyMerge(receiverGroupName, true, message.senderAddress);
-        notifyMerge(receiverGroupName);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleMergeNotification(A3Message message) {
-        try {
-            handleEvent(A3Bus.A3Event.MERGE_STARTED);
-            String receiverGroupName = message.object;
-            node.actualMerge(receiverGroupName, getGroupName());
-        } catch (A3NoGroupDescriptionException e) {
-            e.printStackTrace();
-        }finally {
-            handleEvent(A3Bus.A3Event.MERGE_FINISHED);
-        }
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleMergeReply(A3Message message){
-        String [] reply = message.object.split(A3Constants.SEPARATOR);
-        node.mergeReply(reply[0], getGroupName(), Boolean.valueOf(reply[1]), true);
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void handleSplitNotification(A3Message message){
-        handleEvent(A3Bus.A3Event.SPLIT_STARTED);
-        if(isSupervisor()) {
-            // Random notifySplit operation.
-            notifyNewSubgroup();
-            int nodesToTransfer = Integer.valueOf(message.object);
-            ArrayList<String> selectedNodes = new ArrayList<>();
-            int numberOfNodes = view.getNumberOfNodes();
-            String[] splitView = view.getView()
-                    .substring(1, view.getView().length() - 1)
-                    .split(", ");
-            Random randomNumberGenerator = new Random();
-            String tempAddress;
-
-            /*
-             * I can't move the supervisor in another group, so the
-             * supervisor never sends its integer fitness function
-             * value. I can't move more nodes than I have.
-             */
-            if (nodesToTransfer < numberOfNodes) {
-
-                for (int i = 0; i < nodesToTransfer; i++) {
-
-                    do {
-                        tempAddress = splitView[randomNumberGenerator
-                                .nextInt(numberOfNodes)];
-                    } while (tempAddress.equals(supervisorId)
-                            || selectedNodes.contains(tempAddress));
-
-                    selectedNodes.add(tempAddress);
-                }
-
-                for (String address : selectedNodes)
-                    enqueueControl(new A3Message(
-                            A3Constants.CONTROL_SPLIT, "", new String[]{address}));
-            }
-        }else
-            /*
-			 * I will joinGroup to a group split from this group, which has the
-			 * same roles of this group, so I don't need to check for right
-			 * roles here.
-			 */
-            try {
-                node.actualMerge(
-                        getGroupName() + "_" + hierarchy.getSubgroupsCounter(),
-                        getGroupName());
-            } catch (A3NoGroupDescriptionException e) {
-                e.printStackTrace();
-            }
-        handleEvent(A3Bus.A3Event.SPLIT_FINISHED);
-    }
+    private A3GroupControl groupControl = null;
 
     /**
      * Set the name part of the "host" channel.  Since we are going to "use" a
@@ -766,7 +508,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      */
     int mSessionId = -1;
 
-    private void setSupervisorId(String id){
+    protected synchronized void setSupervisorId(String id){
         Log.i(TAG, "setSupervisorId(" + id + ")");
         this.supervisorId = id;
     }
@@ -775,7 +517,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      *
      * @return The current supervisor id
      */
-    public String getSupervisorId() {
+    public synchronized String getSupervisorId() {
         return supervisorId;
     }
 
@@ -792,6 +534,18 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
 
     /** Indicates if this channel is a supervisor **/
     private boolean supervisor = false;
+
+    public boolean hasSupervisorRole(){
+        return hasSupervisorRole;
+    }
+
+    public boolean hasFollowerRole(){
+        return hasFollowerRole;
+    }
+
+    /** Indicate if this node has follower and supervisor roles **/
+    private boolean hasSupervisorRole = false;
+    private boolean hasFollowerRole = false;
 
     /**
      *
@@ -919,8 +673,8 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     private List<Observer> mObservers = new ArrayList<>();
 
     /**
-     *
-     * @return
+     * @return an A3MessageItem containing a message and a type of message if
+     * mOutbound is not empty
      */
     public synchronized A3MessageItem getOutboundItem() {
         if (mOutbound.isEmpty()) {
@@ -928,6 +682,14 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         } else {
             return mOutbound.remove(0);
         }
+    }
+
+    /**
+     *
+     * @return true if this outbound is empty
+     */
+    public synchronized boolean isOutboundEmpty(){
+        return mOutbound.isEmpty();
     }
 
     /**
@@ -939,19 +701,17 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      * and send them down the session corresponding to the channel.
      */
     public void addOutboundItem(A3Message message, int type) {
-        addOutboundItem(message, type, true);
+        addOutboundItem(message, type);
+        notifyObservers(OUTBOUND_CHANGED_EVENT);
     }
 
     /**
-     *
+     * Adds a message to the outbound queue without notifying observers
      * @param message
      * @param type
-     * @param notify
      */
-    public void addOutboundItem(A3Message message, int type, boolean notify) {
+    public void addOutboundItemSilently(A3Message message, int type) {
         mOutbound.add(new A3MessageItem(message, type));
-        if(notify)
-            notifyObservers(OUTBOUND_CHANGED_EVENT);
     }
 
     /**

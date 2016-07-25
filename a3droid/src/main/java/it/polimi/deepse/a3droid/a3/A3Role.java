@@ -139,7 +139,7 @@ public abstract class A3Role implements Runnable {
 	 * Control messages are handled by A3Channel.
 	 * @param message The received message.
 	 */
-	public abstract void receiveApplicationMessage(A3Message message);
+	abstract void receiveApplicationMessage(A3Message message);
 
 	/**It receives the incoming messages and passes them to another thread, releasing the channel.
 	 *
@@ -169,6 +169,10 @@ public abstract class A3Role implements Runnable {
 
 	public void setChannel(A3Channel a3channel) {
 		channel = a3channel;
+	}
+
+	public A3Channel getChannel() {
+		return channel;
 	}
 
 	/**Thread responsible for handling messages**/

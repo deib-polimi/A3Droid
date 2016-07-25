@@ -35,7 +35,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
      */
     public void onCreate() {
         Log.i(TAG, "onCreate()");
-        a3Application = (A3Application)getApplication();
+        application = (A3Application)getApplication();
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
         builder.setPriority(Notification.PRIORITY_MIN);
@@ -52,7 +52,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
      * A reference to a descendant of the Android Application class that is
      * acting as the Model of our MVC-based application.
      */
-    protected A3Application a3Application = null;
+    protected A3Application application = null;
 
     /**
      * The session with a service has been lost.

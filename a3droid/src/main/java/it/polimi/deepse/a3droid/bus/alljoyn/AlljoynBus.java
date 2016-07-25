@@ -51,7 +51,7 @@ public class AlljoynBus extends A3Bus {
     @Override
     public void onCreate() {
         super.onCreate();
-        a3Application.addObserver(this);
+        application.addObserver(this);
         startBusThread();
 
         /*
@@ -61,11 +61,8 @@ public class AlljoynBus extends A3Bus {
          * is starting up.
          */
         DiscoveryDescriptorA3 discoveryDescriptor = new DiscoveryDescriptorA3();
-        mDiscoveryChannel = new AlljoynChannel((A3Application) getApplication(),
-                null,
-                discoveryDescriptor,
-                discoveryDescriptor.getName(),
-                false, false);
+        mDiscoveryChannel = new AlljoynChannel((A3Application) getApplication(), null,
+                discoveryDescriptor);
         mBackgroundHandler.connect(mDiscoveryChannel);
         mBackgroundHandler.startDiscovery(mDiscoveryChannel);
     }
@@ -81,7 +78,7 @@ public class AlljoynBus extends A3Bus {
         mBackgroundHandler.cancelDiscovery(mDiscoveryChannel);
         mBackgroundHandler.disconnect(mDiscoveryChannel);
         stopBusThread();
-        a3Application.deleteObserver(this);
+        application.deleteObserver(this);
     }
 
     /**
@@ -206,25 +203,29 @@ public class AlljoynBus extends A3Bus {
                 break;
                 case HANDLE_DISCONNECT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): HANDLE_CONNECT_EVENT");
-                    mBackgroundHandler.leaveSession(channel);
-                    mBackgroundHandler.cancelAdvertise(channel);
-                    mBackgroundHandler.unbindSession(channel);
-                    mBackgroundHandler.releaseName(channel);
                     mBackgroundHandler.disconnect(channel);
                 }
                 break;
                 case HANDLE_JOIN_CHANNEL_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): JOIN_CHANNEL_EVENT");
-                    //TODO: why to add service here?
-                    //mBackgroundHandler.addService(channel);
-                    mBackgroundHandler.addChannel(channel);
-                    mBackgroundHandler.joinSession(channel);
+                    switch (channel.getChannelState()) {
+                        case IDLE:
+                            mBackgroundHandler.addChannel(channel);
+                        case REGISTERED:
+                            mBackgroundHandler.joinSession(channel);
+                        default:
+                            break;
+                    }
                 }
                 break;
                 case HANDLE_LEAVE_CHANNEL_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): USE_LEAVE_CHANNEL_EVENT");
-                    mBackgroundHandler.leaveSession(channel);
-                    mBackgroundHandler.removeChannel(channel);
+                    switch (channel.getChannelState()) {
+                        case JOINT:
+                            mBackgroundHandler.leaveSession(channel);
+                        case REGISTERED:
+                            mBackgroundHandler.removeChannel(channel);
+                    }
                 }
                 break;
                 case HANDLE_START_SERVICE_EVENT: {
@@ -239,6 +240,7 @@ public class AlljoynBus extends A3Bus {
                                 mBackgroundHandler.bindSession(channel);
                             case BOUND:
                                 mBackgroundHandler.advertise(channel);
+                            default:
                                 break;
                         }
                     }
@@ -246,9 +248,16 @@ public class AlljoynBus extends A3Bus {
                 break;
                 case HANDLE_STOP_SERVICE_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): STOP_SERVICE_EVENT");
-                    mBackgroundHandler.cancelAdvertise(channel);
-                    mBackgroundHandler.unbindSession(channel);
-                    mBackgroundHandler.releaseName(channel);
+                    switch (channel.getServiceState()) {
+                        case ADVERTISED:
+                            mBackgroundHandler.cancelAdvertise(channel);
+                        case BOUND:
+                            mBackgroundHandler.unbindSession(channel);
+                        case NAMED:
+                            mBackgroundHandler.releaseName(channel);
+                        default:
+                            break;
+                    }
                 }
                 break;
                 case HANDLE_OUTBOUND_CHANGED_EVENT: {
@@ -508,7 +517,7 @@ public class AlljoynBus extends A3Bus {
                     doAddService((AlljoynChannel) msg.obj);
                     break;
                 case DISCONNECT:
-                    doDisconnect((AlljoynChannel) msg.obj);
+                    beforeDisconnectionWait((AlljoynChannel) msg.obj);
                     break;
                 case START_DISCOVERY:
                     doStartDiscovery((AlljoynChannel) msg.obj);
@@ -648,7 +657,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setBusState(BusState.CONNECTED);
         }else {
-            a3Application.busError(A3Application.Module.GENERAL, "Unable to joinGroup to the bus: (" + status + ")");
+            application.busError(A3Application.Module.GENERAL, "Unable to joinGroup to the bus: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
         }
     }
@@ -667,7 +676,7 @@ public class AlljoynBus extends A3Bus {
         if (Status.OK == status) {
             channel.setServiceState(AlljoynServiceState.REGISTERED);
         } else {
-            a3Application.busError(A3Application.Module.HOST, "Unable to register the service bus object: (" + status + ")");
+            application.busError(A3Application.Module.HOST, "Unable to register the service bus object: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
         }
     }
@@ -679,7 +688,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setChannelState(AlljoynChannelState.REGISTERED);
         } else {
-            a3Application.busError(A3Application.Module.USE, "Unable to register channel signal handlers: (" + status + ")");
+            application.busError(A3Application.Module.USE, "Unable to register channel signal handlers: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
         }
     }
@@ -708,6 +717,23 @@ public class AlljoynBus extends A3Bus {
     }
 
     /**
+     * Gives time to the Alljoyn bus to be properly set before communication starts, avoiding an
+     * error noticed experimentally.
+     */
+    private void beforeDisconnectionWait(AlljoynChannel channel){
+        while(channel.getChannelState() == AlljoynChannelState.JOINT &&
+                !channel.isOutboundEmpty())
+            try {
+                synchronized (this) {
+                    this.wait();
+                }
+                doDisconnect(channel);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+    }
+
+    /**
      * Implementation of the functionality related to discovering remote apps
      * which are hosting chat channels.  We expect that this method will only
      * be called in the context of the AllJoyn bus handler thread; and while
@@ -721,7 +747,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setBusState(BusState.DISCOVERING);
         } else {
-            a3Application.busError(A3Application.Module.USE, "Unable to start finding advertised names: (" + status + ")");
+            application.busError(A3Application.Module.USE, "Unable to start finding advertised names: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
         }
     }
@@ -757,7 +783,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setServiceState(AlljoynServiceState.NAMED);
         } else {
-            a3Application.busError(A3Application.Module.USE, "Unable to acquire well-known name: (" + status + ")");
+            application.busError(A3Application.Module.USE, "Unable to acquire well-known name: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
         }
     }
@@ -862,7 +888,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setServiceState(AlljoynServiceState.BOUND);
         } else {
-            a3Application.busError(A3Application.Module.HOST, "Unable to bind session contact port: (" + status + ")");
+            application.busError(A3Application.Module.HOST, "Unable to bind session contact port: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
         }
     }
@@ -902,7 +928,7 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.handleEvent(AlljoynEvent.SESSION_CREATED, null);
         } else {
-            a3Application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
+            application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
         }
     }
@@ -925,7 +951,7 @@ public class AlljoynBus extends A3Bus {
             Status status = channel.getBus().cancelAdvertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
 
             if (status != Status.OK) {
-                a3Application.busError(A3Application.Module.HOST, "Unable to cancel advertisement of well-known name: (" + status + ")");
+                application.busError(A3Application.Module.HOST, "Unable to cancel advertisement of well-known name: (" + status + ")");
                 return;
             }
 
@@ -968,7 +994,7 @@ public class AlljoynBus extends A3Bus {
             Mutable.IntegerValue sessionId = new Mutable.IntegerValue();
 
 
-            Status status = channel.getBus().joinSession(wellKnownName, contactPort, sessionId, sessionOpts, new AlljoynSessionListener(a3Application, channel));
+            Status status = channel.getBus().joinSession(wellKnownName, contactPort, sessionId, sessionOpts, new AlljoynSessionListener(application, channel));
 
             if (status == Status.OK) {
                 channel.setSessionId(sessionId.value);
@@ -987,7 +1013,7 @@ public class AlljoynBus extends A3Bus {
                 postJoinWait(POS_CONNECTION_WAIT_TIME);
                 channel.handleEvent(AlljoynEvent.SESSION_JOINED, null);
             } else {
-                a3Application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
+                application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
                 channel.handleError(status, AlljoynErrorHandler.CHANNEL);
             }
         }
@@ -1034,7 +1060,8 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doSendMessages()");
 
         A3MessageItem messageItem;
-        while (channel.getChannelState().equals(AlljoynChannelState.JOINT) && (messageItem = channel.getOutboundItem()) != null) {
+        while (channel.getChannelState().equals(AlljoynChannelState.JOINT)
+                && (messageItem = channel.getOutboundItem()) != null) {
             A3Message message = messageItem.getMessage();
             Log.i(TAG, "doSendMessages(): sending message \"" + message + "\"");
             /*
@@ -1062,14 +1089,15 @@ public class AlljoynBus extends A3Bus {
                     default:
                         break;
                 }
-
             } catch (BusException ex) {
-                a3Application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
-                channel.addOutboundItem(message, messageItem.getType(), false);
+                notifyAll();
+                application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
+                channel.addOutboundItemSilently(message, messageItem.getType());
                 channel.handleError(ex, AlljoynErrorHandler.BUS);
                 break;
             }
         }
+        notifyAll();
     }
 
     /**

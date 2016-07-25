@@ -26,14 +26,11 @@ public class AlljoynChannel extends A3Channel{
 
     public AlljoynChannel(A3Application application,
                           A3Node node,
-                          A3GroupDescriptor descriptor,
-                          String groupName,
-                          boolean hasFollowerRole,
-                          boolean hasSupervisorRole){
-        super(application, node, descriptor, groupName, hasFollowerRole, hasSupervisorRole);
+                          A3GroupDescriptor descriptor){
+        super(application, node, descriptor);
         assert(application != null);
         assert(descriptor != null);
-        setService(new AlljoynService(descriptor.getName()));
+        setService(new AlljoynService(descriptor.getGroupName()));
         errorHandler = new AlljoynErrorHandler(this);
         errorHandler.prepareHandler();
         eventHandler = new AlljoynEventHandler(application, this);
