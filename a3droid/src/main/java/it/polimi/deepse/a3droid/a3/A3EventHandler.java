@@ -16,9 +16,9 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
 
     private Handler mHandler;
     private A3Application application;
-    private A3Channel channel;
+    private A3GroupChannel channel;
 
-    public A3EventHandler(A3Application application, A3Channel channel){
+    public A3EventHandler(A3Application application, A3GroupChannel channel){
         super("A3EventHandler_" + channel.getGroupName());
         this.application = application;
         this.channel = channel;

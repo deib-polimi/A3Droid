@@ -15,11 +15,11 @@ import org.alljoyn.bus.SessionPortListener;
 import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
 
+import it.polimi.deepse.a3droid.a3.A3GroupChannel;
 import it.polimi.deepse.a3droid.a3.A3Message;
 import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
-import it.polimi.deepse.a3droid.a3.A3Channel;
 import it.polimi.deepse.a3droid.a3.A3MessageItem;
 import it.polimi.deepse.a3droid.pattern.Observable;
 
@@ -73,7 +73,9 @@ public class AlljoynBus extends A3Bus {
      * thread to exit andremove ourselves from the list of observers of the
      * model.
      */
+    @Override
     public void onDestroy() {
+        super.onDestroy();
         Log.i(TAG, "onDestroy()");
         mBackgroundHandler.cancelDiscovery(mDiscoveryChannel);
         mBackgroundHandler.disconnect(mDiscoveryChannel);
@@ -115,39 +117,39 @@ public class AlljoynBus extends A3Bus {
             mHandler.sendMessage(message);
         }
 
-        if (qualifier.equals(A3Channel.CONNECT_EVENT))
+        if (qualifier.equals(A3GroupChannel.CONNECT_EVENT))
             this.connect((AlljoynChannel) o);
 
-        if (qualifier.equals(A3Channel.DISCONNECT_EVENT)) {
+        if (qualifier.equals(A3GroupChannel.DISCONNECT_EVENT)) {
             this.disconnect((AlljoynChannel) o);
         }
 
-        if (qualifier.equals(A3Channel.JOIN_CHANNEL_EVENT)) {
+        if (qualifier.equals(A3GroupChannel.JOIN_CHANNEL_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_JOIN_CHANNEL_EVENT);
             message.obj = o;
             mHandler.sendMessage(message);
         }
 
-        if (qualifier.equals(A3Channel.USE_LEAVE_CHANNEL_EVENT)) {
+        if (qualifier.equals(A3GroupChannel.USE_LEAVE_CHANNEL_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_LEAVE_CHANNEL_EVENT);
             message.obj = o;
             mHandler.sendMessage(message);
         }
 
-        if (qualifier.equals(A3Channel.START_SERVICE_EVENT)) {
+        if (qualifier.equals(A3GroupChannel.START_SERVICE_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_START_SERVICE_EVENT);
             message.obj = o;
             mHandler.sendMessage(message);
         }
 
-        if (qualifier.equals(A3Channel.STOP_SERVICE_EVENT)) {
+        if (qualifier.equals(A3GroupChannel.STOP_SERVICE_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_STOP_SERVICE_EVENT);
             message.obj = o;
             mHandler.sendMessage(message);
         }
 
         //In both cases, try to send a message if channel state is JOINT.
-        if (qualifier.equals(A3Channel.OUTBOUND_CHANGED_EVENT) ||
+        if (qualifier.equals(A3GroupChannel.OUTBOUND_CHANGED_EVENT) ||
                 qualifier.equals(AlljoynChannel.CHANNEL_STATE_CHANGED_EVENT)) {
             Message message = mHandler.obtainMessage(HANDLE_OUTBOUND_CHANGED_EVENT);
             message.obj = o;
@@ -156,14 +158,14 @@ public class AlljoynBus extends A3Bus {
     }
 
     @Override
-    public void connect(A3Channel channel) {
+    public void connect(A3GroupChannel channel) {
         Message message = mHandler.obtainMessage(HANDLE_CONNECT_EVENT);
         message.obj = channel;
         mHandler.sendMessage(message);
     }
 
     @Override
-    public void disconnect(A3Channel channel) {
+    public void disconnect(A3GroupChannel channel) {
         Message message = mHandler.obtainMessage(HANDLE_DISCONNECT_EVENT);
         message.obj = channel;
         mHandler.sendMessage(message);
@@ -578,7 +580,6 @@ public class AlljoynBus extends A3Bus {
     private static final int ADD_CHANNEL = 15;
     private static final int ADD_SERVICE = 16;
     private static final int DEL_CHANNEL = 17;
-    private static final int DEL_SERVICE = 18;
 
     /**
      * The instance of the AllJoyn background thread handler.  It is created
@@ -1074,16 +1075,16 @@ public class AlljoynBus extends A3Bus {
              */
             try {
                 switch (messageItem.getType()) {
-                    case A3Channel.BROADCAST_MSG:
+                    case A3GroupChannel.BROADCAST_MSG:
                         channel.sendBroadcast(message);
                         break;
-                    case A3Channel.UNICAST_MSG:
+                    case A3GroupChannel.UNICAST_MSG:
                         channel.sendUnicast(message);
                         break;
-                    case A3Channel.MULTICAST_MSG:
+                    case A3GroupChannel.MULTICAST_MSG:
                         channel.sendMulticast(message);
                         break;
-                    case A3Channel.CONTROL_MSG:
+                    case A3GroupChannel.CONTROL_MSG:
                         channel.sendControl(message);
                         break;
                     default:

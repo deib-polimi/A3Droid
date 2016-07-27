@@ -9,16 +9,13 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.*;
 import it.polimi.deepse.a3droid.utility.RandomWait;
 
-/**
- * TODO
- */
 public class A3GroupControl extends HandlerThread implements TimerInterface{
 
-    private final A3Node node;
-    private final A3Channel channel;
+    private final A3NodeInterface node;
+    private final A3GroupChannel channel;
     private Handler mHandler;
 
-    public A3GroupControl(A3Node node, A3Channel channel) {
+    public A3GroupControl(A3NodeInterface node, A3GroupChannel channel) {
         super("ControlRoleMessageHandler_" + channel.getGroupName());
         this.node = node;
         this.channel = channel;
@@ -99,7 +96,6 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
             }
         };
     }
-
 
     /**
      *

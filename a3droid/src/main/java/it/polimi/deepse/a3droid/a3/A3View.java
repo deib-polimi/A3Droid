@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class A3View extends HandlerThread{
 
 	/**The Service on which this View resides.*/
-	private A3Channel channel;
+	private A3GroupChannel channel;
 
 	/**The list of the channel that are currently part of the group.*/
 	private ArrayList<String> groupMembers;
@@ -32,7 +32,7 @@ public class A3View extends HandlerThread{
 	/**The Service on which this View resides
 	 * @param channel this view's channel
 	 */
-	public A3View(A3Channel channel) {
+	public A3View(A3GroupChannel channel) {
 		super("View_" + channel.getGroupName());
 		this.channel = channel;
 		groupMembers = new ArrayList<>();

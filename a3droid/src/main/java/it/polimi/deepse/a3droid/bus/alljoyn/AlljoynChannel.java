@@ -10,7 +10,7 @@ import org.alljoyn.bus.annotation.BusSignalHandler;
 import it.polimi.deepse.a3droid.a3.A3Message;
 import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3Channel;
+import it.polimi.deepse.a3droid.a3.A3GroupChannel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
 import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
@@ -18,7 +18,7 @@ import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
 /**
  * TODO: Describe
  */
-public class AlljoynChannel extends A3Channel{
+public class AlljoynChannel extends A3GroupChannel {
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
@@ -99,7 +99,7 @@ public class AlljoynChannel extends A3Channel{
 
     /**
      * Handles Alljoyn error events. If an A3Exception is trowed, it was not possible to handle the
-     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
+     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3GroupChannel.
      * @param status the (error) status returned by Alljoyn
      * @param errorSide identifies where the error occurred, i.e., at channel, service or bus setup
      */
@@ -113,7 +113,7 @@ public class AlljoynChannel extends A3Channel{
 
     /**
      * Handles Alljoyn errors. If an A3Exception is trowed, it was not possible to handle the
-     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3Channel.
+     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3GroupChannel.
      * @param ex the exception trowed by the bus
      */
     public void handleError(BusException ex, int errorSide){

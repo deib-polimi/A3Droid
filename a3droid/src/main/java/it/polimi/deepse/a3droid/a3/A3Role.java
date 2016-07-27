@@ -47,7 +47,7 @@ public abstract class A3Role implements Runnable {
 	protected A3Node node;
 
 	/**The channel this role belongs to.*/
-	private A3Channel channel;
+	private A3GroupChannel channel;
 
 	private RoleMessageHandler handler;
 	/**
@@ -92,7 +92,8 @@ public abstract class A3Role implements Runnable {
 
 		if(active){
 			handler = new RoleMessageHandler(this);
-		}
+		}else
+			handler.quit();
 	}
 
 	public boolean isActive(){
@@ -102,7 +103,7 @@ public abstract class A3Role implements Runnable {
 	public void sendUnicast(A3Message message, String address){
 		try {
 			message.addresses = new String [] {address};
-			channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
+			channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,7 +112,7 @@ public abstract class A3Role implements Runnable {
 	public void sendMulticast(A3Message message, String ... addresses){
 		try {
 			message.addresses = addresses;
-			channel.addOutboundItem(message, A3Channel.MULTICAST_MSG);
+			channel.addOutboundItem(message, A3GroupChannel.MULTICAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -119,7 +120,7 @@ public abstract class A3Role implements Runnable {
 
 	public void sendBroadcast(A3Message message){
 		try {
-			channel.addOutboundItem(message, A3Channel.BROADCAST_MSG);
+			channel.addOutboundItem(message, A3GroupChannel.BROADCAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -128,7 +129,7 @@ public abstract class A3Role implements Runnable {
 	public void sendToSupervisor(A3Message message){
 		try {
 			message.addresses = new String [] {channel.getSupervisorId()};
-			channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
+			channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -136,7 +137,7 @@ public abstract class A3Role implements Runnable {
 
 	/**
 	 * The logic that must be executed when receiving an application message.
-	 * Control messages are handled by A3Channel.
+	 * Control messages are handled by A3GroupChannel.
 	 * @param message The received message.
 	 */
 	abstract void receiveApplicationMessage(A3Message message);
@@ -167,11 +168,11 @@ public abstract class A3Role implements Runnable {
 		this.node = node;
 	}
 
-	public void setChannel(A3Channel a3channel) {
+	public void setChannel(A3GroupChannel a3channel) {
 		channel = a3channel;
 	}
 
-	public A3Channel getChannel() {
+	public A3GroupChannel getChannel() {
 		return channel;
 	}
 
@@ -208,9 +209,5 @@ public abstract class A3Role implements Runnable {
 				}
 			};
 		}
-	}
-
-	public void showOnScreen(String msg){
-		Log.i(TAG, msg);
 	}
 }

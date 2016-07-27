@@ -200,25 +200,23 @@ public class A3Application extends Application implements Observable{
      */
     private List<String> mGroups = new ArrayList<>();
 
-    /**
-     * A singleton method for creating of fetching an existing node, which is identified by the
-     * group descriptors and roles
-     * @see A3Node#hashCode()
-     * @see A3GroupDescriptor#hashCode()
-     * @param a3GroupDescriptors a list of A3GroupDescriptor instances for the node to be created
-     * @param roles a list of A3Role instances for the node to be created
-     * @return the created node or the existing node instance
-     */
-    public A3Node createNode(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
-                             ArrayList<String> roles){
-
+    public synchronized boolean isNodeCreated(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
+                                              ArrayList<String> roles){
         A3Node node = new A3Node(this, a3GroupDescriptors, roles);
-        if(mNodes.contains(node)) {
-            return mNodes.get(mNodes.indexOf(node));
-        }else {
-            addNode(node);
-            return node;
-        }
+        return mNodes.contains(node);
+    }
+
+    public synchronized A3Node createNode(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
+                             ArrayList<String> roles){
+        A3Node node = new A3Node(this, a3GroupDescriptors, roles);
+        addNode(node);
+        return node;
+    }
+
+    public synchronized A3Node getNode(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
+                          ArrayList<String> roles){
+        A3Node node = new A3Node(this, a3GroupDescriptors, roles);
+        return mNodes.get(mNodes.indexOf(node));
     }
 
     /**

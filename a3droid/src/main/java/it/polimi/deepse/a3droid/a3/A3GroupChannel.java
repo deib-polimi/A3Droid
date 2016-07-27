@@ -20,19 +20,27 @@ import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 
 /**
- * This is the A3 layer class responsible for group management, A3 application/control communication,
- * handling A3 events and errors, and other methods related to A3 layer only. The framework responsible
- * for the actual communication between nodes must extend this class and implement its logic in its
- * own layer.
+ * This class implements the communication methods for sending and receiving both application
+ * and control messages. It is composed of an event and error handlers, as well as group control,
+ * view a and hierarchy classes which have their specific responsibilities. For each group a node
+ * is connect to, a corresponding instance of a class extending A3GroupChannel must exist, i.e.,
+ * a class from the bus framework used for group communication.
+ * @see A3EventHandler
+ * @see A3GroupControl
+ * @see A3View
+ * @see A3Hierarchy
  */
-public abstract class A3Channel implements A3ChannelInterface, Observable, TimerInterface {
+public abstract class A3GroupChannel implements A3ChannelInterface, Observable, TimerInterface {
 
-    protected static final String TAG = "a3droid.A3Channel";
+    protected static final String TAG = "a3droid.A3GroupChannel";
 
-    /** The logic that is executed when this channel is a follower. */
+    /** The A3 class extending Android Application class with middleware specific behavior **/
+    protected A3Application application;
+
+    /** The logic that is executed when this channel is a follower */
     protected A3FollowerRole followerRole;
 
-    /** The logic that is executed when this channel is the supervisor. */
+    /** The logic that is executed when this channel is the supervisor */
     protected A3SupervisorRole supervisorRole;
 
     /** The current active role, since follower and supervisor roles activation are mutually exclusive **/
@@ -41,67 +49,109 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
     /** Handler class for A3 layer events **/
     private A3EventHandler eventHandler;
 
+    /** A reference to the node which this channel belongs to **/
+    private A3NodeInterface node;
+
     /** The descriptor instance of the group associated to this channel **/
     private A3GroupDescriptor groupDescriptor;
 
-    public A3Channel(A3Application application,
-                     A3Node node,
-                     A3GroupDescriptor descriptor){
+    public A3GroupChannel(A3Application application,
+                          A3Node node,
+                          A3GroupDescriptor descriptor){
         this.setGroupName(descriptor.getGroupName());
         this.application = application;
         this.hasFollowerRole = descriptor.getFollowerRoleId() != null;
         this.hasSupervisorRole = descriptor.getSupervisorRoleId() != null;
+        this.node = node;
         this.groupDescriptor = descriptor;
-        eventHandler = new A3EventHandler(application, this);
-        hierarchy = new A3Hierarchy(this);
-        view = new A3View(this);
-        groupControl = new A3GroupControl(node, this);
     }
 
-    protected A3Application application;
-
-    /** A3Channel methods **/
-
+    /**
+     *
+     * @param followerRole
+     * @param supervisorRole
+     */
     public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
+        addObservers(application.getObservers());
+        initializeRoles(followerRole, supervisorRole);
+        initializeHandlers();
+        notifyObservers(A3GroupChannel.CONNECT_EVENT);
+    }
+
+    /**
+     *
+     * @param followerRole
+     * @param supervisorRole
+     */
+    private void initializeRoles(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
         this.followerRole = followerRole;
         this.supervisorRole = supervisorRole;
         if(this.followerRole != null)
             this.followerRole.setChannel(this);
         if(this.supervisorRole != null)
             this.supervisorRole.setChannel(this);
-        addObservers(application.getObservers());
-        notifyObservers(A3Channel.CONNECT_EVENT);
     }
 
+    /**
+     *
+     */
     public void disconnect(){
         deactivateActiveRole();
-        notifyObservers(A3Channel.DISCONNECT_EVENT);
+        notifyObservers(A3GroupChannel.DISCONNECT_EVENT);
         clearObservers();
     }
 
     public void joinGroup(){
-        notifyObservers(A3Channel.JOIN_CHANNEL_EVENT);
+        notifyObservers(A3GroupChannel.JOIN_CHANNEL_EVENT);
     }
 
     public void leaveGroup(){
-        notifyObservers(A3Channel.USE_LEAVE_CHANNEL_EVENT);
+        notifyObservers(A3GroupChannel.USE_LEAVE_CHANNEL_EVENT);
     }
 
     public void createGroup(){
-        notifyObservers(A3Channel.START_SERVICE_EVENT);
+        notifyObservers(A3GroupChannel.START_SERVICE_EVENT);
     }
 
     public void destroyGroup(){
-        notifyObservers(A3Channel.STOP_SERVICE_EVENT);
+        notifyObservers(A3GroupChannel.STOP_SERVICE_EVENT);
     }
 
-    /** A3Channel methods used internally**/
+    /**
+     *
+     */
+    private void initializeHandlers(){
+        eventHandler = new A3EventHandler(application, this);
+        hierarchy = new A3Hierarchy(this);
+        view = new A3View(this);
+        groupControl = new A3GroupControl(node, this);
+    }
+
+    /**
+     *
+     */
+    private void quitHandlers(){
+        eventHandler.quit();
+        hierarchy = null;
+        view.quit();
+        groupControl.quit();
+    }
+
+    /**
+     * Forward event to handler without argument
+     * @param event
+     */
     public void handleEvent(A3Bus.A3Event event){
         Message msg = eventHandler.obtainMessage();
         msg.what = event.ordinal();
         eventHandler.sendMessage(msg);
     }
 
+    /**
+     * Forward event to handler with argument
+     * @param event
+     * @param arg
+     */
     public void handleEvent(A3Bus.A3Event event, Object arg){
         Message msg = eventHandler.obtainMessage();
         msg.what = event.ordinal();
@@ -109,6 +159,10 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
         eventHandler.sendMessage(msg);
     }
 
+    /**
+     *
+     * @param ex
+     */
     public void handleError(A3Exception ex){
         if(ex instanceof A3GroupDuplicationException){
             reconnect(); //TODO handle duplication
@@ -406,7 +460,7 @@ public abstract class A3Channel implements A3ChannelInterface, Observable, Timer
      */
     protected void enqueueControl(A3Message message){
         try {
-            addOutboundItem(message, A3Channel.CONTROL_MSG);
+            addOutboundItem(message, A3GroupChannel.CONTROL_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -22,9 +22,30 @@ public class A3Node implements A3NodeInterface{
 
     protected static final String TAG = "a3droid.A3Node";
 
-    private A3Application application;
+    /**
+     * A singleton method for creating of fetching an existing node, which is identified by the
+     * group descriptors and roles
+     * @see A3Node#hashCode()
+     * @see A3GroupDescriptor#hashCode()
+     * @param groupDescriptors a list of A3GroupDescriptor instances for the node to be created
+     * @param roles a list of A3Role instances for the node to be created
+     * @return the created node or the existing node instance
+     */
+    public static A3Node createNode(A3Application application, ArrayList<A3GroupDescriptor> groupDescriptors,
+                             ArrayList<String> roles){
+        if(application.isNodeCreated(groupDescriptors, roles))
+            return application.getNode(groupDescriptors, roles);
+        else
+            return application.createNode(groupDescriptors, roles);
+    }
 
-    public A3Node(A3Application application,
+    /**
+     *
+     * @param application
+     * @param a3GroupDescriptors
+     * @param roles
+     */
+    protected A3Node(A3Application application,
                   ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                   ArrayList<String> roles){
         this.application = application;
@@ -32,17 +53,8 @@ public class A3Node implements A3NodeInterface{
         this.roles = roles;
     }
 
-    /**
-     * @param groupName
-     * @return
-     * @throws A3NoGroupDescriptionException
-     */
-    protected synchronized boolean connectAndWait(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        boolean result = connect(groupName);
-        A3Channel channel = getChannel(groupName);
-        waitForState(channel, A3Bus.A3GroupState.ACTIVE);
-        return result;
-    }
+    /** A reference to the android application object **/
+    private A3Application application;
 
     /**
      *
@@ -58,7 +70,7 @@ public class A3Node implements A3NodeInterface{
         if(descriptor != null) {
             A3SupervisorRole supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
             A3FollowerRole followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
-            A3Channel channel = new AlljoynChannel(application, this, descriptor);
+            A3GroupChannel channel = new AlljoynChannel(application, this, descriptor);
             channel.connect(followerRole, supervisorRole);
             addChannel(channel);
             return true;
@@ -68,12 +80,24 @@ public class A3Node implements A3NodeInterface{
     }
 
     /**
+     * @param groupName
+     * @return
+     * @throws A3NoGroupDescriptionException
+     */
+    protected synchronized boolean connectAndWait(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+        boolean result = connect(groupName);
+        A3GroupChannel channel = getChannel(groupName);
+        waitForState(channel, A3Bus.A3GroupState.ACTIVE);
+        return result;
+    }
+
+    /**
      *
      * @param groupName
      * @throws A3ChannelNotFoundException
      */
     public void disconnect(String groupName) throws A3ChannelNotFoundException {
-        A3Channel channel;
+        A3GroupChannel channel;
         channel = getChannel(groupName);
         channel.disconnect();
         removeChannel(channel);
@@ -84,7 +108,7 @@ public class A3Node implements A3NodeInterface{
      * @param channel
      * @param state
      */
-    private void waitForState(A3Channel channel, A3Bus.A3GroupState state){
+    private void waitForState(A3GroupChannel channel, A3Bus.A3GroupState state){
         synchronized (waiter) {
             while (channel.getGroupState().compareTo(state) < 0) {
                 try {
@@ -145,7 +169,7 @@ public class A3Node implements A3NodeInterface{
      */
     private void requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (connectAndWait(childGroupName)) {
-            A3Channel channel;
+            A3GroupChannel channel;
             channel = getChannel(childGroupName);
             channel.requestStack(parentGroupName);
         } else
@@ -168,7 +192,7 @@ public class A3Node implements A3NodeInterface{
         assert(!parentGroupName.isEmpty());
         assert(!childGroupName.isEmpty());
         if(connect(parentGroupName)) {
-            A3Channel channel = getChannel(childGroupName);
+            A3GroupChannel channel = getChannel(childGroupName);
             channel.notifyHierarchyAdd(parentGroupName);
             stackReply(parentGroupName, childGroupName, true, false);
             return true;
@@ -241,7 +265,7 @@ public class A3Node implements A3NodeInterface{
             A3ChannelNotFoundException {
         assert(!parentGroupName.isEmpty());
         assert(!childGroupName.isEmpty());
-        A3Channel channel = getChannel(childGroupName);
+        A3GroupChannel channel = getChannel(childGroupName);
         channel.notifyHierarchyRemove(parentGroupName);
         disconnect(parentGroupName);
         reverseStackReply(parentGroupName, childGroupName, true, false);
@@ -258,7 +282,7 @@ public class A3Node implements A3NodeInterface{
     private void requestReverseStack(String parentGroupName, String childGroupName) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (connectAndWait(childGroupName)) {
-            A3Channel channel = getChannel(childGroupName);
+            A3GroupChannel channel = getChannel(childGroupName);
             channel.requestReverseStack(parentGroupName);
         } else
             reverseStackReply(parentGroupName, childGroupName, false, false);
@@ -324,7 +348,7 @@ public class A3Node implements A3NodeInterface{
     private void requestMerge(String destinationGroupName, String sourceGroupName)
         throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (connectAndWait(sourceGroupName)) {
-            A3Channel channel = getChannel(sourceGroupName);
+            A3GroupChannel channel = getChannel(sourceGroupName);
             channel.requestMerge(destinationGroupName);
         } else
             disconnect(sourceGroupName);
@@ -341,7 +365,7 @@ public class A3Node implements A3NodeInterface{
                                                        String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         disconnectFromHierarchyAbove(sourceGroupName);
-        A3Channel oldGroupChannel = getChannel(sourceGroupName);
+        A3GroupChannel oldGroupChannel = getChannel(sourceGroupName);
         oldGroupChannel.notifyMerge(destinationGroupName);
         return true;
     }
@@ -370,7 +394,7 @@ public class A3Node implements A3NodeInterface{
 
     /** A3Hierarchy bellow the old group **/
     private void disconnectFromHieararchyBellow(String oldGroupName){
-        for (A3Channel c : mChannels) {
+        for (A3GroupChannel c : mChannels) {
             if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
                 c.notifyHierarchyRemove(oldGroupName);
                 //disconnect(oldGroupName); TODO
@@ -415,7 +439,7 @@ public class A3Node implements A3NodeInterface{
      */
     public synchronized boolean performSupervisorSplit(String groupName, int nodesToTransfer) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        A3Channel channel = getChannel(groupName);
+        A3GroupChannel channel = getChannel(groupName);
         channel.notifyNewSubgroup();
         channel.notifySplitRandomly(nodesToTransfer);
         return true;
@@ -446,9 +470,9 @@ public class A3Node implements A3NodeInterface{
     /** Communication methods **/
     public void sendUnicast(A3Message message, String groupName, String address){
         try {
-            A3Channel channel = getChannel(groupName);
+            A3GroupChannel channel = getChannel(groupName);
             message.addresses = new String [] {address};
-            channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
+            channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -456,9 +480,9 @@ public class A3Node implements A3NodeInterface{
 
     public void sendMulticast(A3Message message, String groupName, String ... addresses){
         try {
-            A3Channel channel = getChannel(groupName);
+            A3GroupChannel channel = getChannel(groupName);
             message.addresses = addresses;
-            channel.addOutboundItem(message, A3Channel.MULTICAST_MSG);
+            channel.addOutboundItem(message, A3GroupChannel.MULTICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -466,8 +490,8 @@ public class A3Node implements A3NodeInterface{
 
     public void sendBroadcast(A3Message message, String groupName){
         try {
-            A3Channel channel = getChannel(groupName);
-            channel.addOutboundItem(message, A3Channel.BROADCAST_MSG);
+            A3GroupChannel channel = getChannel(groupName);
+            channel.addOutboundItem(message, A3GroupChannel.BROADCAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -475,9 +499,9 @@ public class A3Node implements A3NodeInterface{
 
     public void sendToSupervisor(A3Message message, String groupName){
         try {
-            A3Channel channel = getChannel(groupName);
+            A3GroupChannel channel = getChannel(groupName);
             message.addresses = new String [] {channel.getSupervisorId()};
-            channel.addOutboundItem(message, A3Channel.UNICAST_MSG);
+            channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -490,7 +514,7 @@ public class A3Node implements A3NodeInterface{
      * @return true, if the channel "groupName" is used by the application, false otherwise.
      */
     public boolean isConnectedForApplication(String groupName) {
-        A3Channel channel;
+        A3GroupChannel channel;
         try {
             channel = getChannel(groupName);
             return channel.isConnected();
@@ -507,7 +531,7 @@ public class A3Node implements A3NodeInterface{
      */
     public boolean isSupervisor(String groupName){
 
-        A3Channel channel;
+        A3GroupChannel channel;
 
         try {
             channel = getChannel(groupName);
@@ -595,34 +619,34 @@ public class A3Node implements A3NodeInterface{
      * @return The channel connected to the group "groupName".
      * @throws Exception No channel is connected to the group "groupName".
      */
-    public synchronized A3Channel getChannel(String groupName) throws A3ChannelNotFoundException {
+    public synchronized A3GroupChannel getChannel(String groupName) throws A3ChannelNotFoundException {
 
-        A3Channel channel;
+        A3GroupChannel channel;
         for(int i = 0; i < mChannels.size(); i++){
             channel = mChannels.get(i);
 
             if(channel.getGroupName().equals(groupName))
                 return channel;
         }
-        throw new A3ChannelNotFoundException("A3Channel for group " + groupName + "is not in this group's channel list");
+        throw new A3ChannelNotFoundException("A3GroupChannel for group " + groupName + "is not in this group's channel list");
     }
 
     public String getUID(){
         return application.getUID();
     }
 
-    public synchronized void addChannel(A3Channel channel){
+    public synchronized void addChannel(A3GroupChannel channel){
         mChannels.add(channel);
     }
 
-    public synchronized void removeChannel(A3Channel channel){
+    public synchronized void removeChannel(A3GroupChannel channel){
         mChannels.remove(channel);
     }
 
     /**The list of the mChannels to communicate with the groups this node is connected to.
      * There are also mChannels that are disconnected because they are in "wait" group.
      * In such case, a channel to the group "wait" is connected and in this list.*/
-    private ArrayList<A3Channel> mChannels = new ArrayList<>();
+    private ArrayList<A3GroupChannel> mChannels = new ArrayList<>();
 
     @Override
     public int hashCode() {

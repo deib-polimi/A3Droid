@@ -16,7 +16,7 @@ public class A3Hierarchy {
 	private ArrayList<String> hierarchy;
 	
 	/**The channel this hierarchy belongs to.*/
-	private A3Channel channel;
+	private A3GroupChannel channel;
 
 	/**
 	 * Only useful to determine the right name of a new splitted group.
@@ -29,7 +29,7 @@ public class A3Hierarchy {
 	/**
 	 * @param a3channel The channel this hierarchy belongs to.
 	 */
-	public A3Hierarchy(A3Channel a3channel){
+	public A3Hierarchy(A3GroupChannel a3channel){
 		channel = a3channel;
 		hierarchy = new ArrayList<String>();
 		numberOfSplitGroups = 0;
