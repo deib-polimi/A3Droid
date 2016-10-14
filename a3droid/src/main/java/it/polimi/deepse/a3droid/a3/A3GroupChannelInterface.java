@@ -3,7 +3,7 @@ package it.polimi.deepse.a3droid.a3;
 /**
  * TODO: Describe
  */
-public interface A3ChannelInterface {
+public interface A3GroupChannelInterface {
 
     void connect(A3FollowerRole a3FollowerRole, A3SupervisorRole a3SupervisorRole);
 

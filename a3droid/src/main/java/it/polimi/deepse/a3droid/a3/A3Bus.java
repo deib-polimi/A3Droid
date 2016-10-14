@@ -67,25 +67,4 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         MERGE,
         SPLIT
     }
-
-    /**
-     * The session with a service has been lost.
-     */
-    public enum A3Event {
-        GROUP_CREATED,
-        GROUP_DESTROYED,
-        GROUP_LOST,
-        GROUP_JOINED,
-        GROUP_LEFT,
-        MEMBER_LEFT,
-        MEMBER_JOINED,
-        SUPERVISOR_LEFT,
-        SUPERVISOR_ELECTED,
-        STACK_STARTED,
-        STACK_FINISHED,
-        MERGE_STARTED,
-        MERGE_FINISHED,
-        SPLIT_STARTED,
-        SPLIT_FINISHED
-    }
 }

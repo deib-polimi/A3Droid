@@ -76,7 +76,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
                     case A3Constants.CONTROL_ADD_TO_HIERARCHY:
                     case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
                     case A3Constants.CONTROL_INCREASE_SUBGROUPS:
-                        channel.getHierarchy().onMessage(message);
+                        channel.getHierarchyControl().onMessage(message);
                         break;
                     case A3Constants.CONTROL_MERGE_REQUEST:
                         handleMergeRequest(message);
@@ -124,7 +124,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3Bus.A3Event.SUPERVISOR_ELECTED);
+            channel.handleEvent(A3EventHandler.A3Event.SUPERVISOR_ELECTED);
         }
     }
 
@@ -162,17 +162,17 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
      * @param message
      */
     private void handleStackRequest(A3Message message){
-        assert channel.isSupervisor();
+        assert channel.isSupervisor();//TODO things may change.. we should verify and perform some behavior if it is false
         String parentGroupName = message.object;
         boolean ok = false;
         try{
-            channel.handleEvent(A3Bus.A3Event.STACK_STARTED);
+            channel.handleEvent(A3EventHandler.A3Event.STACK_STARTED);
             ok = node.performSupervisorStack(parentGroupName, channel.getGroupName());
         } catch (Exception e) {
             e.printStackTrace();
         }finally {
             channel.replyStack(parentGroupName, ok, message.senderAddress);
-            channel.handleEvent(A3Bus.A3Event.STACK_FINISHED);
+            channel.handleEvent(A3EventHandler.A3Event.STACK_FINISHED);
         }
     }
 
@@ -201,7 +201,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
-            channel.replyStackRequest(message.object, ok, message.senderAddress);
+            channel.replyReverseStack(message.object, ok, message.senderAddress);
         }
     }
 
@@ -242,7 +242,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
      * @param message
      */
     private void handleMergeNotification(A3Message message) {
-        channel.handleEvent(A3Bus.A3Event.MERGE_STARTED);
+        channel.handleEvent(A3EventHandler.A3Event.MERGE_STARTED);
         String receiverGroupName = message.object;
         new Timer(this, WAIT_AND_MERGE_EVENT, randomWait.next(WAIT_AND_MERGE_FIXED_TIME, WAIT_AND_MERGE_RANDOM_TIME), receiverGroupName);
     }
@@ -259,7 +259,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3Bus.A3Event.MERGE_FINISHED);
+            channel.handleEvent(A3EventHandler.A3Event.MERGE_FINISHED);
         }
     }
 
@@ -284,7 +284,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
      * @param message
      */
     private void handleSplitNotification(A3Message message){
-        channel.handleEvent(A3Bus.A3Event.SPLIT_STARTED);
+        channel.handleEvent(A3EventHandler.A3Event.SPLIT_STARTED);
         new Timer(this, WAIT_AND_SPLIT_EVENT, randomWait.next(WAIT_AND_SPLIT_FIXED_TIME, WAIT_AND_SPLIT_RANDOM_TIME));
     }
 
@@ -297,14 +297,16 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
     private void handleDelayedSplit(){
         try {
             node.performMerge(
-                    channel.getGroupName() + "_" + channel.getHierarchy().getSubgroupsCounter(),
-                    channel.getGroupName());
+                channel.getGroupName() + "_" +
+                channel.getHierarchyControl().getSubgroupsCounter(),
+                channel.getGroupName()
+            );
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3Bus.A3Event.SPLIT_FINISHED);
+            channel.handleEvent(A3EventHandler.A3Event.SPLIT_FINISHED);
         }
     }
 

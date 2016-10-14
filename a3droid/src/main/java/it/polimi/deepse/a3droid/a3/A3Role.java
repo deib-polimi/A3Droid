@@ -3,7 +3,6 @@ package it.polimi.deepse.a3droid.a3;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import android.util.Log;
 
 import java.lang.ref.WeakReference;
 

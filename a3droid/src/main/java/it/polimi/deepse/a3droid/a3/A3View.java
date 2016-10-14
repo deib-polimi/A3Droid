@@ -60,7 +60,7 @@ public class A3View extends HandlerThread{
 			 */
 			public void handleMessage(Message msg) {
 
-				A3Bus.A3Event event = A3Bus.A3Event.values()[msg.what];
+				A3EventHandler.A3Event event = A3EventHandler.A3Event.values()[msg.what];
 				String memberName = (String) msg.obj;
 				switch(event){
 					case MEMBER_JOINED:
@@ -111,7 +111,7 @@ public class A3View extends HandlerThread{
 
 		String supervisorId = channel.getSupervisorId();
 		if(supervisorId != null && supervisorId.equals(memberName))
-			channel.handleEvent(A3Bus.A3Event.SUPERVISOR_LEFT);
+			channel.handleEvent(A3EventHandler.A3Event.SUPERVISOR_LEFT);
 	}
 
 	/**

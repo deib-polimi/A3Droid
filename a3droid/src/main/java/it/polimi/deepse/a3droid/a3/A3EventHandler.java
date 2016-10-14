@@ -25,6 +25,27 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
         start();
     }
 
+    /**
+     * The session with a service has been lost.
+     */
+    public enum A3Event {
+        GROUP_CREATED,
+        GROUP_DESTROYED,
+        GROUP_LOST,
+        GROUP_JOINED,
+        GROUP_LEFT,
+        MEMBER_LEFT,
+        MEMBER_JOINED,
+        SUPERVISOR_LEFT,
+        SUPERVISOR_ELECTED,
+        STACK_STARTED,
+        STACK_FINISHED,
+        MERGE_STARTED,
+        MERGE_FINISHED,
+        SPLIT_STARTED,
+        SPLIT_FINISHED
+    }
+
     public Message obtainMessage() {
         return mHandler.obtainMessage();
     }
@@ -43,12 +64,12 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
 
             @Override
             public void handleMessage(Message msg) {
-                handleEvent(A3Bus.A3Event.values()[msg.what], msg.obj);
+                handleEvent(A3Event.values()[msg.what], msg.obj);
             }
         };
     }
 
-    public void handleEvent(A3Bus.A3Event event, Object obj) {
+    public void handleEvent(A3Event event, Object obj) {
         switch (event) {
             case GROUP_CREATED:
                 //A node also needs to join the group it has created
@@ -131,7 +152,7 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
     /** Used as random time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 1000;
 
-    private void notifyView(A3Bus.A3Event event, String memberId) {
+    private void notifyView(A3Event event, String memberId) {
         Message msg = channel.getView().obtainMessage();
         msg.what = event.ordinal();
         msg.obj = memberId;

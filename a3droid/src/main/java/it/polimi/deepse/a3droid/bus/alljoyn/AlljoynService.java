@@ -48,7 +48,7 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
         return true;
     }
 
-    /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynChannel class**/
+    /** Bellow methods are empty because they are handled by BusSignalHandler methods at @link AlljoynGroupChannel class**/
     public void ReceiveUnicast(A3Message message) throws BusException {}
 
     public void ReceiveMultiCast(A3Message message) throws BusException {}
@@ -75,4 +75,33 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
      * This interface is used for emitting bus signals in the bus, not calling methods
      */
     private AlljoynServiceInterface serviceSignalEmitterInterface;
+
+    /**
+     * Enumeration of the states of a hosted chat channel.  This lets us make a
+     * note to ourselve
+     A3DiscoveryDescriptor discoveryDescriptor = new A3DiscoveryDescriptor();
+     mDiscoveryChannel = new AlljoynGroupChannel((A3Application) getApplication(), null,
+     discoveryDescriptor);
+     mBackgroundHandler.connect(mDiscoveryChannel);
+     mBackgroundHandler.startDiscovery(mDiscoveryChannel);
+     }s regarding where we are in the process of preparing
+     * and tearing down the AllJoyn pieces responsible for providing the chat
+     * service.  In order to be out of the IDLE state, the BusAttachment state
+     * must be at least CONNECTED.
+     */
+    public enum AlljoynServiceState {
+        IDLE, /**
+         * There is no hosted chat channel
+         */
+        REGISTERED, /**
+         * The service has been registered to the bus
+         */
+        NAMED, /**
+         * The well-known name for the channel has been successfully acquired
+         */
+        BOUND, /**
+         * A session port has been bound for the channel
+         */
+        ADVERTISED,        /** The bus attachment has advertised itself as hosting an chat channel */
+    }
 }

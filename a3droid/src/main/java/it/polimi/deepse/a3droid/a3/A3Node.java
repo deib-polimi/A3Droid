@@ -9,7 +9,7 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynChannel;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynGroupChannel;
 
 /**
  * This class represent a device, with the roles it can play in each group.
@@ -70,7 +70,7 @@ public class A3Node implements A3NodeInterface{
         if(descriptor != null) {
             A3SupervisorRole supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
             A3FollowerRole followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
-            A3GroupChannel channel = new AlljoynChannel(application, this, descriptor);
+            A3GroupChannel channel = new AlljoynGroupChannel(application, this, descriptor);
             channel.connect(followerRole, supervisorRole);
             addChannel(channel);
             return true;
@@ -161,22 +161,6 @@ public class A3Node implements A3NodeInterface{
     }
 
     /**
-     *
-     * @param parentGroupName
-     * @param childGroupName
-     * @throws A3NoGroupDescriptionException
-     * @throws A3ChannelNotFoundException
-     */
-    private void requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        if (connectAndWait(childGroupName)) {
-            A3GroupChannel channel;
-            channel = getChannel(childGroupName);
-            channel.requestStack(parentGroupName);
-        } else
-            stackReply(parentGroupName, childGroupName, false, true);
-    }
-
-    /**
      * If this node has the proper roles,
      * this method creates a hierarchical relationship between the specified groups.
      * This happens by connecting this node to the parent group
@@ -198,6 +182,22 @@ public class A3Node implements A3NodeInterface{
             return true;
         }else
             return false;
+    }
+
+    /**
+     *
+     * @param parentGroupName
+     * @param childGroupName
+     * @throws A3NoGroupDescriptionException
+     * @throws A3ChannelNotFoundException
+     */
+    private void requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+        if (connectAndWait(childGroupName)) {
+            A3GroupChannel channel;
+            channel = getChannel(childGroupName);
+            channel.requestStack(parentGroupName);
+        } else
+            stackReply(parentGroupName, childGroupName, false, true);
     }
 
     /**
@@ -285,7 +285,7 @@ public class A3Node implements A3NodeInterface{
             A3GroupChannel channel = getChannel(childGroupName);
             channel.requestReverseStack(parentGroupName);
         } else
-            reverseStackReply(parentGroupName, childGroupName, false, false);
+            reverseStackReply(parentGroupName, childGroupName, false, true);
     }
 
     /**
@@ -351,12 +351,11 @@ public class A3Node implements A3NodeInterface{
             A3GroupChannel channel = getChannel(sourceGroupName);
             channel.requestMerge(destinationGroupName);
         } else
-            disconnect(sourceGroupName);
+            mergeReply(destinationGroupName, sourceGroupName, false, true);
     }
 
     /**
-     * It disconnects the hierarchy above the old group before the supervisor notifies the merge
-     * if it has the right roles.
+     * It disconnects the hierarchy above the old group before the supervisor notifies the merge.
      *
      * @param destinationGroupName The name of the group to joinGroup to.
      * @param sourceGroupName The name of the group to disconnect from.
@@ -371,31 +370,32 @@ public class A3Node implements A3NodeInterface{
     }
 
     /**
-     * It disconnects this node from the group "oldGroupName" and connects it to the group "newGroupName",
-     * if it has the right roles.
+     * It disconnects this node from the group "sourceGroupName" and connects it to the group
+     * "destinationGroupName"
      *
      * @param destinationGroupName The name of the group to joinGroup to.
      * @param sourceGroupName The name of the group to disconnect from.
      */
     public synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-            disconnectFromHieararchyBellow(sourceGroupName);
-        mergeReply(destinationGroupName, sourceGroupName, connectAndWait(destinationGroupName), true);
+        disconnectHierarchyBellow(sourceGroupName);
+        boolean ok = connectAndWait(destinationGroupName);
+        mergeReply(destinationGroupName, sourceGroupName, ok, true);
         return true;
     }
 
-    /** A3Hierarchy above the old group **/
+    /** Disconnects this node from the group hierarchy above oldGroupName group, if any **/
     private void disconnectFromHierarchyAbove(String oldGroupName) throws A3ChannelNotFoundException {
-        ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchy().getHierarchy();
+        ArrayList<String> oldHierarchy = getChannel(oldGroupName).getHierarchyControl().getHierarchy();
         for (String s : oldHierarchy) {
             disconnect(s);
         }
     }
 
-    /** A3Hierarchy bellow the old group **/
-    private void disconnectFromHieararchyBellow(String oldGroupName){
+    /** Notifies the nodes from the hierarchy bellow the oldGroupName group to disconnect from it **/
+    private void disconnectHierarchyBellow(String oldGroupName){
         for (A3GroupChannel c : mChannels) {
-            if (c.isSupervisor() && c.getHierarchy().getHierarchy().contains(oldGroupName)) {
+            if (c.isSupervisor() && c.getHierarchyControl().getHierarchy().contains(oldGroupName)) {
                 c.notifyHierarchyRemove(oldGroupName);
                 //disconnect(oldGroupName); TODO
             }

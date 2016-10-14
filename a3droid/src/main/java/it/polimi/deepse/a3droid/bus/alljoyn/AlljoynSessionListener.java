@@ -14,13 +14,13 @@ public class AlljoynSessionListener extends SessionListener{
 
     private static final String TAG = "a3droid.bus.AlljoynSL";
 
-    public AlljoynSessionListener(A3Application application, AlljoynChannel channel){
+    public AlljoynSessionListener(A3Application application, AlljoynGroupChannel channel){
         this.a3Application = application;
         this.channel = channel;
     }
 
     A3Application a3Application = null;
-    AlljoynChannel channel = null;
+    AlljoynGroupChannel channel = null;
 
     /**
      * This method is called when the last remote participant in the
@@ -36,18 +36,18 @@ public class AlljoynSessionListener extends SessionListener{
         Log.i(TAG, "AlljoynSessionListener.sessionLost(sessionId=" + sessionId + ",reason=" + reason + ")");
         a3Application.busError(A3Application.Module.USE, "The session has been lost");
         channel.setSessionId(-1);
-        channel.handleEvent(AlljoynBus.AlljoynEvent.SESSION_LOST, reason);
+        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LOST, reason);
     }
 
     @Override
     public void sessionMemberAdded(int sessionId, String uniqueName) {
         Log.i(TAG, "AlljoynSessionListener.sessionMemberAdded(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-        channel.handleEvent(AlljoynBus.AlljoynEvent.MEMBER_JOINED, uniqueName);
+        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.MEMBER_JOINED, uniqueName);
     }
 
     @Override
     public void sessionMemberRemoved(int sessionId, String uniqueName) {
         Log.i(TAG, "AlljoynSessionListener.sessionMemberRemoved(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-        channel.handleEvent(AlljoynBus.AlljoynEvent.MEMBER_LEFT, uniqueName);
+        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.MEMBER_LEFT, uniqueName);
     }
 }

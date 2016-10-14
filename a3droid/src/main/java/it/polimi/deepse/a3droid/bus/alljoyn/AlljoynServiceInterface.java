@@ -40,7 +40,7 @@ public interface AlljoynServiceInterface{
      * out that this is a used as a signal emitter and is only called to send
      * signals and not to receive signals.
      * Bus signals are called by the service and will be listened by all interfaces that declared
-     * the corresponding bus signal handlers, in our case the AlljoynChannel class.
+     * the corresponding bus signal handlers, in our case the AlljoynGroupChannel class.
      */
     @BusSignal(signature = "(sisayas)")
     void ReceiveUnicast(A3Message message) throws BusException;

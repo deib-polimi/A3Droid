@@ -7,10 +7,10 @@ import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Status;
 import org.alljoyn.bus.annotation.BusSignalHandler;
 
+import it.polimi.deepse.a3droid.a3.A3GroupChannel;
 import it.polimi.deepse.a3droid.a3.A3Message;
 import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3GroupChannel;
 import it.polimi.deepse.a3droid.a3.A3FollowerRole;
 import it.polimi.deepse.a3droid.a3.A3Node;
 import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
@@ -18,24 +18,11 @@ import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
 /**
  * TODO: Describe
  */
-public class AlljoynChannel extends A3GroupChannel {
+public class AlljoynGroupChannel extends A3GroupChannel {
 
     private boolean hosting = false;
     private AlljoynErrorHandler errorHandler;
     private AlljoynEventHandler eventHandler;
-
-    public AlljoynChannel(A3Application application,
-                          A3Node node,
-                          A3GroupDescriptor descriptor){
-        super(application, node, descriptor);
-        assert(application != null);
-        assert(descriptor != null);
-        setService(new AlljoynService(descriptor.getGroupName()));
-        errorHandler = new AlljoynErrorHandler(this);
-        errorHandler.prepareHandler();
-        eventHandler = new AlljoynEventHandler(application, this);
-        eventHandler.prepareHandler();
-    }
 
     /**
      * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
@@ -90,7 +77,7 @@ public class AlljoynChannel extends A3GroupChannel {
         super.leaveGroup();
     }
 
-    public void handleEvent(AlljoynBus.AlljoynEvent event, Object arg){
+    public void handleEvent(AlljoynEventHandler.AlljoynEvent event, Object arg){
         Message msg = eventHandler.obtainMessage();
         msg.what = event.ordinal();
         msg.obj = arg;
@@ -121,6 +108,19 @@ public class AlljoynChannel extends A3GroupChannel {
         Message msg = errorHandler.obtainMessage(errorSide);
         msg.obj = ex;
         errorHandler.sendMessage(msg);
+    }
+
+    public AlljoynGroupChannel(A3Application application,
+                               A3Node node,
+                               A3GroupDescriptor descriptor){
+        super(application, node, descriptor);
+        assert(application != null);
+        assert(descriptor != null);
+        setService(new AlljoynService(descriptor.getGroupName()));
+        errorHandler = new AlljoynErrorHandler(this);
+        errorHandler.prepareHandler();
+        eventHandler = new AlljoynEventHandler(application, this);
+        eventHandler.prepareHandler();
     }
 
     /** Methods to send application messages through service interface **/
@@ -244,15 +244,15 @@ public class AlljoynChannel extends A3GroupChannel {
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public synchronized void setServiceState(AlljoynBus.AlljoynServiceState state) {
+    public synchronized void setServiceState(AlljoynService.AlljoynServiceState state) {
         mServiceState = state;
         notifyObservers(SERVICE_STATE_CHANGED_EVENT);
     }
 
     /**
-     * Get the state of the "use" channel.
+     * Get the state of the "host" channel.
      */
-    public synchronized AlljoynBus.AlljoynServiceState getServiceState() {
+    public synchronized AlljoynService.AlljoynServiceState getServiceState() {
         return mServiceState;
     }
 
@@ -268,7 +268,7 @@ public class AlljoynChannel extends A3GroupChannel {
      * of detail probably isn't appropriate, but we want to do so for this
      * sample.
      */
-    protected AlljoynBus.AlljoynServiceState mServiceState = AlljoynBus.AlljoynServiceState.IDLE;
+    protected AlljoynService.AlljoynServiceState mServiceState = AlljoynService.AlljoynServiceState.IDLE;
 
     /**
      * Set the status of the "use" channel.  The AllJoyn Service part of the
