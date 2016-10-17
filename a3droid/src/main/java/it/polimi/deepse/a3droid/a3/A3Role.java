@@ -8,7 +8,6 @@ import java.lang.ref.WeakReference;
 
 
 /**
- * TODO
  * This class represents the role that the Node can play in a group.
  * A list of the roles a node can play resides on A3Node, it is fixed at node creation time and it can't change.
  * The A3Node constructor automatically sets the field "node" of the role to itself,

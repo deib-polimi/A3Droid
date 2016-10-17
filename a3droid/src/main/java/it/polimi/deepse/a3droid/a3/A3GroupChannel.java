@@ -14,6 +14,7 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDisconnectedException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 import it.polimi.deepse.a3droid.pattern.Timer;
@@ -26,7 +27,7 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  * is connect to, a corresponding instance of a class extending A3GroupChannel must exist, i.e.,
  * a class from the bus framework used for group communication.
  * @see A3EventHandler
- * @see A3GroupControl
+ * @see A3GroupControlHandler
  * @see A3View
  * @see A3HierarchyControl
  */
@@ -124,7 +125,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         eventHandler = new A3EventHandler(application, this);
         hierarchyControl = new A3HierarchyControl(this);
         view = new A3View(this);
-        groupControl = new A3GroupControl(node, this);
+        groupControl = new A3GroupControlHandler(node.getTopologyControl(), this);
     }
 
     /**
@@ -497,7 +498,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Thread responsible for handling messages
      **/
-    private A3GroupControl groupControl = null;
+    private A3GroupControlHandler groupControl = null;
 
     /**
      * Set the name part of the "host" channel.  Since we are going to "use" a
@@ -530,6 +531,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     public synchronized String getChannelId() {
         return channelId;
+    }
+
+    public A3GroupDescriptor getGroupDescriptor() throws A3NoGroupDescriptionException {
+        return node.getGroupDescriptor(getGroupName());
     }
 
     /**

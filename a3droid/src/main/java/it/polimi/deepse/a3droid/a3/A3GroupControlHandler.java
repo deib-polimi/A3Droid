@@ -9,15 +9,15 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.*;
 import it.polimi.deepse.a3droid.utility.RandomWait;
 
-public class A3GroupControl extends HandlerThread implements TimerInterface{
+public class A3GroupControlHandler extends HandlerThread implements TimerInterface{
 
-    private final A3NodeInterface node;
+    private final A3TopologyControl topologyControl;
     private final A3GroupChannel channel;
     private Handler mHandler;
 
-    public A3GroupControl(A3NodeInterface node, A3GroupChannel channel) {
-        super("ControlRoleMessageHandler_" + channel.getGroupName());
-        this.node = node;
+    public A3GroupControlHandler(A3TopologyControl topologyControl, A3GroupChannel channel) {
+        super("A3GroupControl_" + channel.getGroupName());
+        this.topologyControl = topologyControl;
         this.channel = channel;
         start();
     }
@@ -105,7 +105,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         channel.setSupervisorId(message.senderAddress);
         A3GroupDescriptor groupDescriptor = null;
         try {
-            groupDescriptor = node.getGroupDescriptor(channel.getGroupName());
+            groupDescriptor = channel.getGroupDescriptor();
             if(!channel.getSupervisorId().equals(message.senderAddress)){
                 float supervisorFF = Float.parseFloat(message.object);
                 if(channel.hasSupervisorRole()){
@@ -167,7 +167,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         boolean ok = false;
         try{
             channel.handleEvent(A3EventHandler.A3Event.STACK_STARTED);
-            ok = node.performSupervisorStack(parentGroupName, channel.getGroupName());
+            ok = topologyControl.performSupervisorStack(parentGroupName, channel.getGroupName());
         } catch (Exception e) {
             e.printStackTrace();
         }finally {
@@ -183,7 +183,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
     private void handleStackReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
-            node.stackReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
+            topologyControl.stackReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         }
@@ -197,7 +197,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         assert channel.isSupervisor();
         boolean ok = false;
         try {
-            ok = node.performSupervisorReverseStack(message.object, channel.getGroupName());
+            ok = topologyControl.performSupervisorReverseStack(message.object, channel.getGroupName());
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
@@ -212,7 +212,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
     private void handleReverseStackReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
-            node.reverseStackReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
+            topologyControl.reverseStackReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         }
@@ -227,7 +227,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
         String receiverGroupName = message.object;
         boolean ok = false;
         try {
-            ok = node.performSupervisorMerge(receiverGroupName, channel.getGroupName());
+            ok = topologyControl.performSupervisorMerge(receiverGroupName, channel.getGroupName());
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } catch (A3ChannelNotFoundException e) {
@@ -253,7 +253,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
      */
     private void handleDelayedMerge(String receiverGroupName){
         try {
-            node.performMerge(receiverGroupName, channel.getGroupName());
+            topologyControl.performMerge(receiverGroupName, channel.getGroupName());
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } catch (A3ChannelNotFoundException e) {
@@ -273,7 +273,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
     private void handleMergeReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
-            node.mergeReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
+            topologyControl.mergeReply(reply[0], channel.getGroupName(), Boolean.valueOf(reply[1]), true);
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         }
@@ -296,7 +296,7 @@ public class A3GroupControl extends HandlerThread implements TimerInterface{
      */
     private void handleDelayedSplit(){
         try {
-            node.performMerge(
+            topologyControl.performMerge(
                 channel.getGroupName() + "_" +
                 channel.getHierarchyControl().getSubgroupsCounter(),
                 channel.getGroupName()

@@ -20,25 +20,13 @@ public interface A3NodeInterface {
 
     void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
-    void stackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
-
-    boolean performSupervisorStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
-
     void reverseStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
-
-    void reverseStackReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
-
-    boolean performSupervisorReverseStack(String parentGroupName, String childGroupName) throws A3ChannelNotFoundException;
 
     void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
     A3GroupDescriptor getGroupDescriptor(String groupName) throws A3NoGroupDescriptionException;
 
-    boolean performSupervisorMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
-
-    boolean performMerge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException;
-
-    void mergeReply(String parentGroupName, String childGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException;
+    A3TopologyControl getTopologyControl();
 
     Object waiter = new Object();
 
