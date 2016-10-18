@@ -26,6 +26,7 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  * view a and hierarchyControl classes which have their specific responsibilities. For each group a node
  * is connect to, a corresponding instance of a class extending A3GroupChannel must exist, i.e.,
  * a class from the bus framework used for group communication.
+ *
  * @see A3EventHandler
  * @see A3GroupControlHandler
  * @see A3View
@@ -35,30 +36,44 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     protected static final String TAG = "A3GroupChannel";
 
-    /** The A3 class extending Android Application class with middleware specific behavior **/
+    /**
+     * The A3 class extending Android Application class with middleware specific behavior
+     **/
     protected A3Application application;
 
-    /** The logic that is executed when this channel is a follower */
+    /**
+     * The logic that is executed when this channel is a follower
+     */
     protected A3FollowerRole followerRole;
 
-    /** The logic that is executed when this channel is the supervisor */
+    /**
+     * The logic that is executed when this channel is the supervisor
+     */
     protected A3SupervisorRole supervisorRole;
 
-    /** The current active role, since follower and supervisor roles activation are mutually exclusive **/
+    /**
+     * The current active role, since follower and supervisor roles activation are mutually exclusive
+     **/
     protected A3Role activeRole;
 
-    /** Handler class for A3 layer events **/
+    /**
+     * Handler class for A3 layer events
+     **/
     private A3EventHandler eventHandler;
 
-    /** A reference to the node which this channel belongs to **/
+    /**
+     * A reference to the node which this channel belongs to
+     **/
     private A3NodeInterface node;
 
-    /** The descriptor instance of the group associated to this channel **/
+    /**
+     * The descriptor instance of the group associated to this channel
+     **/
     private A3GroupDescriptor groupDescriptor;
 
     public A3GroupChannel(A3Application application,
                           A3Node node,
-                          A3GroupDescriptor descriptor){
+                          A3GroupDescriptor descriptor) {
         this.setGroupName(descriptor.getGroupName());
         this.application = application;
         this.hasFollowerRole = descriptor.getFollowerRoleId() != null;
@@ -68,11 +83,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @param followerRole
      * @param supervisorRole
      */
-    public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
+    public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole) {
         addObservers(application.getObservers());
         initializeRoles(followerRole, supervisorRole);
         initializeHandlers();
@@ -80,48 +94,47 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @param followerRole
      * @param supervisorRole
      */
-    private void initializeRoles(A3FollowerRole followerRole, A3SupervisorRole supervisorRole){
+    private void initializeRoles(A3FollowerRole followerRole, A3SupervisorRole supervisorRole) {
         this.followerRole = followerRole;
         this.supervisorRole = supervisorRole;
-        if(this.followerRole != null)
+        if (this.followerRole != null)
             this.followerRole.setChannel(this);
-        if(this.supervisorRole != null)
+        if (this.supervisorRole != null)
             this.supervisorRole.setChannel(this);
     }
 
     /**
      *
      */
-    public void disconnect(){
+    public void disconnect() {
         deactivateActiveRole();
         notifyObservers(A3GroupChannel.DISCONNECT_EVENT);
         clearObservers();
     }
 
-    public void joinGroup(){
+    public void joinGroup() {
         notifyObservers(A3GroupChannel.JOIN_CHANNEL_EVENT);
     }
 
-    public void leaveGroup(){
+    public void leaveGroup() {
         notifyObservers(A3GroupChannel.USE_LEAVE_CHANNEL_EVENT);
     }
 
-    public void createGroup(){
+    public void createGroup() {
         notifyObservers(A3GroupChannel.START_SERVICE_EVENT);
     }
 
-    public void destroyGroup(){
+    public void destroyGroup() {
         notifyObservers(A3GroupChannel.STOP_SERVICE_EVENT);
     }
 
     /**
      *
      */
-    private void initializeHandlers(){
+    private void initializeHandlers() {
         eventHandler = new A3EventHandler(application, this);
         hierarchyControl = new A3HierarchyControl(this);
         view = new A3View(this);
@@ -131,7 +144,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      *
      */
-    private void quitHandlers(){
+    private void quitHandlers() {
         eventHandler.quit();
         hierarchyControl = null;
         view.quit();
@@ -140,9 +153,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Forward event to handler without argument
+     *
      * @param event
      */
-    public void handleEvent(A3EventHandler.A3Event event){
+    public void handleEvent(A3EventHandler.A3Event event) {
         Message msg = eventHandler.obtainMessage();
         msg.what = event.ordinal();
         eventHandler.sendMessage(msg);
@@ -150,10 +164,11 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Forward event to handler with argument
+     *
      * @param event
      * @param arg
      */
-    public void handleEvent(A3EventHandler.A3Event event, Object arg){
+    public void handleEvent(A3EventHandler.A3Event event, Object arg) {
         Message msg = eventHandler.obtainMessage();
         msg.what = event.ordinal();
         msg.obj = arg;
@@ -161,19 +176,18 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @param ex
      */
-    public void handleError(A3Exception ex){
-        if(ex instanceof A3GroupDuplicationException){
+    public void handleError(A3Exception ex) {
+        if (ex instanceof A3GroupDuplicationException) {
             reconnect(); //TODO handle duplication
-        }else if(ex instanceof A3GroupDisconnectedException){
+        } else if (ex instanceof A3GroupDisconnectedException) {
             //TODO raise this to the application?
-        }else if(ex instanceof A3GroupCreationException){
+        } else if (ex instanceof A3GroupCreationException) {
             //TODO raise this to the application?
-        }else if(ex instanceof A3GroupJoinException){
+        } else if (ex instanceof A3GroupJoinException) {
             //TODO raise this to the application?
-        }else if(ex instanceof A3MessageDeliveryException){
+        } else if (ex instanceof A3MessageDeliveryException) {
             //TODO raise this to the application?
         }
     }
@@ -181,8 +195,8 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Check for the condition to become a supervisor or to query for existing one.
      */
-    protected void queryRole(){
-        if((getView().isViewEmpty() ||
+    protected void queryRole() {
+        if ((getView().isViewEmpty() ||
                 getView().isAloneInView(channelId)
         ) &&
                 hasSupervisorRole)
@@ -200,10 +214,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         assert (hasSupervisorRole);
         supervisor = true;
         supervisorId = channelId;
-        if(hasFollowerRole)
+        if (hasFollowerRole)
             followerRole.setActive(false);
         activeRole = supervisorRole;
-        if(!supervisorRole.isActive()) {
+        if (!supervisorRole.isActive()) {
             supervisorRole.setActive(true);
             new Thread(supervisorRole).start();
         }
@@ -214,15 +228,15 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * Called when this channels becomes a follower. It deactivates the supervisor
      * role (if it is active) and it activates the follower role.
      */
-    protected void becomeFollower(){
+    protected void becomeFollower() {
         Log.i(TAG, "becomeFollower()");
         assert hasFollowerRole;
         assert supervisorId != null;
         supervisor = false;
-        if(hasSupervisorRole)
+        if (hasSupervisorRole)
             supervisorRole.setActive(false);
         activeRole = followerRole;
-        if(!followerRole.isActive()) {
+        if (!followerRole.isActive()) {
             followerRole.setActive(true);
             new Thread(followerRole).start();
         }
@@ -231,17 +245,17 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Deactivates the current active role
      */
-    protected void deactivateActiveRole(){
-        if(isSupervisor())
+    protected void deactivateActiveRole() {
+        if (isSupervisor())
             deactivateSupervisor();
-        else if(hasFollowerRole)
+        else if (hasFollowerRole)
             deactivateFollower();
     }
 
     /**
      * Removes the supervisor role by deactivating it and setting supervisor false
      */
-    protected void deactivateSupervisor(){
+    protected void deactivateSupervisor() {
         assert (hasSupervisorRole);
         supervisor = false;
         supervisorRole.setActive(false);
@@ -250,14 +264,14 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Clears the information regarding the current supervisor ID
      */
-    protected void clearSupervisor(){
+    protected void clearSupervisor() {
         supervisorId = null;
     }
 
     /**
      * Removes the follower role by deactivating it and setting supervisor false
      */
-    protected void deactivateFollower(){
+    protected void deactivateFollower() {
         assert (hasFollowerRole);
         followerRole.setActive(false);
     }
@@ -266,16 +280,17 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Broadcasts the election of a new supervisor
      */
-    private void notifyNewSupervisor(){
+    private void notifyNewSupervisor() {
         A3Message m = new A3Message(A3Constants.CONTROL_NEW_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         enqueueControl(m);
     }
 
     /**
      * Notifies @address of the current supervisor
+     *
      * @param address the address to send the current supervisor id
      */
-    protected void notifyCurrentSupervisor(String address){
+    protected void notifyCurrentSupervisor(String address) {
         A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         m.addresses = new String[]{address};
         enqueueControl(m);
@@ -284,7 +299,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Broadcasts a query about the current supervisor
      */
-    private void querySupervisor(){
+    private void querySupervisor() {
         A3Message m = new A3Message(A3Constants.CONTROL_GET_SUPERVISOR, "");
         enqueueControl(m);
         supervisorQueryTimer = new Timer(this, SUPERVISOR_NOT_FOUND_EVENT, SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT);
@@ -293,86 +308,95 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     /**
      * Aborts the current supervisor query timer if it is active
      */
-    protected synchronized void clearSupervisorQueryTimer(){
-        if(supervisorQueryTimer != null)
+    protected synchronized void clearSupervisorQueryTimer() {
+        if (supervisorQueryTimer != null)
             supervisorQueryTimer.abort();
     }
 
-    /** Timer object for the supervisor query **/
+    /**
+     * Timer object for the supervisor query
+     **/
     private Timer supervisorQueryTimer = null;
 
     /**
      * Sends a stack request to the supervisor of this channel's group
+     *
      * @param parentGroupName the group name that should receive the stack request
      */
-    protected void requestStack(String parentGroupName){
+    protected void requestStack(String parentGroupName) {
         assert getSupervisorId() != null;
         enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REQUEST, parentGroupName, new String[]{getSupervisorId()}));
     }
 
     /**
      * Send a reverse stack request to the supervisor of this channel's group
+     *
      * @param parentGroupName the group name that should receive the stack request
      */
-    protected void requestReverseStack(String parentGroupName){
+    protected void requestReverseStack(String parentGroupName) {
         assert getSupervisorId() != null;
         enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REQUEST, parentGroupName, new String[]{getSupervisorId()}));
     }
 
     /**
      * Sends a merge request to the supervisor of this channel's group
+     *
      * @param receiverGroupName the name of the group to receive merged nodes
      */
-    protected void requestMerge(String receiverGroupName){
+    protected void requestMerge(String receiverGroupName) {
         assert getSupervisorId() != null;
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REQUEST, receiverGroupName, new String[]{getSupervisorId()}));
     }
 
     /**
      * Replies to a stack request
-     * @param result the boolean result indicating the success of the stack operation
+     *
+     * @param result  the boolean result indicating the success of the stack operation
      * @param address the address of the node that should receive the stack reply
      */
-    protected void replyStack(String parentGroupName, boolean result, String address){
+    protected void replyStack(String parentGroupName, boolean result, String address) {
         enqueueControl(new A3Message(A3Constants.CONTROL_STACK_REPLY, groupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
      * Replies to a stack request
-     * @param result the boolean result indicating the success of the stack operation
+     *
+     * @param result  the boolean result indicating the success of the stack operation
      * @param address the address of the node that should receive the stack reply
      */
-    protected void replyReverseStack(String parentGroupName, boolean result, String address){
+    protected void replyReverseStack(String parentGroupName, boolean result, String address) {
         enqueueControl(new A3Message(A3Constants.CONTROL_REVERSE_STACK_REPLY, groupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
      * Replies to a merge request
-     * @param result the result of the merge operation
+     *
+     * @param result  the result of the merge operation
      * @param address the address of the node that should receive the merge reply
      */
-    protected void replyMerge(String parentGroupName, boolean result, String address){
+    protected void replyMerge(String parentGroupName, boolean result, String address) {
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_REPLY, parentGroupName + A3Constants.SEPARATOR + result, new String[]{address}));
     }
 
     /**
      * Sends a broadcast request to add a given group to the hierarchyControl
+     *
      * @param parentGroupName The name of the group to be added to the hierarchyControl
      */
-    protected void notifyHierarchyAdd(String parentGroupName){
+    protected void notifyHierarchyAdd(String parentGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
     }
 
     /**
      * Sends a broadcast request to remove a given group from the hierarchyControl
+     *
      * @param oldGroupName the name of the group to be removed from the hierarchyControl
      */
-    protected void notifyHierarchyRemove(String oldGroupName){
+    protected void notifyHierarchyRemove(String oldGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_REMOVE_FROM_HIERARCHY, oldGroupName));
     }
 
     /**
-     *
      * @param nodesToTransfer
      * @throws A3ChannelNotFoundException
      */
@@ -413,14 +437,16 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Sends a merge notification to this group nodes, which will initiate their merge procedure
+     *
      * @param receiverGroupName The destination group name, to which the nodes should be merged with
      */
-    protected void notifyMerge(String receiverGroupName){
+    protected void notifyMerge(String receiverGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_NOTIFICATION, receiverGroupName));
     }
 
     /**
      * Sends a split request to the supervisor of this channel's group
+     *
      * @param nodesToTransfer The number of nodes to be transferred to the new group
      */
     public void notifySplit(int nodesToTransfer) {
@@ -429,10 +455,11 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Handles events triggered after a certain amount of time past from a message been sent.
+     *
      * @param reason It indicates which timeout fired. The taken action will depend on this.
      */
-    public void handleTimeEvent(int reason, Object object){
-        switch (reason){
+    public void handleTimeEvent(int reason, Object object) {
+        switch (reason) {
             case SUPERVISOR_NOT_FOUND_EVENT:
                 handleSupervisorNotFoundEvent();
                 break;
@@ -448,18 +475,19 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * Whenever an existing group without supervisor is joint by this node, it becomes the
      * supervisor if it has the role for it.
      */
-    private void handleSupervisorNotFoundEvent(){
-        if(supervisorId == null){
-            if(hasSupervisorRole)
+    private void handleSupervisorNotFoundEvent() {
+        if (supervisorId == null) {
+            if (hasSupervisorRole)
                 becomeSupervisor();
         }
     }
 
     /**
      * Enqueue a control message
+     *
      * @param message the control message to be sent
      */
-    protected void enqueueControl(A3Message message){
+    protected void enqueueControl(A3Message message) {
         try {
             addOutboundItem(message, A3GroupChannel.CONTROL_MSG);
         } catch (Exception e) {
@@ -467,7 +495,9 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         }
     }
 
-    /** A3GroupChannelInterface for application communication **/
+    /**
+     * A3GroupChannelInterface for application communication
+     **/
     @Override
     public void receiveUnicast(A3Message message) {
         Log.i(TAG, "UNICAST : " + message.object + " TO " + message.getAddresses());
@@ -486,7 +516,9 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         activeRole.onMessage(message);
     }
 
-    /** A3GroupChannelInterface for control **/
+    /**
+     * A3GroupChannelInterface for control
+     **/
     @Override
     public void receiveControl(A3Message message) {
         Log.i(TAG, "CONTROL : " + message.object + " TO " + message.getAddresses());
@@ -506,7 +538,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * FoundAdvertisedName, this must come from a list of advertised names.
      * These names are our channels, and so we expect the GUI to choose from
      * among the list of channels it retrieves from getFoundGroups().
-     *
+     * <p>
      * Since we are talking about user-level interactions here, we are talking
      * about the final segment of a well-known name representing a channel at
      * this point.
@@ -543,11 +575,11 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     protected String channelId = null;
 
-    public int getSessionId(){
+    public int getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(int sessionId){
+    public void setSessionId(int sessionId) {
         this.sessionId = sessionId;
     }
 
@@ -557,7 +589,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     int sessionId = -1;
 
-    protected synchronized void setSupervisorId(String id){
+    protected synchronized void setSupervisorId(String id) {
         Log.i(TAG, "setSupervisorId(" + id + ")");
         this.supervisorId = id;
     }
@@ -568,17 +600,17 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     private String supervisorId = null;
 
-    public boolean isSupervisor(){
+    public boolean isSupervisor() {
         return supervisor;
     }
 
     private boolean supervisor = false;
 
-    public boolean hasSupervisorRole(){
+    public boolean hasSupervisorRole() {
         return hasSupervisorRole;
     }
 
-    public boolean hasFollowerRole(){
+    public boolean hasFollowerRole() {
         return hasFollowerRole;
     }
 
@@ -586,25 +618,27 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     private boolean hasFollowerRole = false;
 
     /**
-     *
      * @return this channel's hierarchyControl instance
      */
     public A3HierarchyControl getHierarchyControl() {
         return hierarchyControl;
     }
 
-    /** Stores the hierarchyControl on top of this group for this node **/
+    /**
+     * Stores the hierarchyControl on top of this group for this node
+     **/
     private A3HierarchyControl hierarchyControl = null;
 
     /**
-     *
      * @return this channel's view instance
      */
-    public A3View getView(){
+    public A3View getView() {
         return view;
     }
 
-    /** The list of the group members and all the methods to manage it. */
+    /**
+     * The list of the group members and all the methods to manage it.
+     */
     public A3View view = null;
 
     /**
@@ -666,7 +700,6 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @param observers
      */
     public synchronized void addObservers(List<Observer> observers) {
@@ -693,7 +726,6 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @param arg
      */
     protected void notifyObservers(Object arg) {
@@ -723,10 +755,9 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     *
      * @return true if this outbound is empty
      */
-    public synchronized boolean isOutboundEmpty(){
+    public synchronized boolean isOutboundEmpty() {
         return mOutbound.isEmpty();
     }
 
@@ -745,6 +776,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Adds a message to the outbound queue without notifying observers
+     *
      * @param message
      * @param type
      */
@@ -758,11 +790,11 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     private List<A3MessageItem> mOutbound = new ArrayList<>();
 
-    public A3GroupDescriptor.A3GroupState getGroupState(){
+    public A3GroupDescriptor.A3GroupState getGroupState() {
         return mGroupState;
     }
 
-    public void setGroupState(A3GroupDescriptor.A3GroupState state){
+    public void setGroupState(A3GroupDescriptor.A3GroupState state) {
         node.groupStateChangeListener(getGroupName(), getGroupState(), state);
         this.mGroupState = state;
         notifyObservers(GROUP_STATE_CHANGED_EVENT);

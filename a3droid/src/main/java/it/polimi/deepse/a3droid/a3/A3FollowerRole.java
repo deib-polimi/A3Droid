@@ -5,5 +5,5 @@ package it.polimi.deepse.a3droid.a3;
  */
 public abstract class A3FollowerRole extends A3Role{
 
-	abstract void receiveApplicationMessage(A3Message message);
+	public abstract void receiveApplicationMessage(A3Message message);
 }
