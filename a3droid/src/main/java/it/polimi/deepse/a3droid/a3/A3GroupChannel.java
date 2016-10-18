@@ -770,7 +770,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * and send them down the session corresponding to the channel.
      */
     public void addOutboundItem(A3Message message, int type) {
-        addOutboundItem(message, type);
+        this.mOutbound.add(new A3MessageItem(message, type));
         notifyObservers(OUTBOUND_CHANGED_EVENT);
     }
 

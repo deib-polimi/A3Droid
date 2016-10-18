@@ -20,8 +20,8 @@ android {
 
     compileOptions {
 
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -50,13 +50,13 @@ exportJar.dependsOn(deleteOldJar, build)
 
 // task to delete the old jar
 task deleteOldProjectJar(type: Delete) {
-    delete '/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/A3Droid.jar'
+    delete 'C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs/A3Droid.jar'
 }
 
 // task to export contents as jar
 task exportJarToProject(type: Copy) {
     from('build/intermediates/bundles/release/')
-    into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
+    into('C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs')
     include('classes.jar')
     // name the plugin
     rename('classes.jar','A3Droid.jar')

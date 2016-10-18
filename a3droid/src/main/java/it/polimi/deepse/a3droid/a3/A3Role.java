@@ -91,7 +91,8 @@ public abstract class A3Role implements Runnable {
 		if(active){
 			handler = new RoleMessageHandler(this);
 		}else
-			handler.quit();
+			if(handler != null)
+				handler.quit();
 	}
 
 	public boolean isActive(){
