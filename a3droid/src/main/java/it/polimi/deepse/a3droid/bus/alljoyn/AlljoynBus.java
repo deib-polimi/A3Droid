@@ -85,7 +85,7 @@ public class AlljoynBus extends A3Bus {
         super.onDestroy();
         Log.i(TAG, "onDestroy()");
         mBackgroundHandler.cancelDiscovery(mDiscoveryChannel);
-        mBackgroundHandler.disconnect(mDiscoveryChannel);
+        mBackgroundHandler.beforeDisconnectionWait(mDiscoveryChannel);
         stopBusThread();
         application.deleteObserver(this);
     }
@@ -212,7 +212,7 @@ public class AlljoynBus extends A3Bus {
                 break;
                 case HANDLE_DISCONNECT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): HANDLE_CONNECT_EVENT");
-                    mBackgroundHandler.disconnect(channel);
+                    mBackgroundHandler.beforeDisconnectionWait(channel);
                 }
                 break;
                 case HANDLE_JOIN_CHANNEL_EVENT: {
@@ -406,6 +406,24 @@ public class AlljoynBus extends A3Bus {
         }
 
         /**
+         * Gives time to messages to be sent before disconnecting whenever the channel state is
+         * still JOINT
+         */
+        private void beforeDisconnectionWait(AlljoynGroupChannel channel){
+            while(channel.getChannelState() == AlljoynChannelState.JOINT &&
+                    !channel.isOutboundEmpty()) {
+                try {
+                    synchronized (this) {
+                        this.wait();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            disconnect(channel);
+        }
+
+        /**
          * Disonnect the application from the Alljoyn bus attachment.  We
          * expect this method to be called in the context of the main Service
          * thread.  All this method does is to dispatch a corresponding method
@@ -526,7 +544,7 @@ public class AlljoynBus extends A3Bus {
                     doAddService((AlljoynGroupChannel) msg.obj);
                     break;
                 case DISCONNECT:
-                    beforeDisconnectionWait((AlljoynGroupChannel) msg.obj);
+                    doDisconnect((AlljoynGroupChannel) msg.obj);
                     break;
                 case START_DISCOVERY:
                     doStartDiscovery((AlljoynGroupChannel) msg.obj);
@@ -722,23 +740,6 @@ public class AlljoynBus extends A3Bus {
         channel.getBus().disconnect();
         channel.setBusState(BusState.DISCONNECTED);
         return true;
-    }
-
-    /**
-     * Gives time to the Alljoyn bus to be properly set before communication starts, avoiding an
-     * error noticed experimentally.
-     */
-    private void beforeDisconnectionWait(AlljoynGroupChannel channel){
-        while(channel.getChannelState() == AlljoynChannelState.JOINT &&
-                !channel.isOutboundEmpty())
-            try {
-                synchronized (this) {
-                    this.wait();
-                }
-                doDisconnect(channel);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
     }
 
     /**
@@ -1096,15 +1097,22 @@ public class AlljoynBus extends A3Bus {
                     default:
                         break;
                 }
+                if(channel.isOutboundEmpty())
+                    notifyOuterClass();
             } catch (BusException ex) {
-                notifyAll();
+                notifyOuterClass();
                 application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
                 channel.addOutboundItemSilently(message, messageItem.getType());
                 channel.handleError(ex, AlljoynErrorHandler.BUS);
                 break;
             }
         }
-        notifyAll();
+    }
+
+    private void notifyOuterClass(){
+        synchronized (AlljoynBus.this) {
+            AlljoynBus.this.notify();
+        }
     }
 
     /**
