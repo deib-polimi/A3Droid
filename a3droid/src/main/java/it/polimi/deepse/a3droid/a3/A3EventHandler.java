@@ -40,6 +40,8 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
         SUPERVISOR_ELECTED,
         STACK_STARTED,
         STACK_FINISHED,
+        REVERSE_STACK_STARTED,
+        REVERSE_STACK_FINISHED,
         MERGE_STARTED,
         MERGE_FINISHED,
         SPLIT_STARTED,
@@ -105,6 +107,12 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
                 channel.setGroupState(A3Bus.A3GroupState.STACK);
                 break;
             case STACK_FINISHED:
+                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                break;
+            case REVERSE_STACK_STARTED:
+                channel.setGroupState(A3Bus.A3GroupState.REVERSE_STACK);
+                break;
+            case REVERSE_STACK_FINISHED:
                 channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
                 break;
             case MERGE_STARTED:

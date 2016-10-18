@@ -62,8 +62,7 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
         ELECTION,
         ACTIVE,
         STACK,
-        UNSTACK,
-        PEER,
+        REVERSE_STACK,
         MERGE,
         SPLIT
     }
