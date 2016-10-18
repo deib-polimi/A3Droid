@@ -79,15 +79,15 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
                 break;
             case GROUP_DESTROYED:
             case GROUP_LOST:
-                channel.setGroupState(A3Bus.A3GroupState.IDLE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
             case GROUP_JOINED:
-                channel.setGroupState(A3Bus.A3GroupState.ELECTION);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
-                channel.setGroupState(A3Bus.A3GroupState.IDLE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
             case MEMBER_JOINED:
@@ -95,37 +95,37 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
                 notifyView(event, (String) obj);
                 break;
             case SUPERVISOR_LEFT:
-                if (channel.getGroupState() == A3Bus.A3GroupState.ACTIVE) {
-                    channel.setGroupState(A3Bus.A3GroupState.ELECTION);
+                if (channel.getGroupState() == A3GroupDescriptor.A3GroupState.ACTIVE) {
+                    channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
                     handleSupervisorLeftEvent();
                 }
                 break;
             case SUPERVISOR_ELECTED:
-                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case STACK_STARTED:
-                channel.setGroupState(A3Bus.A3GroupState.STACK);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.STACK);
                 break;
             case STACK_FINISHED:
-                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case REVERSE_STACK_STARTED:
-                channel.setGroupState(A3Bus.A3GroupState.REVERSE_STACK);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.REVERSE_STACK);
                 break;
             case REVERSE_STACK_FINISHED:
-                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case MERGE_STARTED:
-                channel.setGroupState(A3Bus.A3GroupState.MERGE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.MERGE);
                 break;
             case MERGE_FINISHED:
-                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case SPLIT_STARTED:
-                channel.setGroupState(A3Bus.A3GroupState.SPLIT);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.SPLIT);
                 break;
             case SPLIT_FINISHED:
-                channel.setGroupState(A3Bus.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             default:
                 break;

@@ -758,11 +758,12 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     private List<A3MessageItem> mOutbound = new ArrayList<>();
 
-    public A3Bus.A3GroupState getGroupState(){
+    public A3GroupDescriptor.A3GroupState getGroupState(){
         return mGroupState;
     }
 
-    public void setGroupState(A3Bus.A3GroupState state){
+    public void setGroupState(A3GroupDescriptor.A3GroupState state){
+        node.groupStateChangeListener(getGroupName(), getGroupState(), state);
         this.mGroupState = state;
         notifyObservers(GROUP_STATE_CHANGED_EVENT);
         synchronized (A3NodeInterface.waiter) {
@@ -770,7 +771,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         }
     }
 
-    private A3Bus.A3GroupState mGroupState = A3Bus.A3GroupState.IDLE;
+    private A3GroupDescriptor.A3GroupState mGroupState = A3GroupDescriptor.A3GroupState.IDLE;
 
     /**
      * The object we use in notifications to indicate that the state of the

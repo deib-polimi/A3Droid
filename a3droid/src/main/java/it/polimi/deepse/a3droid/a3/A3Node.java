@@ -84,7 +84,7 @@ public class A3Node implements A3NodeInterface{
 
     /**
      * Try to connect to a group and wait for its state to be ACTIVE
-     * @see it.polimi.deepse.a3droid.a3.A3Bus.A3GroupState
+     * @see A3GroupDescriptor.A3GroupState
      * @param groupName
      * @return true if the node has connected to the group
      * @throws A3NoGroupDescriptionException
@@ -92,7 +92,7 @@ public class A3Node implements A3NodeInterface{
     public synchronized boolean connectAndWait(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         boolean result = connect(groupName);
         A3GroupChannel channel = getChannel(groupName);
-        waitForState(channel, A3Bus.A3GroupState.ACTIVE);
+        waitForState(channel, A3GroupDescriptor.A3GroupState.ACTIVE);
         return result;
     }
 
@@ -113,7 +113,7 @@ public class A3Node implements A3NodeInterface{
      * @param channel
      * @param state
      */
-    private void waitForState(A3GroupChannel channel, A3Bus.A3GroupState state){
+    private void waitForState(A3GroupChannel channel, A3GroupDescriptor.A3GroupState state){
         synchronized (waiter) {
             while (channel.getGroupState().compareTo(state) < 0) {
                 try {
@@ -207,6 +207,9 @@ public class A3Node implements A3NodeInterface{
         validateOneSupervisorRole(groupName);
         topologyControl.split(groupName, nodesToTransfer);
     }
+
+    @Override
+    public void groupStateChangeListener(String groupName, A3GroupDescriptor.A3GroupState oldState, A3GroupDescriptor.A3GroupState newState) {}
 
     /**
      * Check if group names are not null nor empty

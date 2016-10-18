@@ -111,5 +111,17 @@ public abstract class A3GroupDescriptor {
 				this.supervisorRoleId.equals(((A3GroupDescriptor) o).supervisorRoleId) &&
 				this.followerRoleId.equals(((A3GroupDescriptor) o).followerRoleId);
 	}
-	
+
+	/**
+     * The session with a service has been lost.
+     */
+    public enum A3GroupState {
+        IDLE,
+        ELECTION,
+        ACTIVE,
+        STACK,
+        REVERSE_STACK,
+        MERGE,
+        SPLIT
+    }
 }

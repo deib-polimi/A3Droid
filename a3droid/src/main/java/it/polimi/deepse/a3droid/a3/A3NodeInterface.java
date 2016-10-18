@@ -24,11 +24,14 @@ public interface A3NodeInterface {
 
     void merge(String newGroupName, String oldGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
+    void split(String groupName, int nodesToTransfer) throws A3InvalidOperationRole, A3InvalidOperationParameters, A3ChannelNotFoundException, A3NoGroupDescriptionException;
+
+    void groupStateChangeListener(String groupName, A3GroupDescriptor.A3GroupState oldState, A3GroupDescriptor.A3GroupState newState);
+
     A3GroupDescriptor getGroupDescriptor(String groupName) throws A3NoGroupDescriptionException;
 
     A3TopologyControl getTopologyControl();
 
+    /** TODO refactor this, use the class as waiter **/
     Object waiter = new Object();
-
-
 }

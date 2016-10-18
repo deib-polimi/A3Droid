@@ -54,16 +54,4 @@ public abstract class A3Bus extends Service implements Observer, A3BusInterface{
      */
     protected A3Application application = null;
 
-    /**
-     * The session with a service has been lost.
-     */
-    public enum A3GroupState {
-        IDLE,
-        ELECTION,
-        ACTIVE,
-        STACK,
-        REVERSE_STACK,
-        MERGE,
-        SPLIT
-    }
 }
