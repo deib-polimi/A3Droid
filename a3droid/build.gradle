@@ -13,8 +13,14 @@ android {
     }
     buildTypes {
         release {
+            debuggable true
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+        debug {
+            debuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
         }
     }
 
@@ -27,7 +33,7 @@ android {
 
 dependencies {
     compile project(':alljoyn_java')
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(dir: 'LIBS', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.1'
 }
@@ -50,13 +56,14 @@ exportJar.dependsOn(deleteOldJar, build)
 
 // task to delete the old jar
 task deleteOldProjectJar(type: Delete) {
-    delete 'C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs/A3Droid.jar'
+    delete '/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/A3Droid.jar'
 }
 
 // task to export contents as jar
 task exportJarToProject(type: Copy) {
     from('build/intermediates/bundles/release/')
-    into('C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs')
+    //into('C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs')
+    into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
     include('classes.jar')
     // name the plugin
     rename('classes.jar','A3Droid.jar')

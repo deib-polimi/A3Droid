@@ -76,8 +76,6 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
                           A3GroupDescriptor descriptor) {
         this.setGroupName(descriptor.getGroupName());
         this.application = application;
-        this.hasFollowerRole = descriptor.getFollowerRoleId() != null;
-        this.hasSupervisorRole = descriptor.getSupervisorRoleId() != null;
         this.node = node;
         this.groupDescriptor = descriptor;
     }
@@ -100,10 +98,14 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     private void initializeRoles(A3FollowerRole followerRole, A3SupervisorRole supervisorRole) {
         this.followerRole = followerRole;
         this.supervisorRole = supervisorRole;
-        if (this.followerRole != null)
+        if (this.followerRole != null) {
+            this.hasFollowerRole = true;
             this.followerRole.setChannel(this);
-        if (this.supervisorRole != null)
+        }
+        if (this.supervisorRole != null) {
+            this.hasSupervisorRole = true;
             this.supervisorRole.setChannel(this);
+        }
     }
 
     /**
@@ -291,6 +293,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * @param address the address to send the current supervisor id
      */
     protected void notifyCurrentSupervisor(String address) {
+        Log.i(TAG, "notifyCurrentSupervisor(" + address + ")");
         A3Message m = new A3Message(A3Constants.CONTROL_CURRENT_SUPERVISOR, groupDescriptor.getSupervisorFitnessFunction() + "");
         m.addresses = new String[]{address};
         enqueueControl(m);
@@ -566,7 +569,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     public A3GroupDescriptor getGroupDescriptor() throws A3NoGroupDescriptionException {
-        return node.getGroupDescriptor(getGroupName());
+        return groupDescriptor;
     }
 
     /**
@@ -729,9 +732,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      * @param arg
      */
     protected void notifyObservers(Object arg) {
-        Log.i(TAG, "notifyObservers(" + arg + ")");
         for (Observer obs : mObservers) {
-            Log.i(TAG, "notify observer = " + obs);
             obs.update(this, arg);
         }
     }
@@ -795,7 +796,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     public void setGroupState(A3GroupDescriptor.A3GroupState state) {
-        node.groupStateChangeListener(getGroupName(), getGroupState(), state);
+        groupDescriptor.groupStateChangeListener(getGroupState(), state);
         this.mGroupState = state;
         notifyObservers(GROUP_STATE_CHANGED_EVENT);
         synchronized (A3NodeInterface.waiter) {

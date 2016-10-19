@@ -1166,5 +1166,10 @@ public class AlljoynBus extends A3Bus {
         public int getSupervisorFitnessFunction() {
             return 0;
         }
+
+        @Override
+        public void groupStateChangeListener(A3GroupState oldState, A3GroupState newState) {
+
+        }
     }
 }

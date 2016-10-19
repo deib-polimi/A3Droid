@@ -61,7 +61,9 @@ public abstract class A3GroupDescriptor {
 	}*/
 	
 	public abstract int getSupervisorFitnessFunction();
-	
+
+	public abstract void groupStateChangeListener(A3GroupDescriptor.A3GroupState oldState, A3GroupDescriptor.A3GroupState newState);
+
 	/**
 	 * Create the string representation of the type GroupInfo.
 	 * The obtained string is like "name supervisorRoleId followerRoleId".

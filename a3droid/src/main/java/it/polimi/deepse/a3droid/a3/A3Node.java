@@ -208,9 +208,6 @@ public class A3Node implements A3NodeInterface{
         topologyControl.split(groupName, nodesToTransfer);
     }
 
-    @Override
-    public void groupStateChangeListener(String groupName, A3GroupDescriptor.A3GroupState oldState, A3GroupDescriptor.A3GroupState newState) {}
-
     /**
      * Check if group names are not null nor empty
      * @param groupNames

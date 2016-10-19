@@ -3,6 +3,7 @@ package it.polimi.deepse.a3droid.a3;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
 
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
@@ -10,6 +11,8 @@ import it.polimi.deepse.a3droid.pattern.*;
 import it.polimi.deepse.a3droid.utility.RandomWait;
 
 public class A3GroupControlHandler extends HandlerThread implements TimerInterface{
+
+    protected static final String TAG = "A3GroupControlHandler";
 
     private final A3TopologyControl topologyControl;
     private final A3GroupChannel channel;
@@ -106,16 +109,19 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         A3GroupDescriptor groupDescriptor = null;
         try {
             groupDescriptor = channel.getGroupDescriptor();
-            if(!channel.getSupervisorId().equals(message.senderAddress)){
+            if(!channel.getChannelId().equals(message.senderAddress)){
                 float supervisorFF = Float.parseFloat(message.object);
                 if(channel.hasSupervisorRole()){
-                    if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF)
+                    if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF) {
                         channel.becomeSupervisor();
+                    }
                     else{
-                        if(channel.hasFollowerRole())
+                        if(channel.hasFollowerRole()) {
                             channel.becomeFollower();
-                        else if(channel.isSupervisor())
+                        }
+                        else if(channel.isSupervisor()) {
                             channel.deactivateSupervisor();
+                        }
                     }
                 }else if(channel.hasFollowerRole()) {
                     channel.becomeFollower();
@@ -133,6 +139,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      * @param message
      */
     private void handleCurrentSupervisorReply(A3Message message){
+        Log.i(TAG, "handleCurrentSupervisorReply(" + message + ")");
         channel.clearSupervisorQueryTimer();
         handleNewSupervisorNotification(message);
     }
