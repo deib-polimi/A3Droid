@@ -32,10 +32,16 @@ android {
 }
 
 dependencies {
-    compile project(':alljoyn_java')
-    compile fileTree(dir: 'LIBS', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+    //special android support
     compile 'com.android.support:appcompat-v7:24.2.1'
+    //alljoyn middleware for group communication
+    compile project(':alljoyn_java')
+    //library for events in android
+    compile 'org.greenrobot:eventbus:3.0.0'
+    //any external jar dependency
+    compile fileTree(dir: 'LIBS', include: ['*.jar'])
+    //for testing
+    testCompile 'junit:junit:4.12'
 }
 
 // task to delete the old jar

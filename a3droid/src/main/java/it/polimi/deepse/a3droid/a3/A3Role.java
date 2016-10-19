@@ -4,6 +4,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.lang.ref.WeakReference;
 
 
@@ -172,6 +174,10 @@ public abstract class A3Role implements Runnable {
 
 	public A3GroupChannel getChannel() {
 		return channel;
+	}
+
+	public void postUIEvent(int what, String message){
+		EventBus.getDefault().post(new A3UIEvent(what, message));
 	}
 
 	private void quitHandler(){
