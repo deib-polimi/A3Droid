@@ -113,6 +113,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     public void disconnect() {
         deactivateActiveRole();
+        quitHandlers();
         notifyObservers(A3GroupChannel.DISCONNECT_EVENT);
         clearObservers();
     }
@@ -138,19 +139,19 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     private void initializeHandlers() {
         eventHandler = new A3EventHandler(application, this);
-        hierarchyControl = new A3HierarchyControl(this);
         view = new A3View(this);
         groupControl = new A3GroupControlHandler(node.getTopologyControl(), this);
+        hierarchyControl = new A3HierarchyControl(this);
     }
 
     /**
      *
      */
     private void quitHandlers() {
-        eventHandler.quit();
+        eventHandler.quitSafely();
+        view.quitSafely();
+        groupControl.quitSafely();
         hierarchyControl = null;
-        view.quit();
-        groupControl.quit();
     }
 
     /**
@@ -196,12 +197,13 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /**
      * Check for the condition to become a supervisor or to query for existing one.
+     * A view may still be empty or contain only this node as there is a racing condition
+     * when the first group is created, which triggers the creation of the discovery channel.
+     * This justifies the double verification for becoming a supervisor.
      */
     protected void queryRole() {
-        if ((getView().isViewEmpty() ||
-                getView().isAloneInView(channelId)
-        ) &&
-                hasSupervisorRole)
+        if((getView().isViewEmpty() ||
+                getView().isAloneInView(channelId)) && hasSupervisorRole)
             becomeSupervisor();
         else
             querySupervisor();
@@ -214,15 +216,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     protected void becomeSupervisor() {
         Log.i(TAG, "becomeSupervisor()");
         assert (hasSupervisorRole);
-        supervisor = true;
         supervisorId = channelId;
         if (hasFollowerRole)
-            followerRole.setActive(false);
-        activeRole = supervisorRole;
-        if (!supervisorRole.isActive()) {
-            supervisorRole.setActive(true);
-            new Thread(supervisorRole).start();
-        }
+            deactivateFollower();
+        activateSupervisor();
         notifyNewSupervisor();
     }
 
@@ -234,14 +231,26 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
         Log.i(TAG, "becomeFollower()");
         assert hasFollowerRole;
         assert supervisorId != null;
-        supervisor = false;
         if (hasSupervisorRole)
-            supervisorRole.setActive(false);
+            deactivateSupervisor();
+        activateFollower();
+    }
+
+    private void activateFollower(){
         activeRole = followerRole;
         if (!followerRole.isActive()) {
             followerRole.setActive(true);
             new Thread(followerRole).start();
         }
+    }
+
+    private void activateSupervisor(){
+        activeRole = supervisorRole;
+        if (!supervisorRole.isActive()) {
+            supervisorRole.setActive(true);
+            new Thread(supervisorRole).start();
+        }
+        supervisor = true;
     }
 
     /**
@@ -264,18 +273,18 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     }
 
     /**
-     * Clears the information regarding the current supervisor ID
-     */
-    protected void clearSupervisor() {
-        supervisorId = null;
-    }
-
-    /**
      * Removes the follower role by deactivating it and setting supervisor false
      */
     protected void deactivateFollower() {
         assert (hasFollowerRole);
         followerRole.setActive(false);
+    }
+
+    /**
+     * Clears the information regarding the current supervisor ID
+     */
+    protected void clearSupervisor() {
+        supervisorId = null;
     }
 
     /** Supervisor election methods **/
@@ -305,21 +314,29 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     private void querySupervisor() {
         A3Message m = new A3Message(A3Constants.CONTROL_GET_SUPERVISOR, "");
         enqueueControl(m);
-        supervisorQueryTimer = new Timer(this, SUPERVISOR_NOT_FOUND_EVENT, SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT);
+        createSupervisorNotFoundTimer();
+    }
+
+    /**
+     * Creates a Timer event in case no supervisor is found, meaning this node should become the
+     * supervisor if it has the role.
+     */
+    private void createSupervisorNotFoundTimer() {
+        supervisorNotFoundTimer = new Timer(this, SUPERVISOR_NOT_FOUND_EVENT, SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT);
     }
 
     /**
      * Aborts the current supervisor query timer if it is active
      */
     protected synchronized void clearSupervisorQueryTimer() {
-        if (supervisorQueryTimer != null)
-            supervisorQueryTimer.abort();
+        if (supervisorNotFoundTimer != null)
+            supervisorNotFoundTimer.abort();
     }
 
     /**
      * Timer object for the supervisor query
      **/
-    private Timer supervisorQueryTimer = null;
+    private Timer supervisorNotFoundTimer = null;
 
     /**
      * Sends a stack request to the supervisor of this channel's group

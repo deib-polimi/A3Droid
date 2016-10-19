@@ -87,12 +87,11 @@ public abstract class A3Role implements Runnable {
 
 	public void setActive(boolean active) {
 		this.active = active;
-
-		if(active){
+		if(active)
 			handler = new RoleMessageHandler(this);
-		}else
-			if(handler != null)
-				handler.quit();
+		else if(handler != null)
+				quitHandler();
+
 	}
 
 	public boolean isActive(){
@@ -173,6 +172,11 @@ public abstract class A3Role implements Runnable {
 
 	public A3GroupChannel getChannel() {
 		return channel;
+	}
+
+	private void quitHandler(){
+		handler.quitSafely();
+		handler = null;
 	}
 
 	/**Thread responsible for handling messages**/
