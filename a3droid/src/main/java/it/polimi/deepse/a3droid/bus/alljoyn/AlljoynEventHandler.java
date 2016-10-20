@@ -15,7 +15,7 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class AlljoynEventHandler extends HandlerThread implements TimerInterface{
+public class AlljoynEventHandler implements TimerInterface{
 
     private Handler mHandler;
     private A3Application application;
@@ -23,10 +23,8 @@ public class AlljoynEventHandler extends HandlerThread implements TimerInterface
     private RandomWait randomWait = new RandomWait();
 
     public AlljoynEventHandler(A3Application application, AlljoynGroupChannel channel){
-        super("AlljoynEventHandler_" + channel.getGroupName());
         this.application = application;
         this.channel = channel;
-        start();
     }
 
     /**
@@ -40,23 +38,6 @@ public class AlljoynEventHandler extends HandlerThread implements TimerInterface
         SESSION_LOST,
         MEMBER_JOINED,
         MEMBER_LEFT
-    }
-
-    public Message obtainMessage() {
-        return mHandler.obtainMessage();
-    }
-
-    public void sendMessage(Message msg) {
-        mHandler.sendMessage(msg);
-    }
-
-    public void prepareHandler(){
-        mHandler = new Handler(getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                handleEvent(AlljoynEvent.values()[msg.what], msg.obj);
-            }
-        };
     }
 
     public void handleEvent(AlljoynEvent event, Object arg){

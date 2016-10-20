@@ -116,36 +116,31 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     }
 
     public void handleEvent(AlljoynEventHandler.AlljoynEvent event, Object arg){
-        Message msg = eventHandler.obtainMessage();
-        msg.what = event.ordinal();
-        msg.obj = arg;
-        eventHandler.sendMessage(msg);
+        eventHandler.handleEvent(event, arg);
     }
 
     /**
-     * Handles Alljoyn error events. If an A3Exception is trowed, it was not possible to handle the
-     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3GroupChannel.
+     * Handles Alljoyn CHANNEL and SERVICE error events. If an A3Exception is trowed, it was not
+     * possible to handle the error at Alljoyn layer and the A3Exception is passed to the A3 layer
+     * to be handled by A3GroupChannel.
      * @param status the (error) status returned by Alljoyn
      * @param errorSide identifies where the error occurred, i.e., at channel, service or bus setup
      */
     public void handleError(Status status, int errorSide){
         assert (errorSide == AlljoynErrorHandler.CHANNEL ||
                 errorSide == AlljoynErrorHandler.SERVICE);
-        Message msg = errorHandler.obtainMessage(errorSide);
-        msg.obj = status;
-        errorHandler.sendMessage(msg);
+        errorHandler.handleError(errorSide, status);
     }
 
     /**
-     * Handles Alljoyn errors. If an A3Exception is trowed, it was not possible to handle the
-     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by A3GroupChannel.
+     * Handles Alljoyn BUS errors. If an A3Exception is trowed, it was not possible to handle the
+     * error at Alljoyn layer and the A3Exception is passed to the A3 layer to be handled by
+     * A3GroupChannel.
      * @param ex the exception trowed by the bus
      */
     public void handleError(BusException ex, int errorSide){
         assert (errorSide == AlljoynErrorHandler.BUS);
-        Message msg = errorHandler.obtainMessage(errorSide);
-        msg.obj = ex;
-        errorHandler.sendMessage(msg);
+        errorHandler.handleError(errorSide, ex);
     }
 
     public void prepareHandler(){
@@ -222,7 +217,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         leaveGroup();
         if(hosting)
             destroyGroup();
-        quitHandlers();
         super.disconnect();
     }
 
@@ -312,14 +306,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
 
     private void initializeHandlers(){
         errorHandler = new AlljoynErrorHandler(this);
-        errorHandler.prepareHandler();
         eventHandler = new AlljoynEventHandler(application, this);
-        eventHandler.prepareHandler();
-    }
-
-    private void quitHandlers(){
-        errorHandler.quitSafely();
-        eventHandler.quitSafely();
     }
 
     /**

@@ -1,9 +1,5 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
-
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Status;
 
@@ -20,9 +16,8 @@ import it.polimi.deepse.a3droid.utility.Fibonacci;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class AlljoynErrorHandler extends HandlerThread {
+public class AlljoynErrorHandler{
 
-    private Handler mHandler;
     private AlljoynGroupChannel channel;
     private Map<AlljoynBus.AlljoynChannelState, Integer> channelRetries;
     private Map<AlljoynService.AlljoynServiceState, Integer> serviceRetries;
@@ -31,34 +26,11 @@ public class AlljoynErrorHandler extends HandlerThread {
 
 
     public AlljoynErrorHandler(AlljoynGroupChannel channel){
-        super("AlljoynErrorHandler_" + channel.getGroupName());
         this.channel = channel;
         channelRetries = new HashMap<>();
         resetChannelRetry();
         serviceRetries = new HashMap<>();
         resetServiceRetry();
-        start();
-    }
-
-    public Message obtainMessage() {
-        return mHandler.obtainMessage();
-    }
-
-    public Message obtainMessage(int what) {
-        return mHandler.obtainMessage(what);
-    }
-
-    public void sendMessage(Message msg) {
-        mHandler.sendMessage(msg);
-    }
-
-    public void prepareHandler(){
-        mHandler = new Handler(getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                handleError(msg.what, msg.obj);
-            }
-        };
     }
 
     public void handleError(int errorSource, Object arg) {
