@@ -39,6 +39,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         assert(application != null);
         assert(descriptor != null);
         setService(new AlljoynService(descriptor.getGroupName()));
+        start();
     }
 
     /**
