@@ -85,7 +85,7 @@ public class AlljoynBus extends A3Bus {
         super.onDestroy();
         Log.i(TAG, "onDestroy()");
         mBackgroundHandler.cancelDiscovery(mDiscoveryChannel);
-        mBackgroundHandler.beforeDisconnectionWait(mDiscoveryChannel);
+        mBackgroundHandler.disconnect(mDiscoveryChannel);
         stopBusThread();
         application.deleteObserver(this);
     }
@@ -1050,12 +1050,9 @@ public class AlljoynBus extends A3Bus {
      */
     private void doLeaveSession(AlljoynGroupChannel channel) {
         Log.i(TAG, "doLeaveSession()");
-        //TODO: Is this the right place for this verification? Why it is here?
-        if (channel.getChannelState() == AlljoynChannelState.JOINT) {
-            channel.getBus().leaveSession(channel.getSessionId());
-            channel.setSessionId(-1);
-            channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LEFT, null);
-        }
+        channel.getBus().leaveSession(channel.getSessionId());
+        channel.setSessionId(-1);
+        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LEFT, null);
     }
 
     /**
@@ -1109,6 +1106,9 @@ public class AlljoynBus extends A3Bus {
         }
     }
 
+    /**
+     * The AlljoynBus class may be waiting for notification before disconnecting a channel
+     */
     private void notifyOuterClass(){
         synchronized (AlljoynBus.this) {
             AlljoynBus.this.notify();

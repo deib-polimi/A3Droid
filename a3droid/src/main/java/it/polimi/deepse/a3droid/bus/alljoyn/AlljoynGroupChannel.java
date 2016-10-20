@@ -24,12 +24,22 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     private AlljoynErrorHandler errorHandler;
     private AlljoynEventHandler eventHandler;
 
+    public AlljoynGroupChannel(A3Application application,
+                               A3Node node,
+                               A3GroupDescriptor descriptor){
+        super(application, node, descriptor);
+        assert(application != null);
+        assert(descriptor != null);
+        setService(new AlljoynService(descriptor.getGroupName()));
+    }
+
     /**
      * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
      */
     @Override
     public void connect(A3FollowerRole a3FollowerRole, A3SupervisorRole a3SupervisorRole){
         super.connect(a3FollowerRole, a3SupervisorRole);
+        initializeHandlers();
         if(application.isGroupFound(groupName))
             joinGroup();
         else
@@ -44,8 +54,8 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         leaveGroup();
         if(hosting)
             destroyGroup();
+        quitHandlers();
         super.disconnect();
-        //TODO: clean the channel resources, will you?
     }
 
     @Override
@@ -108,19 +118,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         Message msg = errorHandler.obtainMessage(errorSide);
         msg.obj = ex;
         errorHandler.sendMessage(msg);
-    }
-
-    public AlljoynGroupChannel(A3Application application,
-                               A3Node node,
-                               A3GroupDescriptor descriptor){
-        super(application, node, descriptor);
-        assert(application != null);
-        assert(descriptor != null);
-        setService(new AlljoynService(descriptor.getGroupName()));
-        errorHandler = new AlljoynErrorHandler(this);
-        errorHandler.prepareHandler();
-        eventHandler = new AlljoynEventHandler(application, this);
-        eventHandler.prepareHandler();
     }
 
     /** Methods to send application messages through service interface **/
@@ -212,6 +209,18 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         }else
             if(!hosting)
                 this.serviceInterface = serviceInterface;
+    }
+
+    private void initializeHandlers(){
+        errorHandler = new AlljoynErrorHandler(this);
+        errorHandler.prepareHandler();
+        eventHandler = new AlljoynEventHandler(application, this);
+        eventHandler.prepareHandler();
+    }
+
+    private void quitHandlers(){
+        errorHandler.quitSafely();
+        eventHandler.quitSafely();
     }
 
     /**

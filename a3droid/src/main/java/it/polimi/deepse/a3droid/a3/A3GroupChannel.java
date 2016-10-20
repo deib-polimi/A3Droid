@@ -3,10 +3,13 @@ package it.polimi.deepse.a3droid.a3;
 import android.os.Message;
 import android.util.Log;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import it.polimi.deepse.a3droid.a3.events.A3ErrorEvent;
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreationException;
@@ -15,6 +18,8 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynGroupChannel;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 import it.polimi.deepse.a3droid.pattern.Timer;
@@ -23,13 +28,13 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
 /**
  * This class implements the communication methods for sending and receiving both application
  * and control messages. It is composed of an event and error handlers, as well as group control,
- * view a and hierarchyControl classes which have their specific responsibilities. For each group a node
+ * groupView a and hierarchyControl classes which have their specific responsibilities. For each group a node
  * is connect to, a corresponding instance of a class extending A3GroupChannel must exist, i.e.,
  * a class from the bus framework used for group communication.
  *
  * @see A3EventHandler
  * @see A3GroupControlHandler
- * @see A3View
+ * @see A3GroupView
  * @see A3HierarchyControl
  */
 public abstract class A3GroupChannel implements A3GroupChannelInterface, Observable, TimerInterface {
@@ -139,7 +144,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     private void initializeHandlers() {
         eventHandler = new A3EventHandler(application, this);
-        view = new A3View(this);
+        groupView = new A3GroupView(this);
         groupControl = new A3GroupControlHandler(node.getTopologyControl(), this);
         hierarchyControl = new A3HierarchyControl(this);
     }
@@ -149,7 +154,7 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     private void quitHandlers() {
         eventHandler.quitSafely();
-        view.quitSafely();
+        groupView.quitSafely();
         groupControl.quitSafely();
         hierarchyControl = null;
     }
@@ -183,27 +188,27 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
      */
     public void handleError(A3Exception ex) {
         if (ex instanceof A3GroupDuplicationException) {
-            reconnect(); //TODO handle duplication
+            EventBus.getDefault().post(new A3ErrorEvent(ex));
         } else if (ex instanceof A3GroupDisconnectedException) {
-            //TODO raise this to the application?
+            EventBus.getDefault().post(new A3ErrorEvent(ex));
         } else if (ex instanceof A3GroupCreationException) {
-            //TODO raise this to the application?
+            EventBus.getDefault().post(new A3ErrorEvent(ex));
         } else if (ex instanceof A3GroupJoinException) {
-            //TODO raise this to the application?
+            EventBus.getDefault().post(new A3ErrorEvent(ex));
         } else if (ex instanceof A3MessageDeliveryException) {
-            //TODO raise this to the application?
+            EventBus.getDefault().post(new A3ErrorEvent(ex));
         }
     }
 
     /**
      * Check for the condition to become a supervisor or to query for existing one.
-     * A view may still be empty or contain only this node as there is a racing condition
+     * A groupView may still be empty or contain only this node as there is a racing condition
      * when the first group is created, which triggers the creation of the discovery channel.
      * This justifies the double verification for becoming a supervisor.
      */
     protected void queryRole() {
-        if((getView().isViewEmpty() ||
-                getView().isAloneInView(channelId)) && hasSupervisorRole)
+        if((getGroupView().isViewEmpty() ||
+                getGroupView().isAloneInView(channelId)) && hasSupervisorRole)
             becomeSupervisor();
         else
             querySupervisor();
@@ -423,9 +428,9 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     protected void notifySplitRandomly(int nodesToTransfer) throws
             A3ChannelNotFoundException {
         ArrayList<String> selectedNodes = new ArrayList<>();
-        int numberOfNodes = getView().getNumberOfNodes();
-        String[] splitView = getView().toString()
-                .substring(1, getView().toString().length() - 1)
+        int numberOfNodes = getGroupView().getNumberOfNodes();
+        String[] splitView = getGroupView().toString()
+                .substring(1, getGroupView().toString().length() - 1)
                 .split(", ");
         Random randomNumberGenerator = new Random();
         String tempAddress;
@@ -650,16 +655,16 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
     private A3HierarchyControl hierarchyControl = null;
 
     /**
-     * @return this channel's view instance
+     * @return this channel's groupView instance
      */
-    public A3View getView() {
-        return view;
+    public A3GroupView getGroupView() {
+        return groupView;
     }
 
     /**
      * The list of the group members and all the methods to manage it.
      */
-    public A3View view = null;
+    public A3GroupView groupView = null;
 
     /**
      * The object we use in notifications to indicate that a channel must be setup.
@@ -703,10 +708,10 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     /** Observable **/
     /**
-     * This object is really the model of a model-view-controller architecture.
-     * The observer/observed design pattern is used to notify view-controller
+     * This object is really the model of a model-groupView-controller architecture.
+     * The observer/observed design pattern is used to notify groupView-controller
      * objects when the model has changed.  The observed object is this object,
-     * the model.  Observers correspond to the view-controllers which in this
+     * the model.  Observers correspond to the groupView-controllers which in this
      * case are the Android Activities (corresponding to the use tab and the
      * hsot tab) and the Android Service that does all of the AllJoyn work.
      * When an observer wants to register for change notifications, it calls

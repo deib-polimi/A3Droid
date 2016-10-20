@@ -247,10 +247,10 @@ public class A3Application extends Application implements Observable{
     private List<A3Node> mNodes = new ArrayList<>();
 
     /**
-     * This object is really the model of a model-view-controller architecture.
-     * The observer/observed design pattern is used to notify view-controller
+     * This object is really the model of a model-groupView-controller architecture.
+     * The observer/observed design pattern is used to notify groupView-controller
      * objects when the model has changed.  The observed object is this object,
-     * the model.  Observers correspond to the view-controllers which in this
+     * the model.  Observers correspond to the groupView-controllers which in this
      * case are the Android Activities (corresponding to the use tab and the
      * hsot tab) and the Android Service that does all of the AllJoyn work.
      * When an observer wants to register for change notifications, it calls
@@ -277,10 +277,10 @@ public class A3Application extends Application implements Observable{
     }
 
     /**
-     * This object is really the model of a model-view-controller architecture.
-     * The observer/observed design pattern is used to notify view-controller
+     * This object is really the model of a model-groupView-controller architecture.
+     * The observer/observed design pattern is used to notify groupView-controller
      * objects when the model has changed.  The observed object is this object,
-     * the model.  Observers correspond to the view-controllers which in this
+     * the model.  Observers correspond to the groupView-controllers which in this
      * case are the Android Activities (corresponding to the use tab and the
      * hsot tab) and the Android Service that does all of the AllJoyn work.
      * When the model (this object) wants to notify its observers that some

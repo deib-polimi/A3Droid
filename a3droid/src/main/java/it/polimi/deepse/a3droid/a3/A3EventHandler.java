@@ -161,9 +161,9 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
     private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 1000;
 
     private void notifyView(A3Event event, String memberId) {
-        Message msg = channel.getView().obtainMessage();
+        Message msg = channel.getGroupView().obtainMessage();
         msg.what = event.ordinal();
         msg.obj = memberId;
-        channel.getView().sendMessage(msg);
+        channel.getGroupView().sendMessage(msg);
     }
 }
