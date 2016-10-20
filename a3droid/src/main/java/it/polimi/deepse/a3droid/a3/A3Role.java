@@ -187,7 +187,10 @@ public abstract class A3Role implements Runnable {
 		handler = null;
 	}
 
-	/**Thread responsible for handling messages**/
+	/**
+	 * This background thread is needed to not block the bus thread whenever a new message is
+	 * received and must be sent to the role
+	 **/
 	private static class RoleMessageHandler extends HandlerThread {
 
 		private final WeakReference<A3Role> mRole;

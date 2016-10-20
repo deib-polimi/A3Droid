@@ -79,7 +79,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
                     case A3Constants.CONTROL_ADD_TO_HIERARCHY:
                     case A3Constants.CONTROL_REMOVE_FROM_HIERARCHY:
                     case A3Constants.CONTROL_INCREASE_SUBGROUPS:
-                        channel.getHierarchyControl().onMessage(message);
+                        channel.getHierarchyView().onMessage(message);
                         break;
                     case A3Constants.CONTROL_MERGE_REQUEST:
                         handleMergeRequest(message);
@@ -305,7 +305,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         try {
             topologyControl.performMerge(
                 channel.getGroupName() + "_" +
-                channel.getHierarchyControl().getSubgroupsCounter(),
+                channel.getHierarchyView().getSubgroupsCounter(),
                 channel.getGroupName()
             );
         } catch (A3NoGroupDescriptionException e) {

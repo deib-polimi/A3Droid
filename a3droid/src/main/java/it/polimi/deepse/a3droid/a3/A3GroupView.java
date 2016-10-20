@@ -1,16 +1,11 @@
 package it.polimi.deepse.a3droid.a3;
 
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
-
 import java.util.ArrayList;
-
 
 /**
  * TODO
  */
-public class A3GroupView extends HandlerThread{
+public class A3GroupView{
 
 	/**The Service on which this View resides.*/
 	private A3GroupChannel channel;
@@ -27,54 +22,14 @@ public class A3GroupView extends HandlerThread{
 	/**The number of the channels in the group.*/
 	private int numberOfNodes;
 
-	private Handler mHandler;
-
 	/**The Service on which this View resides
 	 * @param channel this groupView's channel
 	 */
 	public A3GroupView(A3GroupChannel channel) {
-		super("View_" + channel.getGroupName());
 		this.channel = channel;
 		groupMembers = new ArrayList<>();
 		temporaryViewIsActive = false;
 		numberOfNodes = 0;
-		start();
-	}
-
-	public Message obtainMessage() {
-		return mHandler.obtainMessage();
-	}
-
-	public void sendMessage(Message msg) {
-		mHandler.sendMessage(msg);
-	}
-
-	@Override
-	protected void onLooperPrepared() {
-		super.onLooperPrepared();
-
-		mHandler = new Handler(getLooper()) {
-
-			/**This method is used to manage callbacks.
-			 * This is done in another thread in order not to block the bus.
-			 */
-			public void handleMessage(Message msg) {
-
-				A3EventHandler.A3Event event = A3EventHandler.A3Event.values()[msg.what];
-				String memberName = (String) msg.obj;
-				switch(event){
-					case MEMBER_JOINED:
-						addGroupMember(memberName);
-						break;
-
-					case MEMBER_LEFT:
-						removeGroupMember(memberName);
-						break;
-
-					default: break;
-				}
-			}
-		};
 	}
 
 	/**
@@ -84,7 +39,7 @@ public class A3GroupView extends HandlerThread{
 	 * and it is notified about it.
 	 * @param memberName The address of the channel that joined the group.
 	 */
-	private synchronized void addGroupMember(String memberName) {
+	public synchronized void addGroupMember(String memberName) {
 
 		groupMembers.add(memberName);
 

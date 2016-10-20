@@ -1,6 +1,5 @@
 package it.polimi.deepse.a3droid.a3;
 
-import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
@@ -28,14 +27,14 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
 /**
  * This class implements the communication methods for sending and receiving both application
  * and control messages. It is composed of an event and error handlers, as well as group control,
- * groupView a and hierarchyControl classes which have their specific responsibilities. For each group a node
+ * groupView a and hierarchyView classes which have their specific responsibilities. For each group a node
  * is connect to, a corresponding instance of a class extending A3GroupChannel must exist, i.e.,
  * a class from the bus framework used for group communication.
  *
  * @see A3EventHandler
  * @see A3GroupControlHandler
  * @see A3GroupView
- * @see A3HierarchyControl
+ * @see A3HierarchyView
  */
 public abstract class A3GroupChannel extends HandlerThread implements A3GroupChannelInterface, Observable, TimerInterface {
 
@@ -147,17 +146,17 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
         eventHandler = new A3EventHandler(application, this);
         groupView = new A3GroupView(this);
         groupControl = new A3GroupControlHandler(node.getTopologyControl(), this);
-        hierarchyControl = new A3HierarchyControl(this);
+        hierarchyView = new A3HierarchyView(this);
     }
 
     /**
      *
      */
     private void quitHandlers() {
-        eventHandler.quitSafely();
-        groupView.quitSafely();
+        eventHandler = null;
         groupControl.quitSafely();
-        hierarchyControl = null;
+        groupControl = null;
+        hierarchyView = null;
     }
 
     /**
@@ -166,9 +165,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      * @param event
      */
     public void handleEvent(A3EventHandler.A3Event event) {
-        Message msg = eventHandler.obtainMessage();
-        msg.what = event.ordinal();
-        eventHandler.sendMessage(msg);
+        eventHandler.handleEvent(event, null);
     }
 
     /**
@@ -178,10 +175,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      * @param arg
      */
     public void handleEvent(A3EventHandler.A3Event event, Object arg) {
-        Message msg = eventHandler.obtainMessage();
-        msg.what = event.ordinal();
-        msg.obj = arg;
-        eventHandler.sendMessage(msg);
+        eventHandler.handleEvent(event, arg);
     }
 
     /**
@@ -405,18 +399,18 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     }
 
     /**
-     * Sends a broadcast request to add a given group to the hierarchyControl
+     * Sends a broadcast request to add a given group to the hierarchyView
      *
-     * @param parentGroupName The name of the group to be added to the hierarchyControl
+     * @param parentGroupName The name of the group to be added to the hierarchyView
      */
     protected void notifyHierarchyAdd(String parentGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_ADD_TO_HIERARCHY, parentGroupName));
     }
 
     /**
-     * Sends a broadcast request to remove a given group from the hierarchyControl
+     * Sends a broadcast request to remove a given group from the hierarchyView
      *
-     * @param oldGroupName the name of the group to be removed from the hierarchyControl
+     * @param oldGroupName the name of the group to be removed from the hierarchyView
      */
     protected void notifyHierarchyRemove(String oldGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_REMOVE_FROM_HIERARCHY, oldGroupName));
@@ -644,16 +638,16 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     private boolean hasFollowerRole = false;
 
     /**
-     * @return this channel's hierarchyControl instance
+     * @return this channel's hierarchyView instance
      */
-    public A3HierarchyControl getHierarchyControl() {
-        return hierarchyControl;
+    public A3HierarchyView getHierarchyView() {
+        return hierarchyView;
     }
 
     /**
-     * Stores the hierarchyControl on top of this group for this node
+     * Stores the hierarchyView on top of this group for this node
      **/
-    private A3HierarchyControl hierarchyControl = null;
+    private A3HierarchyView hierarchyView = null;
 
     /**
      * @return this channel's groupView instance

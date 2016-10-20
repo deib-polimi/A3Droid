@@ -237,7 +237,7 @@ public class A3TopologyControl {
 
     /** Disconnects this node from the group hierarchy above oldGroupName group, if any **/
     private void disconnectFromHierarchyAbove(String oldGroupName) throws A3ChannelNotFoundException {
-        ArrayList<String> oldHierarchy = node.getChannel(oldGroupName).getHierarchyControl().getHierarchy();
+        ArrayList<String> oldHierarchy = node.getChannel(oldGroupName).getHierarchyView().getHierarchy();
         for (String s : oldHierarchy) {
             node.disconnect(s);
         }
@@ -246,7 +246,7 @@ public class A3TopologyControl {
     /** Notifies the nodes from the hierarchy bellow the oldGroupName group to disconnect from it **/
     private void disconnectHierarchyBellow(String oldGroupName){
         for (A3GroupChannel c : node.getChannels()) {
-            if (c.isSupervisor() && c.getHierarchyControl().getHierarchy().contains(oldGroupName)) {
+            if (c.isSupervisor() && c.getHierarchyView().getHierarchy().contains(oldGroupName)) {
                 c.notifyHierarchyRemove(oldGroupName);
                 //disconnect(oldGroupName); TODO
             }

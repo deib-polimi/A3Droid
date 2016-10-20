@@ -1,9 +1,5 @@
 package it.polimi.deepse.a3droid.a3;
 
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
-
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -12,17 +8,14 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
  * Handles three types of error: from service setup, from channel setup and from the bus.
  * Whenever an error cannot be handled by Alljoyn layer, it is scaled to A3 layer.
  */
-public class A3EventHandler extends HandlerThread implements TimerInterface{
+public class A3EventHandler implements TimerInterface{
 
-    private Handler mHandler;
     private A3Application application;
     private A3GroupChannel channel;
 
     public A3EventHandler(A3Application application, A3GroupChannel channel){
-        super("A3EventHandler_" + channel.getGroupName());
         this.application = application;
         this.channel = channel;
-        start();
     }
 
     /**
@@ -48,29 +41,6 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
         SPLIT_FINISHED
     }
 
-    public Message obtainMessage() {
-        return mHandler.obtainMessage();
-    }
-
-    public void sendMessage(Message msg) {
-        mHandler.sendMessage(msg);
-    }
-
-
-
-    @Override
-    protected void onLooperPrepared() {
-        super.onLooperPrepared();
-
-        mHandler = new Handler(getLooper()) {
-
-            @Override
-            public void handleMessage(Message msg) {
-                handleEvent(A3Event.values()[msg.what], msg.obj);
-            }
-        };
-    }
-
     public void handleEvent(A3Event event, Object obj) {
         switch (event) {
             case GROUP_CREATED:
@@ -91,8 +61,10 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
                 channel.deactivateActiveRole();
                 break;
             case MEMBER_JOINED:
+                channel.getGroupView().addGroupMember((String) obj);
+                break;
             case MEMBER_LEFT:
-                notifyView(event, (String) obj);
+                channel.getGroupView().removeGroupMember((String) obj);
                 break;
             case SUPERVISOR_LEFT:
                 if (channel.getGroupState() == A3GroupDescriptor.A3GroupState.ACTIVE) {
@@ -159,11 +131,4 @@ public class A3EventHandler extends HandlerThread implements TimerInterface{
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;
     /** Used as random time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_RANDOM_TIME = 1000;
-
-    private void notifyView(A3Event event, String memberId) {
-        Message msg = channel.getGroupView().obtainMessage();
-        msg.what = event.ordinal();
-        msg.obj = memberId;
-        channel.getGroupView().sendMessage(msg);
-    }
 }

@@ -1,11 +1,8 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3EventHandler;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
@@ -17,7 +14,6 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
  */
 public class AlljoynEventHandler implements TimerInterface{
 
-    private Handler mHandler;
     private A3Application application;
     private AlljoynGroupChannel channel;
     private RandomWait randomWait = new RandomWait();

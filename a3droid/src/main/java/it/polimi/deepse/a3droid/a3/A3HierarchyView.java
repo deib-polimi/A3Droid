@@ -10,7 +10,7 @@ import java.util.ArrayList;
  * @author Francesco
  *
  */
-public class A3HierarchyControl {
+public class A3HierarchyView {
 
 	/**The list of the parent group names.*/
 	private ArrayList<String> hierarchy;
@@ -29,7 +29,7 @@ public class A3HierarchyControl {
 	/**
 	 * @param a3channel The channel this hierarchy belongs to.
 	 */
-	public A3HierarchyControl(A3GroupChannel a3channel){
+	public A3HierarchyView(A3GroupChannel a3channel){
 		channel = a3channel;
 		hierarchy = new ArrayList<String>();
 		numberOfSplitGroups = 0;
@@ -104,7 +104,7 @@ public class A3HierarchyControl {
 	}
 
 	/**
-	 * Creates the string representation of the type A3HierarchyControl.
+	 * Creates the string representation of the type A3HierarchyView.
 	 * The obtained string is like "numberOfSubgroups name1 name2 ..." or "numberOfSubgroups".
 	 */
 	@Override
