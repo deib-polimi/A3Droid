@@ -8,6 +8,8 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.lang.ref.WeakReference;
 
+import it.polimi.deepse.a3droid.a3.events.A3UIEvent;
+
 
 /**
  * This class represents the role that the Node can play in a group.

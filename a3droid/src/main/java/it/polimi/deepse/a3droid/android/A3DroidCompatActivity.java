@@ -9,7 +9,8 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import it.polimi.deepse.a3droid.a3.A3UIEvent;
+import it.polimi.deepse.a3droid.a3.events.A3ErrorEvent;
+import it.polimi.deepse.a3droid.a3.events.A3UIEvent;
 
 public abstract class A3DroidCompatActivity extends AppCompatActivity{
 	
@@ -44,11 +45,25 @@ public abstract class A3DroidCompatActivity extends AppCompatActivity{
 		handleUIEvent(event);
 	}
 
+	// This method will be called when a MessageEvent is posted
+	@Subscribe(threadMode = ThreadMode.MAIN)
+	public void onErrorEvent(A3ErrorEvent event) {
+		handleErrorEvent(event);
+	}
+
 	/**
-	 * This method should be overriden by
+	 * This method should be overriden by the application to receive UI events
+	 * @see A3UIEvent
 	 * @param event
 	 */
 	public void handleUIEvent(A3UIEvent event){}
+
+	/**
+	 * This method should be overriden by the application to receive error events
+	 * @see A3ErrorEvent
+	 * @param event
+	 */
+	public void handleErrorEvent(A3ErrorEvent event){}
 
 	// Error handler that redirects exception to the system default handler.
 	public class ErrorReportExceptionHandler implements Thread.UncaughtExceptionHandler {

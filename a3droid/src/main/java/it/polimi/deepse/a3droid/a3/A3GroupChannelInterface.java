@@ -5,7 +5,7 @@ package it.polimi.deepse.a3droid.a3;
  */
 public interface A3GroupChannelInterface {
 
-    void connect(A3FollowerRole a3FollowerRole, A3SupervisorRole a3SupervisorRole);
+    void connect();
 
     void disconnect();
 

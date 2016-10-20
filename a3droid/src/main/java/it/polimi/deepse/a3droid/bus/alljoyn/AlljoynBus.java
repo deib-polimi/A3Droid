@@ -68,8 +68,7 @@ public class AlljoynBus extends A3Bus {
          * is starting up.
          */
         A3DiscoveryDescriptor discoveryDescriptor = new A3DiscoveryDescriptor();
-        mDiscoveryChannel = new AlljoynGroupChannel((A3Application) getApplication(), null,
-                discoveryDescriptor);
+        mDiscoveryChannel = new AlljoynGroupChannel((A3Application) getApplication(), null, discoveryDescriptor, null, null);
         mBackgroundHandler.connect(mDiscoveryChannel);
         mBackgroundHandler.startDiscovery(mDiscoveryChannel);
     }
@@ -212,7 +211,7 @@ public class AlljoynBus extends A3Bus {
                 break;
                 case HANDLE_DISCONNECT_EVENT: {
                     Log.i(TAG, "mHandler.handleMessage(): HANDLE_CONNECT_EVENT");
-                    mBackgroundHandler.beforeDisconnectionWait(channel);
+                    mBackgroundHandler.disconnect(channel);
                 }
                 break;
                 case HANDLE_JOIN_CHANNEL_EVENT: {
@@ -403,24 +402,6 @@ public class AlljoynBus extends A3Bus {
             Message msg = mBackgroundHandler.obtainMessage(ADD_SERVICE);
             msg.obj = channel;
             mBackgroundHandler.sendMessage(msg);
-        }
-
-        /**
-         * Gives time to messages to be sent before disconnecting whenever the channel state is
-         * still JOINT
-         */
-        private void beforeDisconnectionWait(AlljoynGroupChannel channel){
-            while(channel.getChannelState() == AlljoynChannelState.JOINT &&
-                    !channel.isOutboundEmpty()) {
-                try {
-                    synchronized (this) {
-                        this.wait();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            disconnect(channel);
         }
 
         /**
@@ -1095,23 +1076,24 @@ public class AlljoynBus extends A3Bus {
                         break;
                 }
                 if(channel.isOutboundEmpty())
-                    notifyOuterClass();
+                    notifyAlljoynGroupChannel(channel);
             } catch (BusException ex) {
-                notifyOuterClass();
                 application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
                 channel.addOutboundItemSilently(message, messageItem.getType());
                 channel.handleError(ex, AlljoynErrorHandler.BUS);
+                notifyAlljoynGroupChannel(channel);
                 break;
             }
         }
     }
 
     /**
-     * The AlljoynBus class may be waiting for notification before disconnecting a channel
+     * The AlljoynGroupChannel background thread may be waiting for notification before
+     * disconnecting a channel
      */
-    private void notifyOuterClass(){
-        synchronized (AlljoynBus.this) {
-            AlljoynBus.this.notify();
+    private void notifyAlljoynGroupChannel(AlljoynGroupChannel channel){
+        synchronized (channel) {
+            channel.notifyAll();
         }
     }
 

@@ -1,5 +1,6 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
+import android.os.Handler;
 import android.os.Message;
 
 import org.alljoyn.bus.BusAttachment;
@@ -24,10 +25,17 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     private AlljoynErrorHandler errorHandler;
     private AlljoynEventHandler eventHandler;
 
+    /**
+     * The handler used by this thread to receive and process messages
+     */
+    private Handler mHandler;
+
     public AlljoynGroupChannel(A3Application application,
                                A3Node node,
-                               A3GroupDescriptor descriptor){
-        super(application, node, descriptor);
+                               A3GroupDescriptor descriptor,
+                               A3FollowerRole a3FollowerRole,
+                               A3SupervisorRole a3SupervisorRole){
+        super(application, node, descriptor, a3FollowerRole, a3SupervisorRole);
         assert(application != null);
         assert(descriptor != null);
         setService(new AlljoynService(descriptor.getGroupName()));
@@ -37,13 +45,9 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
      */
     @Override
-    public void connect(A3FollowerRole a3FollowerRole, A3SupervisorRole a3SupervisorRole){
-        super.connect(a3FollowerRole, a3SupervisorRole);
-        initializeHandlers();
-        if(application.isGroupFound(groupName))
-            joinGroup();
-        else
-            createGroup();
+    public void connect(){
+        Message message = mHandler.obtainMessage(HANDLE_CONNECT_EVENT);
+        mHandler.sendMessage(message);
     }
 
     /**
@@ -51,40 +55,64 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      */
     @Override
     public void disconnect(){
-        leaveGroup();
-        if(hosting)
-            destroyGroup();
-        quitHandlers();
-        super.disconnect();
+        Message message = mHandler.obtainMessage(HANDLE_DISCONNECT_EVENT);
+        mHandler.sendMessage(message);
     }
 
     @Override
     public void reconnect(){
         disconnect();
-        connect(followerRole, supervisorRole);
+        connect();
     }
 
     @Override
     public void createGroup(){
-        this.hosting = true;
-        super.createGroup();
+        Message message = mHandler.obtainMessage(HANDLE_CREATE_GROUP_EVENT);
+        mHandler.sendMessage(message);
     }
 
     @Override
     public void destroyGroup(){
-        this.hosting = false;
-        super.destroyGroup();
+        Message message = mHandler.obtainMessage(HANDLE_DESTROY_GROUP_EVENT);
+        mHandler.sendMessage(message);
     }
 
     @Override
     public void joinGroup(){
-        this.hosting = false;
-        super.joinGroup();
+        Message message = mHandler.obtainMessage(HANDLE_JOIN_GROUP_EVENT);
+        mHandler.sendMessage(message);
     }
 
     @Override
     public void leaveGroup(){
-        super.leaveGroup();
+        Message message = mHandler.obtainMessage(HANDLE_LEAVE_GROUP_EVENT);
+        mHandler.sendMessage(message);
+    }
+
+    /** Methods to send application messages through service interface **/
+    @Override
+    public void sendUnicast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
+        getServiceInterface().sendUnicast(message);
+    }
+
+    @Override
+    public void sendMulticast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
+        getServiceInterface().sendMulticast(message);
+    }
+
+    @Override
+    public void sendBroadcast(A3Message message) throws BusException {
+        message.senderAddress = channelId;
+        getServiceInterface().sendBroadcast(message);
+    }
+
+    /** Methods to send control messages through service interface **/
+    @Override
+    public void sendControl(A3Message message) throws BusException{
+        message.senderAddress = channelId;
+        getServiceInterface().sendControl(message);
     }
 
     public void handleEvent(AlljoynEventHandler.AlljoynEvent event, Object arg){
@@ -120,30 +148,101 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         errorHandler.sendMessage(msg);
     }
 
-    /** Methods to send application messages through service interface **/
-    @Override
-    public void sendUnicast(A3Message message) throws BusException {
-        message.senderAddress = channelId;
-        getServiceInterface().sendUnicast(message);
+    public void prepareHandler(){
+        mHandler = new Handler(getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case HANDLE_CONNECT_EVENT:
+                        doConnect();
+                        break;
+                    case HANDLE_DISCONNECT_EVENT:
+                        waitBeforeDisconnection();
+                        break;
+                    case HANDLE_CREATE_GROUP_EVENT:
+                        doCreateGroup();
+                        break;
+                    case HANDLE_DESTROY_GROUP_EVENT:
+                        doDestroyGroup();
+                        break;
+                    case HANDLE_JOIN_GROUP_EVENT:
+                        doJoinGroup();
+                        break;
+                    case HANDLE_LEAVE_GROUP_EVENT:
+                        doLeaveGroup();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
     }
 
-    @Override
-    public void sendMulticast(A3Message message) throws BusException {
-        message.senderAddress = channelId;
-        getServiceInterface().sendMulticast(message);
+    private static final int HANDLE_CONNECT_EVENT = 1;
+    private static final int HANDLE_DISCONNECT_EVENT = 2;
+    private static final int HANDLE_CREATE_GROUP_EVENT = 3;
+    private static final int HANDLE_DESTROY_GROUP_EVENT = 4;
+    private static final int HANDLE_JOIN_GROUP_EVENT = 5;
+    private static final int HANDLE_LEAVE_GROUP_EVENT = 6;
+
+    /**
+     * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
+     */
+    private void doConnect(){
+        super.connect();
+        initializeHandlers();
+        if(application.isGroupFound(groupName))
+            joinGroup();
+        else
+            createGroup();
     }
 
-    @Override
-    public void sendBroadcast(A3Message message) throws BusException {
-        message.senderAddress = channelId;
-        getServiceInterface().sendBroadcast(message);
+    /**
+     * Gives time to messages to be sent before disconnecting whenever the channel state is
+     * still JOINT
+     */
+    private void waitBeforeDisconnection(){
+        while(getChannelState() == AlljoynBus.AlljoynChannelState.JOINT &&
+                !isOutboundEmpty()) {
+            try {
+                synchronized (this) {
+                    this.wait();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        doDisconnect();
     }
 
-    /** Methods to send control messages through service interface **/
-    @Override
-    public void sendControl(A3Message message) throws BusException{
-        message.senderAddress = channelId;
-        getServiceInterface().sendControl(message);
+    /**
+     * Leaves a group and destroy it if hosting, them disconnects from the alljoyn bus.
+     */
+    private void doDisconnect(){
+        leaveGroup();
+        if(hosting)
+            destroyGroup();
+        quitHandlers();
+        super.disconnect();
+    }
+
+    private void doCreateGroup(){
+        this.hosting = true;
+        super.createGroup();
+    }
+
+    private void doDestroyGroup(){
+        this.hosting = false;
+        super.destroyGroup();
+    }
+
+    private void doJoinGroup(){
+        this.hosting = false;
+        super.joinGroup();
+    }
+
+    private void doLeaveGroup(){
+        super.leaveGroup();
     }
 
 
@@ -277,7 +376,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * of detail probably isn't appropriate, but we want to do so for this
      * sample.
      */
-    protected AlljoynService.AlljoynServiceState mServiceState = AlljoynService.AlljoynServiceState.IDLE;
+    private AlljoynService.AlljoynServiceState mServiceState = AlljoynService.AlljoynServiceState.IDLE;
 
     /**
      * Set the status of the "use" channel.  The AllJoyn Service part of the
@@ -315,7 +414,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * this kind of detail probably isn't appropriate, but we want to do so for
      * this sample.
      */
-    protected AlljoynBus.AlljoynChannelState mChannelState = AlljoynBus.AlljoynChannelState.IDLE;
+    private AlljoynBus.AlljoynChannelState mChannelState = AlljoynBus.AlljoynChannelState.IDLE;
 
     public synchronized void setBusState(AlljoynBus.BusState state) {
         mBusState = state;
@@ -335,6 +434,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     /**
      * The state of the AllJoyn bus attachment.
      */
-    protected AlljoynBus.BusState mBusState = AlljoynBus.BusState.DISCONNECTED;
+    private AlljoynBus.BusState mBusState = AlljoynBus.BusState.DISCONNECTED;
 
 }

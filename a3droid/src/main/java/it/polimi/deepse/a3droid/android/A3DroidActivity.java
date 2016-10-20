@@ -9,7 +9,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import it.polimi.deepse.a3droid.a3.A3UIEvent;
+import it.polimi.deepse.a3droid.a3.events.A3UIEvent;
 import it.polimi.deepse.a3droid.a3.events.A3ErrorEvent;
 
 public abstract class A3DroidActivity extends Activity{

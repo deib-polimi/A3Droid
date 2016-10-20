@@ -68,18 +68,22 @@ public class A3Node implements A3NodeInterface{
     public synchronized boolean connect(String groupName) throws A3NoGroupDescriptionException {
         if(this.isConnectedForApplication(groupName))
             return true;
-
         A3GroupDescriptor descriptor = getGroupDescriptor(groupName);
         if(descriptor != null) {
-            A3SupervisorRole supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
-            A3FollowerRole followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
-            A3GroupChannel channel = new AlljoynGroupChannel(application, this, descriptor);
-            channel.connect(followerRole, supervisorRole);
-            addChannel(channel);
+            createChannelAndConnect(descriptor);
             return true;
-        }else{
+        }else
             throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
-        }
+
+    }
+
+    private void createChannelAndConnect(A3GroupDescriptor descriptor){
+        A3SupervisorRole supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
+        A3FollowerRole followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
+        A3GroupChannel channel = new AlljoynGroupChannel(application, this, descriptor, followerRole, supervisorRole);
+        channel.prepareHandler();
+        channel.connect();
+        addChannel(channel);
     }
 
     /**
@@ -89,7 +93,7 @@ public class A3Node implements A3NodeInterface{
      * @return true if the node has connected to the group
      * @throws A3NoGroupDescriptionException
      */
-    public synchronized boolean connectAndWait(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+    public synchronized boolean connectAndWaitForActivation(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         boolean result = connect(groupName);
         A3GroupChannel channel = getChannel(groupName);
         waitForState(channel, A3GroupDescriptor.A3GroupState.ACTIVE);

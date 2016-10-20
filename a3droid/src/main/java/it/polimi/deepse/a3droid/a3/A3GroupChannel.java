@@ -1,5 +1,7 @@
 package it.polimi.deepse.a3droid.a3;
 
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
@@ -18,8 +20,6 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3GroupDuplicationException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupJoinException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3MessageDeliveryException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynGroupChannel;
 import it.polimi.deepse.a3droid.pattern.Observable;
 import it.polimi.deepse.a3droid.pattern.Observer;
 import it.polimi.deepse.a3droid.pattern.Timer;
@@ -37,7 +37,7 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  * @see A3GroupView
  * @see A3HierarchyControl
  */
-public abstract class A3GroupChannel implements A3GroupChannelInterface, Observable, TimerInterface {
+public abstract class A3GroupChannel extends HandlerThread implements A3GroupChannelInterface, Observable, TimerInterface {
 
     protected static final String TAG = "A3GroupChannel";
 
@@ -78,20 +78,21 @@ public abstract class A3GroupChannel implements A3GroupChannelInterface, Observa
 
     public A3GroupChannel(A3Application application,
                           A3Node node,
-                          A3GroupDescriptor descriptor) {
+                          A3GroupDescriptor descriptor,
+                          A3FollowerRole followerRole,
+                          A3SupervisorRole supervisorRole) {
+        super("A3GroupChannel_" + descriptor.getGroupName());
         this.setGroupName(descriptor.getGroupName());
         this.application = application;
         this.node = node;
         this.groupDescriptor = descriptor;
+        initializeRoles(followerRole, supervisorRole);
     }
 
-    /**
-     * @param followerRole
-     * @param supervisorRole
-     */
-    public void connect(A3FollowerRole followerRole, A3SupervisorRole supervisorRole) {
+    public abstract void prepareHandler();
+
+    public void connect() {
         addObservers(application.getObservers());
-        initializeRoles(followerRole, supervisorRole);
         initializeHandlers();
         notifyObservers(A3GroupChannel.CONNECT_EVENT);
     }

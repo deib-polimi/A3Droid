@@ -71,7 +71,7 @@ public class A3TopologyControl {
      * @throws A3ChannelNotFoundException
      */
     private void requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        if (node.connectAndWait(childGroupName)) {
+        if (node.connectAndWaitForActivation(childGroupName)) {
             A3GroupChannel channel;
             channel = node.getChannel(childGroupName);
             channel.requestStack(parentGroupName);
@@ -139,7 +139,7 @@ public class A3TopologyControl {
      */
     private void requestReverseStack(String parentGroupName, String childGroupName) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        if (node.connectAndWait(childGroupName)) {
+        if (node.connectAndWaitForActivation(childGroupName)) {
             A3GroupChannel channel = node.getChannel(childGroupName);
             channel.requestReverseStack(parentGroupName);
         } else
@@ -185,7 +185,7 @@ public class A3TopologyControl {
      */
     private void requestMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        if (node.connectAndWait(sourceGroupName)) {
+        if (node.connectAndWaitForActivation(sourceGroupName)) {
             A3GroupChannel channel = node.getChannel(sourceGroupName);
             channel.requestMerge(destinationGroupName);
         } else
@@ -217,7 +217,7 @@ public class A3TopologyControl {
     public synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         disconnectHierarchyBellow(sourceGroupName);
-        boolean ok = node.connectAndWait(destinationGroupName);
+        boolean ok = node.connectAndWaitForActivation(destinationGroupName);
         mergeReply(destinationGroupName, sourceGroupName, ok, true);
         return true;
     }
