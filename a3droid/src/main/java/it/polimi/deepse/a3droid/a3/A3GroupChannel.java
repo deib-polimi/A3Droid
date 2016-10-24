@@ -38,7 +38,7 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  */
 public abstract class A3GroupChannel extends HandlerThread implements A3GroupChannelInterface, Observable, TimerInterface {
 
-    protected static final String TAG = "A3GroupChannel";
+    protected String TAG;
 
     /**
      * The A3 class extending Android Application class with middleware specific behavior
@@ -82,6 +82,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
                           A3FollowerRole followerRole,
                           A3SupervisorRole supervisorRole) {
         super("A3GroupChannel_" + groupName);
+        TAG = "A3GroupChannel#" + groupName;
         this.setGroupName(groupName);
         this.application = application;
         this.node = node;
@@ -324,6 +325,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      */
     private void createSupervisorNotFoundTimer() {
         supervisorNotFoundTimer = new Timer(this, SUPERVISOR_NOT_FOUND_EVENT, SUPERVISOR_NOT_FOUND_EVENT_TIMEOUT);
+        supervisorNotFoundTimer.start();
     }
 
     /**

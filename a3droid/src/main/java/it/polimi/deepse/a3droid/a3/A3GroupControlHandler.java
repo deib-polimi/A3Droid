@@ -12,7 +12,7 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
 
 public class A3GroupControlHandler extends HandlerThread implements TimerInterface{
 
-    protected static final String TAG = "A3GroupControlHandler";
+    protected String TAG;
 
     private final A3TopologyControl topologyControl;
     private final A3GroupChannel channel;
@@ -20,6 +20,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
 
     public A3GroupControlHandler(A3TopologyControl topologyControl, A3GroupChannel channel) {
         super("A3GroupControl_" + channel.getGroupName());
+        TAG = "A3GroupControlHandler#" + channel.getGroupName();
         this.topologyControl = topologyControl;
         this.channel = channel;
         start();
@@ -105,6 +106,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      * @param message
      */
     private void handleNewSupervisorNotification(A3Message message) {
+        Log.i(TAG, "handleNewSupervisorNotification(" + message + ")");
         channel.setSupervisorId(message.senderAddress);
         A3GroupDescriptor groupDescriptor = null;
         try {
