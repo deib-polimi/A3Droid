@@ -68,7 +68,14 @@ public class AlljoynBus extends A3Bus {
          * is starting up.
          */
         A3DiscoveryDescriptor discoveryDescriptor = new A3DiscoveryDescriptor();
-        mDiscoveryChannel = new AlljoynGroupChannel((A3Application) getApplication(), null, discoveryDescriptor, null, null);
+        mDiscoveryChannel = new AlljoynGroupChannel(
+                (A3Application) getApplication(),
+                null,
+                A3DiscoveryDescriptor.DISCOVERY_GROUP_NAME,
+                discoveryDescriptor,
+                null,
+                null
+        );
         mBackgroundHandler.connect(mDiscoveryChannel);
         mBackgroundHandler.startDiscovery(mDiscoveryChannel);
     }
@@ -1140,8 +1147,11 @@ public class AlljoynBus extends A3Bus {
     }
 
     public class A3DiscoveryDescriptor extends A3GroupDescriptor {
+
+        public static final String DISCOVERY_GROUP_NAME = "DISCOVERY";
+
         public A3DiscoveryDescriptor() {
-            super("DISCOVERY", null, null);
+            super(DISCOVERY_GROUP_NAME, null, null);
         }
 
         @Override

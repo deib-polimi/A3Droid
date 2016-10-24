@@ -77,11 +77,12 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
 
     public A3GroupChannel(A3Application application,
                           A3Node node,
+                          String groupName,
                           A3GroupDescriptor descriptor,
                           A3FollowerRole followerRole,
                           A3SupervisorRole supervisorRole) {
-        super("A3GroupChannel_" + descriptor.getGroupName());
-        this.setGroupName(descriptor.getGroupName());
+        super("A3GroupChannel_" + groupName);
+        this.setGroupName(groupName);
         this.application = application;
         this.node = node;
         this.groupDescriptor = descriptor;
@@ -565,16 +566,23 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      */
     private synchronized void setGroupName(String name) {
         groupName = name;
+        groupBaseName = name.split("_")[0];
     }
 
     public synchronized String getGroupName() {
         return groupName;
     }
 
+    public synchronized String getGroupBaseName() {
+        return groupBaseName;
+    }
+
     /**
      * The name of the "host" channel which the user has selected.
      */
     protected String groupName = null;
+
+    protected String groupBaseName = null;
 
     public synchronized void setChannelId(String id) {
         Log.i(TAG, "setChannelId(" + id + ")");

@@ -70,17 +70,17 @@ public class A3Node implements A3NodeInterface{
             return true;
         A3GroupDescriptor descriptor = getGroupDescriptor(groupName);
         if(descriptor != null) {
-            createChannelAndConnect(descriptor);
+            createChannelAndConnect(groupName, descriptor);
             return true;
         }else
             throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
 
     }
 
-    private void createChannelAndConnect(A3GroupDescriptor descriptor){
+    private void createChannelAndConnect(String groupName, A3GroupDescriptor descriptor){
         A3SupervisorRole supervisorRole = getRole(descriptor.getSupervisorRoleId(), A3SupervisorRole.class);
         A3FollowerRole followerRole = getRole(descriptor.getFollowerRoleId(), A3FollowerRole.class);
-        A3GroupChannel channel = new AlljoynGroupChannel(application, this, descriptor, followerRole, supervisorRole);
+        A3GroupChannel channel = new AlljoynGroupChannel(application, this, groupName, descriptor, followerRole, supervisorRole);
         channel.prepareHandler();
         channel.connect();
         addChannel(channel);
