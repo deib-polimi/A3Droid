@@ -207,25 +207,29 @@ public class A3Node implements A3NodeInterface{
             A3InvalidOperationRole, A3InvalidOperationParameters, A3ChannelNotFoundException,
             A3NoGroupDescriptionException {
         Log.i(TAG, "split(" + groupName + ", " + nodesToTransfer + ")");
-        validateGroupNameParameters(groupName);
-        validateOneSupervisorRole(groupName);
+        validateStackParameters(groupName, nodesToTransfer);
         topologyControl.split(groupName, nodesToTransfer);
     }
 
-    /**
-     * Check if group names are not null nor empty
-     * @param groupNames
-     */
+    private void validateStackParameters(String groupName, int nodesToTransfer) throws A3InvalidOperationParameters, A3ChannelNotFoundException {
+        validateGroupNameParameters(groupName);
+        validateOneSupervisorRole(groupName);
+        validatePositiveNumber(groupName, nodesToTransfer);
+    }
+
+    private void validatePositiveNumber(String groupName, int nodesToTransfer) throws A3ChannelNotFoundException, A3InvalidOperationParameters {
+        A3GroupChannel channel = getChannel(groupName);
+        int groupSize = channel.getGroupView().getNumberOfNodes();
+        if(nodesToTransfer <= 0 || nodesToTransfer >= groupSize)
+            throw new A3InvalidOperationParameters("Operation requires non empty parent/child group names.");
+    }
+
     private void validateGroupNameParameters(String ... groupNames) throws A3InvalidOperationParameters {
         for(String groupName : groupNames)
             if(groupName == null || groupName.equals(""))
-                throw new A3InvalidOperationParameters("Stack operation requires non empty parent/child group names.");
+                throw new A3InvalidOperationParameters("Operation requires non empty parent/child group names.");
     }
 
-    /**
-     * Check if this node is a supervisor of at least one of the groups
-     * @param groupNames
-     */
     private void validateOneSupervisorRole(String... groupNames) throws A3InvalidOperationParameters {
         for(String groupName : groupNames)
             if(isSupervisor(groupName))
