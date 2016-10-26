@@ -15,7 +15,7 @@ public class A3Message {
 	/**The address of the channel which sends this message.*/
 	@Position(0)
 	@Signature("s")
-	public String senderAddress;
+	public String senderAddress = "";
 	
 	/**The kind of this message.*/
 	@Position(1)
@@ -25,7 +25,7 @@ public class A3Message {
 	/**The data in this message.*/
 	@Position(2)
 	@Signature("s")
-	public String object;
+	public String object = "";
 	
 	/**The extra data in this message.*/
 	@Position(3)
@@ -39,7 +39,15 @@ public class A3Message {
 
 	/**This must exists because AllJoyn needs it, but is never used in these API.*/
 	public A3Message(){}
-	
+
+
+	/**
+	 * @param reason The kind of this message.
+	 */
+	public A3Message(int reason){
+		this.reason = reason;
+	}
+
 	/**
 	 * @param reason The kind of this message.
 	 * @param object The data in this message.
@@ -47,23 +55,18 @@ public class A3Message {
 	public A3Message(int reason, String object){
 		this.reason = reason;
 		this.object = object;
-		this.bytes = new byte[0];
-		this.senderAddress = "";
-		this.addresses = new String [0];
 	}
 	
 	/**
 	 * @param reason The kind of this message.
 	 * @param object The data in this message.
-	 * @param extra The data in this message.
+	 * @param bytes The data in this message.
 	 */
-	public A3Message(int reason, String object, byte [] extra){
-		assert(extra != null);
+	public A3Message(int reason, String object, byte [] bytes){
+		assert(bytes != null);
 		this.reason = reason;
 		this.object = object;
-		this.bytes = extra;
-		this.senderAddress = "";
-		this.addresses = new String [0];
+		this.bytes = bytes;
 	}
 
 	/**
@@ -75,7 +78,6 @@ public class A3Message {
 		assert(addresses != null);
 		this.reason = reason;
 		this.object = object;
-		this.senderAddress = "";
 		this.addresses = addresses;
 	}
 
@@ -91,7 +93,6 @@ public class A3Message {
 		this.reason = reason;
 		this.object = object;
 		this.bytes = extra;
-		senderAddress = "";
 		this.addresses = addresses;
 	}
 	

@@ -54,6 +54,7 @@ public class A3EventHandler implements TimerInterface{
                 break;
             case GROUP_JOINED:
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
+                channel.getGroupView().addGroupMember(channel.getChannelId());
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:

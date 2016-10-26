@@ -155,10 +155,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      *
      */
     private void quitHandlers() {
-        eventHandler = null;
         groupControl.quitSafely();
-        groupControl = null;
-        hierarchyView = null;
     }
 
     /**
@@ -449,6 +446,15 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     }
 
     /**
+     * Sends a split request to the supervisor of this channel's group
+     *
+     * @param nodesToTransfer The number of nodes to be transferred to the new group
+     */
+    public void notifySplit(int nodesToTransfer) {
+        enqueueControl(new A3Message(A3Constants.CONTROL_SPLIT, String.valueOf(nodesToTransfer)));
+    }
+
+    /**
      * Sends a broadcast request for subgroup counter increment. Subgroup counter is used to create
      * new subgroups named after the original group's name with subgroup counter appended
      */
@@ -465,15 +471,6 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      */
     protected void notifyMerge(String receiverGroupName) {
         enqueueControl(new A3Message(A3Constants.CONTROL_MERGE_NOTIFICATION, receiverGroupName));
-    }
-
-    /**
-     * Sends a split request to the supervisor of this channel's group
-     *
-     * @param nodesToTransfer The number of nodes to be transferred to the new group
-     */
-    public void notifySplit(int nodesToTransfer) {
-        enqueueControl(new A3Message(A3Constants.CONTROL_SPLIT, String.valueOf(nodesToTransfer)));
     }
 
     /**
@@ -524,19 +521,19 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     @Override
     public void receiveUnicast(A3Message message) {
         Log.i(TAG, "UNICAST : " + message.object + " TO " + message.getAddresses());
-        activeRole.onMessage(message);
+        activeRole.handleMessage(message);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
         Log.i(TAG, "MULTICAST : " + message.object + " TO " + message.getAddresses());
-        activeRole.onMessage(message);
+        activeRole.handleMessage(message);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
         Log.i(TAG, "BROADCAST : " + message.object);
-        activeRole.onMessage(message);
+        activeRole.handleMessage(message);
     }
 
     /**

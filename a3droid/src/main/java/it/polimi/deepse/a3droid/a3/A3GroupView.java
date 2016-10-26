@@ -1,6 +1,8 @@
 package it.polimi.deepse.a3droid.a3;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * TODO
@@ -11,7 +13,7 @@ public class A3GroupView{
 	private A3GroupChannel channel;
 
 	/**The list of the channel that are currently part of the group.*/
-	private ArrayList<String> groupMembers;
+	private Set<String> groupMembers;
 
 	/**The list of the group members that will substitute "groupMembers" after a groupView update.*/
 	private ArrayList<String> temporaryView;
@@ -19,17 +21,13 @@ public class A3GroupView{
 	/**Indicates if a groupView update is ongoing or not.*/
 	private boolean temporaryViewIsActive;
 
-	/**The number of the channels in the group.*/
-	private int numberOfNodes;
-
 	/**The Service on which this View resides
 	 * @param channel this groupView's channel
 	 */
 	public A3GroupView(A3GroupChannel channel) {
 		this.channel = channel;
-		groupMembers = new ArrayList<>();
+		groupMembers = new HashSet<String>();
 		temporaryViewIsActive = false;
-		numberOfNodes = 0;
 	}
 
 	/**
@@ -45,7 +43,6 @@ public class A3GroupView{
 
 		if(temporaryViewIsActive)
 			temporaryView.add(memberName);
-		numberOfNodes = numberOfNodes + 1;
 	}
 
 	/**
@@ -62,7 +59,6 @@ public class A3GroupView{
 		if(temporaryViewIsActive){
 			temporaryView.remove(memberName);
 		}
-		numberOfNodes = numberOfNodes - 1;
 
 		String supervisorId = channel.getSupervisorId();
 		if(supervisorId != null && supervisorId.equals(memberName))
@@ -108,6 +104,6 @@ public class A3GroupView{
 	}
 
 	public int getNumberOfNodes() {
-		return numberOfNodes;
+		return groupMembers.size();
 	}
 }

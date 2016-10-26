@@ -51,7 +51,7 @@ public abstract class A3Role implements Runnable {
 	/**The channel this role belongs to.*/
 	private A3GroupChannel channel;
 
-	private RoleMessageHandler handler;
+	private RoleMessageHandler messageHandler;
 	/**
 	 * Set this role as not active and the className of this role to its class canonical name.
 	 */
@@ -92,8 +92,8 @@ public abstract class A3Role implements Runnable {
 	public void setActive(boolean active) {
 		this.active = active;
 		if(active)
-			handler = new RoleMessageHandler(this);
-		else if(handler != null)
+			messageHandler = new RoleMessageHandler(this);
+		else if(messageHandler != null)
 				quitHandler();
 
 	}
@@ -148,10 +148,15 @@ public abstract class A3Role implements Runnable {
 	 *
 	 * @param message The incoming message.
 	 */
-	public void onMessage(A3Message message){
-		Message msg = handler.obtainMessage();
+	public void handleMessage(A3Message message){
+		if(isActive())
+			forwardMessageToHandler(message);
+	}
+
+	private void forwardMessageToHandler(A3Message message) {
+		Message msg = messageHandler.obtainMessage();
 		msg.obj = message;
-		handler.sendMessage(msg);
+		messageHandler.sendMessage(msg);
 	}
 
 	public String getClassName(){
@@ -161,11 +166,9 @@ public abstract class A3Role implements Runnable {
 	public String getChannelId(){
 		return channel.getChannelId();
 	}
-
 	public String getGroupName(){
 		return channel.getGroupName();
 	}
-
 	public void setNode(A3Node node){
 		this.node = node;
 	}
@@ -183,8 +186,7 @@ public abstract class A3Role implements Runnable {
 	}
 
 	private void quitHandler(){
-		handler.quitSafely();
-		handler = null;
+		messageHandler.quitSafely();
 	}
 
 	/**

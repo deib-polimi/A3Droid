@@ -251,9 +251,9 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      * @param message
      */
     private void handleMergeNotification(A3Message message) {
-        channel.handleEvent(A3EventHandler.A3Event.MERGE_STARTED);
         String receiverGroupName = message.object;
-        new Timer(this, WAIT_AND_MERGE_EVENT, randomWait.next(WAIT_AND_MERGE_FIXED_TIME, WAIT_AND_MERGE_RANDOM_TIME), receiverGroupName);
+        channel.handleEvent(A3EventHandler.A3Event.MERGE_STARTED);
+        new Timer(this, WAIT_AND_MERGE_EVENT, randomWait.next(WAIT_AND_MERGE_FIXED_TIME, WAIT_AND_MERGE_RANDOM_TIME), receiverGroupName).start();
     }
 
     /**
@@ -294,7 +294,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      */
     private void handleSplitNotification(A3Message message){
         channel.handleEvent(A3EventHandler.A3Event.SPLIT_STARTED);
-        new Timer(this, WAIT_AND_SPLIT_EVENT, randomWait.next(WAIT_AND_SPLIT_FIXED_TIME, WAIT_AND_SPLIT_RANDOM_TIME));
+        new Timer(this, WAIT_AND_SPLIT_EVENT, randomWait.next(WAIT_AND_SPLIT_FIXED_TIME, WAIT_AND_SPLIT_RANDOM_TIME)).start();
     }
 
     private static final int WAIT_AND_SPLIT_FIXED_TIME = 0;
@@ -305,6 +305,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      */
     private void handleDelayedSplit(){
         try {
+            channel.getHierarchyView().incrementSubgroupsCounter();
             topologyControl.performMerge(
                 channel.getGroupName() + "_" +
                 channel.getHierarchyView().getSubgroupsCounter(),

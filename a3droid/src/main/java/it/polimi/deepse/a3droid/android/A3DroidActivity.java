@@ -26,17 +26,12 @@ public abstract class A3DroidActivity extends Activity{
 
 		// Set new global handler
 		Thread.setDefaultUncaughtExceptionHandler(new ErrorReportExceptionHandler());
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
 		EventBus.getDefault().register(this);
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
+	protected void onDestroy() {
+		super.onDestroy();
 		EventBus.getDefault().unregister(this);
 	}
 

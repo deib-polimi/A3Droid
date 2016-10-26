@@ -160,7 +160,7 @@ public class A3TopologyControl {
     }
 
     /**
-     * Either request the stack operation to the child group's supervisor or
+     * Either request the stack operation to the child group's supervinotifySplitsor or
      * perform the stack operation itself if this is the child group's supervisor
      * @param destinationGroupName
      * @param sourceGroupName
@@ -216,10 +216,20 @@ public class A3TopologyControl {
      */
     public synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
-        disconnectHierarchyBellow(sourceGroupName);
-        boolean ok = node.connectAndWaitForActivation(destinationGroupName);
-        mergeReply(destinationGroupName, sourceGroupName, ok, true);
-        return true;
+        /**
+         * TODO
+         * Avoids the disconnection from the source group before that group's supervisor replies to
+         * the merge request
+         * However, if a node is already connected to the destination folder, it won't disconnect
+         * from the source folder,  leaving the merge uncompleted, which justifies the second part.
+         */
+        if(!node.isConnectedForApplication(destinationGroupName) || !node.isSupervisor(destinationGroupName)) {
+            disconnectHierarchyBellow(sourceGroupName);
+            boolean ok = node.connectAndWaitForActivation(destinationGroupName);
+            mergeReply(destinationGroupName, sourceGroupName, ok, true);
+            return true;
+        }else
+            return false;
     }
 
     /**
@@ -276,7 +286,6 @@ public class A3TopologyControl {
     protected synchronized boolean performSupervisorSplit(String groupName, int nodesToTransfer) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
         A3GroupChannel channel = node.getChannel(groupName);
-        channel.notifyNewSubgroup();
         channel.notifySplitRandomly(nodesToTransfer);
         return true;
     }

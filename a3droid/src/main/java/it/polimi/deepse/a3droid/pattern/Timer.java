@@ -1,6 +1,5 @@
 package it.polimi.deepse.a3droid.pattern;
 
-
 /**This class is used in A3GroupChannelInterface and in Service, which implement the interface "TimerInterface".
  * After a 2 seconds timeout, it calls TimerInterface.handleTimeEvent(int), to notify the timeout fired.
  * @author Francesco
