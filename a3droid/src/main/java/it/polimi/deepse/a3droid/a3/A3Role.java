@@ -40,7 +40,7 @@ public abstract class A3Role implements Runnable {
 	protected static final String TAG = "a3droid.A3Role";
 
 	/**It indicates if this role is currently active or not.*/
-	protected boolean active;
+	private boolean active;
 
 	/**The canonical name of this role class.*/
 	protected String className;
@@ -71,9 +71,9 @@ public abstract class A3Role implements Runnable {
 
 		onActivation();
 
-		while(active){
+		/*while(active){
 			logic();
-		}
+		}*/
 	}
 
 	/**
