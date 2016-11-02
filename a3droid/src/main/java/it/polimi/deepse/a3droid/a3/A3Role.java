@@ -70,7 +70,7 @@ public abstract class A3Role implements Runnable {
 	public void run(){
 
 		onActivation();
-
+		logic();
 		/*while(active){
 			logic();
 		}*/
