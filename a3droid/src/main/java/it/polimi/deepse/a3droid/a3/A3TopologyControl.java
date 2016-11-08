@@ -202,8 +202,8 @@ public class A3TopologyControl {
                                                        String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         disconnectFromHierarchyAbove(sourceGroupName);
-        A3GroupChannel oldGroupChannel = node.getChannel(sourceGroupName);
-        oldGroupChannel.notifyMerge(destinationGroupName);
+        A3GroupChannel sourceGroupChannel = node.getChannel(sourceGroupName);
+        sourceGroupChannel.notifyMerge(destinationGroupName);
         return true;
     }
 
@@ -217,16 +217,16 @@ public class A3TopologyControl {
     public synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         /**
-         * TODO
-         * Avoids the disconnection from the source group before that group's supervisor replies to
-         * the merge request
-         * However, if a node is already connected to the destination folder, it won't disconnect
-         * from the source folder,  leaving the merge uncompleted, which justifies the second part.
+         * TODO: replace this by a passive/control membership which won't receive this msg
+         * If it is a supervisor of destination group, it ignores this request, as it is only
+         * connected to request the merge and will be disconnected once a reply arrives.
+         * However, if a source group supervisor node is already connected to the destination group,
+         * it wouldn't disconnect from the source group, which justifies the second verification part.
          */
-        if(!node.isConnectedForApplication(destinationGroupName) || !node.isSupervisor(destinationGroupName)) {
+        if(!node.isSupervisor(destinationGroupName) || node.isSupervisor(sourceGroupName)) {
             disconnectHierarchyBellow(sourceGroupName);
-            boolean ok = node.connectAndWaitForActivation(destinationGroupName);
-            mergeReply(destinationGroupName, sourceGroupName, ok, true);
+            node.connectAndWaitForActivation(destinationGroupName);
+            mergeReply(destinationGroupName, sourceGroupName, true, true);
             return true;
         }else
             return false;

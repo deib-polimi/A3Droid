@@ -9,6 +9,8 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import it.polimi.deepse.a3droid.a3.A3EventHandler;
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.a3.events.A3UIEvent;
 import it.polimi.deepse.a3droid.a3.events.A3ErrorEvent;
 
@@ -37,6 +39,12 @@ public abstract class A3DroidActivity extends Activity{
 
 	// This method will be called when a MessageEvent is posted
 	@Subscribe(threadMode = ThreadMode.MAIN)
+	public void onGroupEvent(A3GroupEvent event) {
+		handleGroupEvent(event);
+	}
+
+	// This method will be called when a MessageEvent is posted
+	@Subscribe(threadMode = ThreadMode.MAIN)
 	public void onUIEvent(A3UIEvent event) {
 		handleUIEvent(event);
 	}
@@ -46,6 +54,13 @@ public abstract class A3DroidActivity extends Activity{
 	public void onErrorEvent(A3ErrorEvent event) {
 		handleErrorEvent(event);
 	}
+
+	/**
+	 * This method should be overriden by the application to receive group events
+	 * @see A3UIEvent
+	 * @param event
+	 */
+	public void handleGroupEvent(A3GroupEvent event){}
 
 	/**
 	 * This method should be overriden by the application to receive UI events

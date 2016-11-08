@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 import it.polimi.deepse.a3droid.a3.events.A3ErrorEvent;
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3Exception;
 import it.polimi.deepse.a3droid.a3.exceptions.A3GroupCreationException;
@@ -163,7 +164,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      *
      * @param event
      */
-    public void handleEvent(A3EventHandler.A3Event event) {
+    public void handleEvent(A3GroupEvent.A3GroupEventType event) {
         eventHandler.handleEvent(event, null);
     }
 
@@ -173,7 +174,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      * @param event
      * @param arg
      */
-    public void handleEvent(A3EventHandler.A3Event event, Object arg) {
+    public void handleEvent(A3GroupEvent.A3GroupEventType event, Object arg) {
         eventHandler.handleEvent(event, arg);
     }
 

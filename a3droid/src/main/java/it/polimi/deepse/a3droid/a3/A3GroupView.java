@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
+
 /**
  * TODO
  */
@@ -62,7 +64,7 @@ public class A3GroupView{
 
 		String supervisorId = channel.getSupervisorId();
 		if(supervisorId != null && supervisorId.equals(memberName))
-			channel.handleEvent(A3EventHandler.A3Event.SUPERVISOR_LEFT);
+			channel.handleEvent(A3GroupEvent.A3GroupEventType.SUPERVISOR_LEFT);
 	}
 
 	/**
