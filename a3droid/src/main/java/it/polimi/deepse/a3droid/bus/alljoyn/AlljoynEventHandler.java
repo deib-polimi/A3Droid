@@ -1,9 +1,7 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
-import android.os.Handler;
-
 import it.polimi.deepse.a3droid.a3.A3Application;
-import it.polimi.deepse.a3droid.a3.A3EventHandler;
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -39,31 +37,31 @@ public class AlljoynEventHandler implements TimerInterface{
     public void handleEvent(AlljoynEvent event, Object arg){
         switch (event){
             case SESSION_CREATED:
-                channel.handleEvent(A3EventHandler.A3Event.GROUP_CREATED);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_CREATED);
                 channel.setServiceState(AlljoynService.AlljoynServiceState.ADVERTISED);
                 break;
             case SESSION_DESTROYED:
-                channel.handleEvent(A3EventHandler.A3Event.GROUP_DESTROYED);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_DESTROYED);
                 channel.setServiceState(AlljoynService.AlljoynServiceState.BOUND);
                 break;
             case SESSION_JOINED:
-                channel.handleEvent(A3EventHandler.A3Event.GROUP_JOINED);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_JOINED);
                 channel.setChannelState(AlljoynBus.AlljoynChannelState.JOINT);
                 break;
             case SESSION_LOST:
-                channel.handleEvent(A3EventHandler.A3Event.GROUP_LOST);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_LOST);
                 channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
                 new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
                 break;
             case SESSION_LEFT:
-                channel.handleEvent(A3EventHandler.A3Event.GROUP_LEFT);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_LEFT);
                 channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
                 break;
             case MEMBER_JOINED:
-                channel.handleEvent(A3EventHandler.A3Event.MEMBER_JOINED, arg);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.MEMBER_JOINED, arg);
                 break;
             case MEMBER_LEFT:
-                channel.handleEvent(A3EventHandler.A3Event.MEMBER_LEFT, arg);
+                channel.handleEvent(A3GroupEvent.A3GroupEventType.MEMBER_LEFT, arg);
                 break;
             default:
                 break;

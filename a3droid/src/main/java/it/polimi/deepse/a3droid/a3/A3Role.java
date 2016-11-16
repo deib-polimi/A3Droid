@@ -52,7 +52,6 @@ public abstract class A3Role implements Runnable {
 	private A3GroupChannel channel;
 
 	private RoleMessageHandler messageHandler;
-
 	/**
 	 * Set this role as not active and the className of this role to its class canonical name.
 	 */
@@ -69,7 +68,12 @@ public abstract class A3Role implements Runnable {
 	 */
 	@Override
 	public void run(){
+
 		onActivation();
+
+		/*while(active){
+			logic();
+		}*/
 	}
 
 	/**
@@ -79,11 +83,24 @@ public abstract class A3Role implements Runnable {
 	public abstract void onActivation();
 
 	/**
-	 * The logic that must be executed when receiving an application message.
-	 * Control messages are handled by A3GroupChannel.
-	 * @param message The received message.
+	 * The logic that is executed within the loop.
+	 * If some waiting is needed, use the static method "Thread.sleep(int)".
+	 * To exit the loop, execute "active = false".
 	 */
-	abstract void receiveApplicationMessage(A3Message message);
+	public abstract void logic();
+
+	public void setActive(boolean active) {
+		this.active = active;
+		if(active)
+			messageHandler = new RoleMessageHandler(this);
+		else if(messageHandler != null)
+				quitHandler();
+
+	}
+
+	public boolean isActive(){
+		return active;
+	}
 
 	public void sendUnicast(A3Message message, String address){
 		try {
@@ -120,41 +137,40 @@ public abstract class A3Role implements Runnable {
 		}
 	}
 
-	public void postUIEvent(int what, String message){
-		EventBus.getDefault().post(new A3UIEvent(what, message));
-	}
+	/**
+	 * The logic that must be executed when receiving an application message.
+	 * Control messages are handled by A3GroupChannel.
+	 * @param message The received message.
+	 */
+	abstract void receiveApplicationMessage(A3Message message);
 
-	/** It receives the incoming A3Message and forwards it to a HandlerThread if this role is active.
-	 *  TODO: handle the case in which the role is not active
+	/**It receives the incoming messages and passes them to another thread, releasing the channel.
 	 *
 	 * @param message The incoming message.
 	 */
 	public void handleMessage(A3Message message){
 		if(isActive())
-			forwardApplicationMessageToHandler(message);
+			forwardMessageToHandler(message);
 	}
 
-	private void forwardApplicationMessageToHandler(A3Message message) {
+	private void forwardMessageToHandler(A3Message message) {
 		Message msg = messageHandler.obtainMessage();
 		msg.obj = message;
 		messageHandler.sendMessage(msg);
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
-		if(active)
-			messageHandler = new RoleMessageHandler(this);
-		else if(messageHandler != null)
-			quitHandlerSafely();
-
+	public String getClassName(){
+		return className;
 	}
 
-	private void quitHandlerSafely(){
-		messageHandler.quitSafely();
+	public String getChannelId(){
+		return channel.getChannelId();
 	}
-
-	public boolean isActive(){
-		return active;
+	public String getGroupName(){
+		return channel.getGroupName();
+	}
+	public void setNode(A3Node node){
+		this.node = node;
 	}
 
 	public void setChannel(A3GroupChannel a3channel) {
@@ -165,20 +181,12 @@ public abstract class A3Role implements Runnable {
 		return channel;
 	}
 
-	public String getClassName(){
-		return className;
+	public void postUIEvent(int what, String message){
+		EventBus.getDefault().post(new A3UIEvent(what, message));
 	}
 
-	public String getChannelId(){
-		return channel.getChannelId();
-	}
-
-	public String getGroupName(){
-		return channel.getGroupName();
-	}
-
-	public void setNode(A3Node node){
-		this.node = node;
+	private void quitHandler(){
+		messageHandler.quitSafely();
 	}
 
 	/**

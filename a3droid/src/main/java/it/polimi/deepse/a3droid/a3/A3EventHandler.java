@@ -1,5 +1,8 @@
 package it.polimi.deepse.a3droid.a3;
 
+import org.greenrobot.eventbus.EventBus;
+
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -18,34 +21,13 @@ public class A3EventHandler implements TimerInterface{
         this.channel = channel;
     }
 
-    /**
-     * The session with a service has been lost.
-     */
-    public enum A3Event {
-        GROUP_CREATED,
-        GROUP_DESTROYED,
-        GROUP_LOST,
-        GROUP_JOINED,
-        GROUP_LEFT,
-        MEMBER_LEFT,
-        MEMBER_JOINED,
-        SUPERVISOR_LEFT,
-        SUPERVISOR_ELECTED,
-        STACK_STARTED,
-        STACK_FINISHED,
-        REVERSE_STACK_STARTED,
-        REVERSE_STACK_FINISHED,
-        MERGE_STARTED,
-        MERGE_FINISHED,
-        SPLIT_STARTED,
-        SPLIT_FINISHED
-    }
+    public void handleEvent(A3GroupEvent.A3GroupEventType event, Object obj) {
 
-    public void handleEvent(A3Event event, Object obj) {
         switch (event) {
             case GROUP_CREATED:
                 //A node also needs to join the group it has created
                 channel.joinGroup();
+                EventBus.getDefault().post(new A3GroupEvent(event, null));
                 break;
             case GROUP_DESTROYED:
             case GROUP_LOST:

@@ -5,6 +5,7 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
+import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.*;
@@ -132,7 +133,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3EventHandler.A3Event.SUPERVISOR_ELECTED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.SUPERVISOR_ELECTED);
         }
     }
 
@@ -175,13 +176,13 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         String parentGroupName = message.object;
         boolean ok = false;
         try{
-            channel.handleEvent(A3EventHandler.A3Event.STACK_STARTED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.STACK_STARTED);
             ok = topologyControl.performSupervisorStack(parentGroupName, channel.getGroupName());
         } catch (Exception e) {
             e.printStackTrace();
         }finally {
             channel.replyStack(parentGroupName, ok, message.senderAddress);
-            channel.handleEvent(A3EventHandler.A3Event.STACK_FINISHED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.STACK_FINISHED);
         }
     }
 
@@ -252,7 +253,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      */
     private void handleMergeNotification(A3Message message) {
         String receiverGroupName = message.object;
-        channel.handleEvent(A3EventHandler.A3Event.MERGE_STARTED);
+        channel.handleEvent(A3GroupEvent.A3GroupEventType.MERGE_STARTED);
         new Timer(this, WAIT_AND_MERGE_EVENT, randomWait.next(WAIT_AND_MERGE_FIXED_TIME, WAIT_AND_MERGE_RANDOM_TIME), receiverGroupName).start();
     }
 
@@ -268,7 +269,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3EventHandler.A3Event.MERGE_FINISHED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.MERGE_FINISHED);
         }
     }
 
@@ -293,7 +294,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
      * @param message
      */
     private void handleSplitNotification(A3Message message){
-        channel.handleEvent(A3EventHandler.A3Event.SPLIT_STARTED);
+        channel.handleEvent(A3GroupEvent.A3GroupEventType.SPLIT_STARTED);
         new Timer(this, WAIT_AND_SPLIT_EVENT, randomWait.next(WAIT_AND_SPLIT_FIXED_TIME, WAIT_AND_SPLIT_RANDOM_TIME)).start();
     }
 
@@ -316,7 +317,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3EventHandler.A3Event.SPLIT_FINISHED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.SPLIT_FINISHED);
         }
     }
 
