@@ -61,6 +61,8 @@ public abstract class A3DroidActivity extends Activity{
 	 */
 	public void handleErrorEvent(A3ErrorEvent event){}
 
+
+
 	// Error handler that redirects exception to the system default handler.
 	public class ErrorReportExceptionHandler implements Thread.UncaughtExceptionHandler {
 
