@@ -206,8 +206,7 @@ public class AlljoynBus extends A3Bus {
                 channel = (AlljoynGroupChannel) msg.obj;
             switch (msg.what) {
                 case HANDLE_APPLICATION_QUIT_EVENT: {
-                    Log.i(TAG, "mHandler.handleMessage(): APPLICATION_QUIT_EVENT");
-                    mBackgroundHandler.exit();
+                    Log.i(TAG, "mHandler.handleMessage(): HANDLE_APPLICATION_QUIT_EVENT");
                     stopSelf();
                 }
                 break;
@@ -568,7 +567,7 @@ public class AlljoynBus extends A3Bus {
                     doSendMessages((AlljoynGroupChannel) msg.obj);
                     break;
                 case EXIT:
-                    getLooper().quit();
+                    getLooper().quitSafely();
                     break;
                 default:
                     break;
@@ -1157,11 +1156,6 @@ public class AlljoynBus extends A3Bus {
         @Override
         public int getSupervisorFitnessFunction() {
             return 0;
-        }
-
-        @Override
-        public void groupStateChangeListener(A3GroupState oldState, A3GroupState newState) {
-
         }
     }
 }

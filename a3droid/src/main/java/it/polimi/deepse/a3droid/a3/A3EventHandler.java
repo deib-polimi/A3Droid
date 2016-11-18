@@ -25,61 +25,78 @@ public class A3EventHandler implements TimerInterface{
 
         switch (event) {
             case GROUP_CREATED:
-                //A node also needs to join the group it has created
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.joinGroup();
-                EventBus.getDefault().post(new A3GroupEvent(event, null));
                 break;
             case GROUP_DESTROYED:
             case GROUP_LOST:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
             case GROUP_JOINED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
                 channel.getGroupView().addGroupMember(channel.getChannelId());
                 new Timer(this, WAIT_AND_QUERY_ROLE_EVENT, WAIT_AND_QUERY_ROLE_FIXED_TIME_1).start();
                 break;
             case GROUP_LEFT:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 channel.deactivateActiveRole();
                 break;
+            case GROUP_STATE_CHANGED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event, obj));
+                break;
             case MEMBER_JOINED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event, obj));
                 channel.getGroupView().addGroupMember((String) obj);
                 break;
             case MEMBER_LEFT:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event, obj));
                 channel.getGroupView().removeGroupMember((String) obj);
                 break;
             case SUPERVISOR_LEFT:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 if (channel.getGroupState() == A3GroupDescriptor.A3GroupState.ACTIVE) {
                     channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
                     handleSupervisorLeftEvent();
                 }
                 break;
             case SUPERVISOR_ELECTED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case STACK_STARTED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.STACK);
                 break;
             case STACK_FINISHED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case REVERSE_STACK_STARTED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.REVERSE_STACK);
                 break;
             case REVERSE_STACK_FINISHED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case MERGE_STARTED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.MERGE);
                 break;
             case MERGE_FINISHED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             case SPLIT_STARTED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.SPLIT);
                 break;
             case SPLIT_FINISHED:
+                EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
                 channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
                 break;
             default:

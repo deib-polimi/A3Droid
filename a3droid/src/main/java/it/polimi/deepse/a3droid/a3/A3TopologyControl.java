@@ -32,13 +32,13 @@ public class A3TopologyControl {
      * @throws A3NoGroupDescriptionException
      * @throws A3ChannelNotFoundException
      */
-    protected void stack(String parentGroupName, String childGroupName) throws
+    protected boolean stack(String parentGroupName, String childGroupName) throws
             A3InvalidOperationRole, A3NoGroupDescriptionException, A3ChannelNotFoundException, A3InvalidOperationParameters {
         Log.i(TAG, "stack(" + parentGroupName + ", " + childGroupName + ")");
         if (node.isSupervisor(childGroupName))
-            performSupervisorStack(parentGroupName, childGroupName);
+            return performSupervisorStack(parentGroupName, childGroupName);
         else
-            requestStack(parentGroupName, childGroupName);
+            return requestStack(parentGroupName, childGroupName);
     }
 
     /**
@@ -51,7 +51,7 @@ public class A3TopologyControl {
      * @param childGroupName The name of the son group.
      * @return true, if "parentGroupName" became parent of "childGroupName", false otherwise.
      */
-    protected boolean performSupervisorStack(String parentGroupName, String childGroupName) throws
+    private boolean performSupervisorStack(String parentGroupName, String childGroupName) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
         Log.i(TAG, "performSupervisorStack(" + parentGroupName + ", " + childGroupName + ")");
         if(node.connect(parentGroupName)) {
@@ -70,13 +70,16 @@ public class A3TopologyControl {
      * @throws A3NoGroupDescriptionException
      * @throws A3ChannelNotFoundException
      */
-    private void requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+    private boolean requestStack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (node.connectAndWaitForActivation(childGroupName)) {
             A3GroupChannel channel;
             channel = node.getChannel(childGroupName);
             channel.requestStack(parentGroupName);
-        } else
+            return true;
+        } else {
             stackReply(parentGroupName, childGroupName, false, true);
+            return false;
+        }
     }
 
     /**
@@ -102,13 +105,13 @@ public class A3TopologyControl {
      * @throws A3InvalidOperationRole
      * @throws A3ChannelNotFoundException
      */
-    protected void reverseStack(String parentGroupName, String childGroupName) throws
+    protected boolean reverseStack(String parentGroupName, String childGroupName) throws
             A3NoGroupDescriptionException,
             A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException {
         if (node.isSupervisor(childGroupName)) {
-            performSupervisorReverseStack(parentGroupName, childGroupName);
+            return performSupervisorReverseStack(parentGroupName, childGroupName);
         } else
-            requestReverseStack(parentGroupName, childGroupName);
+            return requestReverseStack(parentGroupName, childGroupName);
     }
 
     /**
@@ -119,7 +122,7 @@ public class A3TopologyControl {
      * @param parentGroupName The name of the group to disconnect from.
      * @param childGroupName The name of the group to disconnect from group "parentGroupName".
      */
-    protected boolean performSupervisorReverseStack(String parentGroupName, String childGroupName) throws
+    private boolean performSupervisorReverseStack(String parentGroupName, String childGroupName) throws
             A3ChannelNotFoundException {
         assert(!parentGroupName.isEmpty());
         assert(!childGroupName.isEmpty());
@@ -137,13 +140,16 @@ public class A3TopologyControl {
      * @throws A3NoGroupDescriptionException
      * @throws A3ChannelNotFoundException
      */
-    private void requestReverseStack(String parentGroupName, String childGroupName) throws
+    private boolean requestReverseStack(String parentGroupName, String childGroupName) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (node.connectAndWaitForActivation(childGroupName)) {
             A3GroupChannel channel = node.getChannel(childGroupName);
             channel.requestReverseStack(parentGroupName);
-        } else
+            return true;
+        } else {
             reverseStackReply(parentGroupName, childGroupName, false, true);
+            return false;
+        }
     }
 
     /**
@@ -168,12 +174,12 @@ public class A3TopologyControl {
      * @throws A3NoGroupDescriptionException
      * @throws A3ChannelNotFoundException
      */
-    protected void merge(String destinationGroupName, String sourceGroupName)
+    protected boolean merge(String destinationGroupName, String sourceGroupName)
             throws A3InvalidOperationRole, A3NoGroupDescriptionException, A3ChannelNotFoundException, A3InvalidOperationParameters {
         if (node.isSupervisor(sourceGroupName))
-            performSupervisorMerge(destinationGroupName, sourceGroupName);
+            return performSupervisorMerge(destinationGroupName, sourceGroupName);
         else
-            requestMerge(destinationGroupName, sourceGroupName);
+            return requestMerge(destinationGroupName, sourceGroupName);
     }
 
     /**
@@ -183,13 +189,16 @@ public class A3TopologyControl {
      * @throws A3NoGroupDescriptionException
      * @throws A3ChannelNotFoundException
      */
-    private void requestMerge(String destinationGroupName, String sourceGroupName)
+    private boolean requestMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         if (node.connectAndWaitForActivation(sourceGroupName)) {
             A3GroupChannel channel = node.getChannel(sourceGroupName);
             channel.requestMerge(destinationGroupName);
-        } else
+            return true;
+        } else {
             mergeReply(destinationGroupName, sourceGroupName, false, true);
+            return false;
+        }
     }
 
     /**
@@ -198,7 +207,7 @@ public class A3TopologyControl {
      * @param destinationGroupName The name of the group to joinGroup to.
      * @param sourceGroupName The name of the group to disconnect from.
      */
-    public synchronized boolean performSupervisorMerge(String destinationGroupName,
+    private synchronized boolean performSupervisorMerge(String destinationGroupName,
                                                        String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         disconnectFromHierarchyAbove(sourceGroupName);
@@ -214,7 +223,7 @@ public class A3TopologyControl {
      * @param destinationGroupName The name of the group to joinGroup to.
      * @param sourceGroupName The name of the group to disconnect from.
      */
-    public synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
+    protected synchronized boolean performMerge(String destinationGroupName, String sourceGroupName)
             throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         /**
          * TODO: replace this by a passive/control membership which won't receive this msg
@@ -239,7 +248,7 @@ public class A3TopologyControl {
      * @param originGroupName The name of the group from which the groups will be transferred from
      * @param ok true if the merge operation was successful, false otherwise
      */
-    public void mergeReply(String destinationGroupName, String originGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException {
+    protected void mergeReply(String destinationGroupName, String originGroupName, boolean ok, boolean disconnect) throws A3ChannelNotFoundException {
         Log.i(TAG, "mergeReply(" + destinationGroupName + ", " + originGroupName + ", " + ok + ")");
         if(disconnect)
             node.disconnect(originGroupName);
@@ -283,7 +292,7 @@ public class A3TopologyControl {
      * @param groupName
      * @param nodesToTransfer
      */
-    protected synchronized boolean performSupervisorSplit(String groupName, int nodesToTransfer) throws
+    private synchronized boolean performSupervisorSplit(String groupName, int nodesToTransfer) throws
             A3NoGroupDescriptionException, A3ChannelNotFoundException {
         A3GroupChannel channel = node.getChannel(groupName);
         channel.notifySplitRandomly(nodesToTransfer);

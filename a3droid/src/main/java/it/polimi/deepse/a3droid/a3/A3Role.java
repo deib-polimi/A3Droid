@@ -82,13 +82,6 @@ public abstract class A3Role implements Runnable {
 	 */
 	public abstract void onActivation();
 
-	/**
-	 * The logic that is executed within the loop.
-	 * If some waiting is needed, use the static method "Thread.sleep(int)".
-	 * To exit the loop, execute "active = false".
-	 */
-	public abstract void logic();
-
 	public void setActive(boolean active) {
 		this.active = active;
 		if(active)

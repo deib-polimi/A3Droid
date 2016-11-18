@@ -69,7 +69,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     /**
      * A reference to the node which this channel belongs to
      **/
-    private A3NodeInterface node;
+    private A3Node node;
 
     /**
      * The descriptor instance of the group associated to this channel
@@ -447,15 +447,6 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     }
 
     /**
-     * Sends a split request to the supervisor of this channel's group
-     *
-     * @param nodesToTransfer The number of nodes to be transferred to the new group
-     */
-    public void notifySplit(int nodesToTransfer) {
-        enqueueControl(new A3Message(A3Constants.CONTROL_SPLIT, String.valueOf(nodesToTransfer)));
-    }
-
-    /**
      * Sends a broadcast request for subgroup counter increment. Subgroup counter is used to create
      * new subgroups named after the original group's name with subgroup counter appended
      */
@@ -817,25 +808,20 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     private List<A3MessageItem> mOutbound = new ArrayList<>();
 
     public A3GroupDescriptor.A3GroupState getGroupState() {
-        return mGroupState;
+        return groupState;
     }
 
     public void setGroupState(A3GroupDescriptor.A3GroupState state) {
-        groupDescriptor.groupStateChangeListener(getGroupState(), state);
-        this.mGroupState = state;
-        notifyObservers(GROUP_STATE_CHANGED_EVENT);
-        synchronized (A3NodeInterface.waiter) {
-            A3NodeInterface.waiter.notifyAll();
+        if(!this.groupState.equals(state))
+            handleEvent(A3GroupEvent.A3GroupEventType.GROUP_STATE_CHANGED, state);
+        this.groupState = state;
+        synchronized (node) {
+            node.notifyAll();
         }
     }
 
-    private A3GroupDescriptor.A3GroupState mGroupState = A3GroupDescriptor.A3GroupState.IDLE;
+    private A3GroupDescriptor.A3GroupState groupState = A3GroupDescriptor.A3GroupState.IDLE;
 
-    /**
-     * The object we use in notifications to indicate that the state of the
-     * "host" channel or its name has changed.
-     */
-    public static final String GROUP_STATE_CHANGED_EVENT = "GROUP_STATE_CHANGED_EVENT";
 
     public static final int BROADCAST_MSG = 0;
     public static final int UNICAST_MSG = 1;

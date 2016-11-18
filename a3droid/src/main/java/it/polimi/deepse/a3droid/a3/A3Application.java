@@ -26,11 +26,8 @@ public class A3Application extends Application implements Observable{
         Log.i(TAG, "onCreate()");
         super.onCreate();
         PACKAGE_NAME = getApplicationContext().getPackageName();
-        Intent intent = new Intent(this, AlljoynBus.class);
-        mRunningService = startService(intent);
-        if (mRunningService == null)
-            Log.i(TAG, "onCreate(): failed to startService()");
         this.myUID = Settings.Secure.getString(this.getContentResolver(), "android_id");
+        checkin();
     }
 
     public static String PACKAGE_NAME;

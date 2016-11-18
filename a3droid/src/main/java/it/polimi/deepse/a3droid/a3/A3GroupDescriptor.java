@@ -36,8 +36,6 @@ public abstract class A3GroupDescriptor {
 	 * @throws Exception The integer fitness function is not implemented (default implementation).
 	 */
 	public int getIntegerSplitFitnessFunction() throws Exception {
-		// TODO Auto-generated method stub
-		
 		throw new Exception("Split failed: integer fitness function not implemented.");
 	}
 
@@ -47,22 +45,10 @@ public abstract class A3GroupDescriptor {
 	 * @throws Exception The integer fitness function is not implemented (default implementation).
 	 */
 	public boolean getBooleanSplitFitnessFunction() throws Exception {
-		// TODO Auto-generated method stub
 		throw new Exception("Split failed: boolean fitness function not implemented.");
 	}
 
-	/**To override in order to determine the value of an integer fitness function used for supervisor election.
-	 * 
-	 * @return It should return the value of an integer fitness function.
-	 */
-	/*public int getSupervisorFitnessFunction() throws Exception{
-		// TODO Auto-generated method stub
-		throw new Exception("Supervisor fitness function not implemented.");
-	}*/
-	
 	public abstract int getSupervisorFitnessFunction();
-
-	public abstract void groupStateChangeListener(A3GroupDescriptor.A3GroupState oldState, A3GroupDescriptor.A3GroupState newState);
 
 	/**
 	 * Create the string representation of the type GroupInfo.
@@ -77,24 +63,12 @@ public abstract class A3GroupDescriptor {
 		return name;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
 	public String getSupervisorRoleId() {
 		return supervisorRoleId;
 	}
 
-	public void setSupervisorRoleId(String supervisorRoleId) {
-		this.supervisorRoleId = supervisorRoleId;
-	}
-
 	public String getFollowerRoleId() {
 		return followerRoleId;
-	}
-
-	public void setFollowerRoleId(String followerRoleId) {
-		this.followerRoleId = followerRoleId;
 	}
 
 	@Override

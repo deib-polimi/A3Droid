@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
@@ -49,7 +50,7 @@ public class A3Node implements A3NodeInterface{
                      ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                      ArrayList<String> roles){
         this.application = application;
-        this.a3GroupDescriptors = a3GroupDescriptors;
+        this.groupDescriptors = a3GroupDescriptors;
         this.roles = roles;
         this.topologyControl = new A3TopologyControl(this);
     }
@@ -66,7 +67,7 @@ public class A3Node implements A3NodeInterface{
      * @throws A3NoGroupDescriptionException
      */
     public synchronized boolean connect(String groupName) throws A3NoGroupDescriptionException {
-        if(this.isConnectedForApplication(groupName))
+        if(this.isConnected(groupName))
             return true;
         A3GroupDescriptor descriptor = getGroupDescriptor(groupName);
         if(descriptor != null) {
@@ -110,23 +111,6 @@ public class A3Node implements A3NodeInterface{
         channel = getChannel(groupName);
         channel.disconnect();
         removeChannel(channel);
-    }
-
-    /**
-     *
-     * @param channel
-     * @param state
-     */
-    private void waitForState(A3GroupChannel channel, A3GroupDescriptor.A3GroupState state){
-        synchronized (waiter) {
-            while (channel.getGroupState().compareTo(state) < 0) {
-                try {
-                    waiter.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 
     /**
@@ -279,12 +263,11 @@ public class A3Node implements A3NodeInterface{
     }
 
     /**
-     * Called by the user interface to determine if the channel "groupName" is used by the application or not.
-     * TODO: Not yet checking if connected 'for application'
-     * @param groupName The name of the target channel.
-     * @return true, if the channel "groupName" is used by the application, false otherwise.
+     * Checks if the node instance is connected to a given group
+     * @param groupName The name of the group to be checked
+     * @return true, if the node instance is connected to "groupName"
      */
-    public boolean isConnectedForApplication(String groupName) {
+    public boolean isConnected(String groupName) {
         A3GroupChannel channel;
         try {
             channel = getChannel(groupName);
@@ -303,27 +286,28 @@ public class A3Node implements A3NodeInterface{
     public boolean isSupervisor(String groupName){
 
         A3GroupChannel channel;
-
         try {
             channel = getChannel(groupName);
-        } catch (Exception e) {
+            return channel.isSupervisor();
+        } catch (A3ChannelNotFoundException e) {
+            Log.e(TAG, e.getMessage());
+        } finally {
             return false;
         }
-        return channel.isSupervisor();
     }
 
-    /**Looks for a group descriptor in the "a3GroupDescriptors" list.
+    /**Looks for a group descriptor in the "groupDescriptors" list.
      *
      * @param groupName The name of the group whose descriptor is requested.
      * @return The descriptor of the group "groupName".
      */
-    public A3GroupDescriptor getGroupDescriptor(String groupName) throws A3NoGroupDescriptionException {
+    private A3GroupDescriptor getGroupDescriptor(String groupName) throws A3NoGroupDescriptionException {
         A3GroupDescriptor descriptor;
         String name;
 
-        synchronized(a3GroupDescriptors){
-            for(int i = 0; i < a3GroupDescriptors.size(); i++){
-                descriptor = a3GroupDescriptors.get(i);
+        synchronized(groupDescriptors){
+            for(int i = 0; i < groupDescriptors.size(); i++){
+                descriptor = groupDescriptors.get(i);
                 name = descriptor.getGroupName();
 
 				/* Groups splitted by main groups have the same descriptor as their main groups
@@ -336,14 +320,20 @@ public class A3Node implements A3NodeInterface{
         throw new A3NoGroupDescriptionException("NO GROUP WITH NAME " + groupName + ".");
     }
 
-    public ArrayList<A3GroupDescriptor> getA3GroupDescriptors(){
-        return a3GroupDescriptors;
+    /**
+     * Returns a copy of the A3GroupDescriptor list to prevent modifications of the original list
+     * @return an ArrayList with a copy of the original list
+     */
+    protected ArrayList<A3GroupDescriptor> getGroupDescriptors(){
+        ArrayList<A3GroupDescriptor> groupDescriptorsCopy = new ArrayList<A3GroupDescriptor>();
+        Collections.copy(groupDescriptorsCopy, groupDescriptors);
+        return groupDescriptorsCopy;
     }
 
     /**The list of the descriptors of the groups that can be present in the system.
      * The groups splitted by other groups have their same descriptors.
      */
-    private final ArrayList<A3GroupDescriptor> a3GroupDescriptors;
+    private final ArrayList<A3GroupDescriptor> groupDescriptors;
 
     /**Looks for a role in the "roles" list.
      *
@@ -351,7 +341,7 @@ public class A3Node implements A3NodeInterface{
      * @return The role with "roleId" as className.
      * @throws Exception No role has "roleId" as className.
      */
-    public <T extends A3Role> T getRole(String roleId, Class<T> type){
+    protected <T extends A3Role> T getRole(String roleId, Class<T> type){
         String role;
 
         synchronized(roles){
@@ -376,7 +366,6 @@ public class A3Node implements A3NodeInterface{
             }
         }
         return null;
-        //throw new Exception("NO ROLE WITH NAME " + roleId + ".");
     }
 
     /**The list of roles this node can assume.
@@ -384,17 +373,34 @@ public class A3Node implements A3NodeInterface{
      */
     private final ArrayList<String> roles;
 
-    /**Looks for a channel in the "mChannels" list.
+    /**
+     *
+     * @param channel
+     * @param state
+     */
+    private void waitForState(A3GroupChannel channel, A3GroupDescriptor.A3GroupState state){
+        synchronized (this) {
+            while (channel.getGroupState().compareTo(state) < 0) {
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**Looks for a channel in the "channels" list.
      *
      * @param groupName The name of the group to communicate with (i.e. to which the channel is connected).
      * @return The channel connected to the group "groupName".
      * @throws Exception No channel is connected to the group "groupName".
      */
-    public synchronized A3GroupChannel getChannel(String groupName) throws A3ChannelNotFoundException {
+    protected synchronized A3GroupChannel getChannel(String groupName) throws A3ChannelNotFoundException {
 
         A3GroupChannel channel;
-        for(int i = 0; i < mChannels.size(); i++){
-            channel = mChannels.get(i);
+        for(int i = 0; i < channels.size(); i++){
+            channel = channels.get(i);
 
             if(channel.getGroupName().equals(groupName))
                 return channel;
@@ -402,35 +408,36 @@ public class A3Node implements A3NodeInterface{
         throw new A3ChannelNotFoundException("A3GroupChannel for group " + groupName + "is not in this group's channel list");
     }
 
-    public synchronized ArrayList<A3GroupChannel> getChannels(){
-        return mChannels;
+    protected synchronized ArrayList<A3GroupChannel> getChannels(){
+        return channels;
+    }
+
+
+    protected synchronized void addChannel(A3GroupChannel channel){
+        channels.add(channel);
+    }
+
+    protected synchronized void removeChannel(A3GroupChannel channel){
+        channels.remove(channel);
+    }
+
+    /**The list of the channels to communicate with the groups this node is connected to.
+     * There are also channels that are disconnected because they are in "wait" group.
+     * In such case, a channel to the group "wait" is connected and in this list.*/
+    private ArrayList<A3GroupChannel> channels = new ArrayList<>();
+
+    protected A3TopologyControl getTopologyControl(){
+        return topologyControl;
     }
 
     public String getUID(){
         return application.getUID();
     }
 
-    public synchronized void addChannel(A3GroupChannel channel){
-        mChannels.add(channel);
-    }
-
-    public synchronized void removeChannel(A3GroupChannel channel){
-        mChannels.remove(channel);
-    }
-
-    /**The list of the mChannels to communicate with the groups this node is connected to.
-     * There are also mChannels that are disconnected because they are in "wait" group.
-     * In such case, a channel to the group "wait" is connected and in this list.*/
-    private ArrayList<A3GroupChannel> mChannels = new ArrayList<>();
-
-    public A3TopologyControl getTopologyControl(){
-        return topologyControl;
-    }
-
     @Override
     public int hashCode() {
         int hash = 0;
-        for(A3GroupDescriptor g : a3GroupDescriptors)
+        for(A3GroupDescriptor g : groupDescriptors)
             hash += g.hashCode();
         for(String r : roles)
             hash += r.hashCode();
@@ -439,7 +446,7 @@ public class A3Node implements A3NodeInterface{
 
     @Override
     public boolean equals(Object o){
-        return o instanceof A3Node && (o == this || this.a3GroupDescriptors.equals(((A3Node) o).getA3GroupDescriptors()) &&
+        return o instanceof A3Node && (o == this || this.groupDescriptors.equals(((A3Node) o).getGroupDescriptors()) &&
                 this.roles.equals(((A3Node) o).roles));
     }
 }

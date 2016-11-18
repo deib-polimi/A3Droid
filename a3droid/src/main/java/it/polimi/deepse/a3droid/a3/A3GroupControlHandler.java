@@ -7,6 +7,8 @@ import android.util.Log;
 
 import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
+import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
 import it.polimi.deepse.a3droid.pattern.*;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -102,82 +104,73 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         };
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleNewSupervisorNotification(A3Message message) {
         Log.i(TAG, "handleNewSupervisorNotification(" + message + ")");
         channel.setSupervisorId(message.senderAddress);
         A3GroupDescriptor groupDescriptor = null;
         try {
-            groupDescriptor = channel.getGroupDescriptor();
-            if(!channel.getChannelId().equals(message.senderAddress)){
-                float supervisorFF = Float.parseFloat(message.object);
-                if(channel.hasSupervisorRole()){
-                    if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF) {
-                        channel.becomeSupervisor();
-                    }
-                    else{
-                        if(channel.hasFollowerRole()) {
-                            channel.becomeFollower();
-                        }
-                        else if(channel.isSupervisor()) {
-                            channel.deactivateSupervisor();
-                        }
-                    }
-                }else if(channel.hasFollowerRole()) {
-                    channel.becomeFollower();
-                }
-            }
+            checkNewSupervisorNotification(message);
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } finally {
-            channel.handleEvent(A3GroupEvent.A3GroupEventType.SUPERVISOR_ELECTED);
+            channel.handleEvent(A3GroupEvent.A3GroupEventType.SUPERVISOR_ELECTED, channel.getSupervisorId());
         }
     }
 
-    /**
-     *
-     * @param message
-     */
+    private void checkNewSupervisorNotification(A3Message message) throws A3NoGroupDescriptionException {
+        A3GroupDescriptor groupDescriptor;
+        groupDescriptor = channel.getGroupDescriptor();
+        if(!channel.getChannelId().equals(message.senderAddress)){
+            processNewSupervisorNotification(message, groupDescriptor);
+        }
+    }
+
+    private void processNewSupervisorNotification(A3Message message, A3GroupDescriptor groupDescriptor) {
+        float supervisorFF = Float.parseFloat(message.object);
+        if(channel.hasSupervisorRole()){
+            compareNewSupervisorFF(groupDescriptor, supervisorFF);
+        }else if(channel.hasFollowerRole()) {
+            channel.becomeFollower();
+        }
+    }
+
+    private void compareNewSupervisorFF(A3GroupDescriptor groupDescriptor, float supervisorFF) {
+        if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF) {
+            channel.becomeSupervisor();
+        }
+        else{
+            if(channel.hasFollowerRole()) {
+                channel.becomeFollower();
+            }
+            else if(channel.isSupervisor()) {
+                channel.deactivateSupervisor();
+            }
+        }
+    }
+
     private void handleCurrentSupervisorReply(A3Message message){
         Log.i(TAG, "handleCurrentSupervisorReply(" + message + ")");
         channel.clearSupervisorQueryTimer();
         handleNewSupervisorNotification(message);
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleNoSupervisorNotification(A3Message message){
         if(channel.hasSupervisorRole())
             channel.becomeSupervisor();
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleGetSupervisorQuery(A3Message message){
         if(channel.isSupervisor())
             channel.notifyCurrentSupervisor(message.senderAddress);
-        //else if(!message.senderAddress.equals(getChannelId()) && supervisorId == null)
-        //  notifyNoSupervisor(message.senderAddress);
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleStackRequest(A3Message message){
         assert channel.isSupervisor();//TODO things may change.. we should verify and perform some behavior if it is false
         String parentGroupName = message.object;
         boolean ok = false;
         try{
             channel.handleEvent(A3GroupEvent.A3GroupEventType.STACK_STARTED);
-            ok = topologyControl.performSupervisorStack(parentGroupName, channel.getGroupName());
+            ok = topologyControl.stack(parentGroupName, channel.getGroupName());
         } catch (Exception e) {
             e.printStackTrace();
         }finally {
@@ -186,10 +179,6 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         }
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleStackReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
@@ -199,26 +188,24 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         }
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleReverseStackRequest(A3Message message){
         assert channel.isSupervisor();
         boolean ok = false;
         try {
-            ok = topologyControl.performSupervisorReverseStack(message.object, channel.getGroupName());
+            ok = topologyControl.reverseStack(message.object, channel.getGroupName());
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
+        } catch (A3NoGroupDescriptionException e) {
+            e.printStackTrace();
+        } catch (A3InvalidOperationParameters a3InvalidOperationParameters) {
+            a3InvalidOperationParameters.printStackTrace();
+        } catch (A3InvalidOperationRole a3InvalidOperationRole) {
+            a3InvalidOperationRole.printStackTrace();
         } finally {
             channel.replyReverseStack(message.object, ok, message.senderAddress);
         }
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleReverseStackReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
@@ -228,39 +215,31 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         }
     }
 
-    /**
-     * Supervisor handler of a merge request
-     * @param message
-     */
     private void handleMergeRequest(A3Message message){
         assert channel.isSupervisor();
         String receiverGroupName = message.object;
         boolean ok = false;
         try {
-            ok = topologyControl.performSupervisorMerge(receiverGroupName, channel.getGroupName());
+            ok = topologyControl.merge(receiverGroupName, channel.getGroupName());
         } catch (A3NoGroupDescriptionException e) {
             e.printStackTrace();
         } catch (A3ChannelNotFoundException e) {
             e.printStackTrace();
+        } catch (A3InvalidOperationParameters a3InvalidOperationParameters) {
+            a3InvalidOperationParameters.printStackTrace();
+        } catch (A3InvalidOperationRole a3InvalidOperationRole) {
+            a3InvalidOperationRole.printStackTrace();
         } finally {
             channel.replyMerge(receiverGroupName, ok, message.senderAddress);
         }
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleMergeNotification(A3Message message) {
         String receiverGroupName = message.object;
         channel.handleEvent(A3GroupEvent.A3GroupEventType.MERGE_STARTED);
         new Timer(this, WAIT_AND_MERGE_EVENT, randomWait.next(WAIT_AND_MERGE_FIXED_TIME, WAIT_AND_MERGE_RANDOM_TIME), receiverGroupName).start();
     }
 
-    /**
-     *
-     * @param receiverGroupName
-     */
     private void handleDelayedMerge(String receiverGroupName){
         try {
             topologyControl.performMerge(receiverGroupName, channel.getGroupName());
@@ -276,10 +255,6 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
     private static final int WAIT_AND_MERGE_FIXED_TIME = 0;
     private static final int WAIT_AND_MERGE_RANDOM_TIME = 1000;
 
-    /**
-     *
-     * @param message
-     */
     private void handleMergeReply(A3Message message){
         String [] reply = message.object.split(A3Constants.SEPARATOR);
         try {
@@ -289,10 +264,6 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
         }
     }
 
-    /**
-     *
-     * @param message
-     */
     private void handleSplitNotification(A3Message message){
         channel.handleEvent(A3GroupEvent.A3GroupEventType.SPLIT_STARTED);
         new Timer(this, WAIT_AND_SPLIT_EVENT, randomWait.next(WAIT_AND_SPLIT_FIXED_TIME, WAIT_AND_SPLIT_RANDOM_TIME)).start();
@@ -301,9 +272,6 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
     private static final int WAIT_AND_SPLIT_FIXED_TIME = 0;
     private static final int WAIT_AND_SPLIT_RANDOM_TIME = 1000;
 
-    /**
-     *
-     */
     private void handleDelayedSplit(){
         try {
             channel.getHierarchyView().incrementSubgroupsCounter();
