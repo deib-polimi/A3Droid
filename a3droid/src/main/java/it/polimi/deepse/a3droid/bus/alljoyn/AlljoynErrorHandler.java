@@ -1,5 +1,7 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
+import android.util.Log;
+
 import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Status;
 
@@ -18,6 +20,8 @@ import it.polimi.deepse.a3droid.utility.Fibonacci;
  */
 public class AlljoynErrorHandler{
 
+    protected final String TAG;
+
     private AlljoynGroupChannel channel;
     private Map<AlljoynBus.AlljoynChannelState, Integer> channelRetries;
     private Map<AlljoynService.AlljoynServiceState, Integer> serviceRetries;
@@ -26,6 +30,7 @@ public class AlljoynErrorHandler{
 
 
     public AlljoynErrorHandler(AlljoynGroupChannel channel){
+        TAG = "AlljoynErrorHandler";
         this.channel = channel;
         channelRetries = new HashMap<>();
         resetChannelRetry();
@@ -70,6 +75,7 @@ public class AlljoynErrorHandler{
                 
                 break;
             case REGISTERED:
+                Log.i(TAG, "Alljoyn service error at REGISTERED state");
                 switch (alljoynStatus){
                     case ALLJOYN_JOINSESSION_REPLY_UNREACHABLE:
                     case ALLJOYN_JOINSESSION_REPLY_CONNECT_FAILED:
@@ -87,7 +93,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case JOINT:
-
+                Log.i(TAG, "Alljoyn service error at JOINT state");
                 break;
             default:
                 break;
@@ -97,6 +103,7 @@ public class AlljoynErrorHandler{
     public void handleServiceError(Status alljoynStatus){
         switch (channel.getServiceState()){
             case REGISTERED:
+                Log.i(TAG, "Alljoyn service error at REGISTERED state");
                 switch (alljoynStatus){
                     case DBUS_REQUEST_NAME_REPLY_EXISTS:
                         channel.handleError(new A3GroupDuplicationException(alljoynStatus.toString()));
@@ -114,6 +121,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case NAMED:
+                Log.i(TAG, "Alljoyn service error at NAMED state");
                 switch (alljoynStatus){
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_BINDSESSIONPORT_REPLY_FAILED:
@@ -136,6 +144,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case BOUND:
+                Log.i(TAG, "Alljoyn service error at BOUND state");
                 switch (alljoynStatus){
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_ADVERTISENAME_REPLY_FAILED:
@@ -156,7 +165,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case ADVERTISED:
-
+                Log.i(TAG, "Alljoyn service error at ADVERTISED state");
                 break;
             default:
                 break;

@@ -1084,8 +1084,7 @@ public class AlljoynBus extends A3Bus {
                 if(channel.isOutboundEmpty())
                     notifyAlljoynGroupChannel(channel);
             } catch (BusException ex) {
-                application.busError(A3Application.Module.USE, "Bus exception while sending message: (" + ex + ")");
-                channel.addOutboundItemSilently(message, messageItem.getType());
+                channel.restoreOutboundItem(message, messageItem.getType());
                 channel.handleError(ex, AlljoynErrorHandler.BUS);
                 notifyAlljoynGroupChannel(channel);
                 break;

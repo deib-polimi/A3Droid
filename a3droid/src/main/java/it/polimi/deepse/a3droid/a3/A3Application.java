@@ -90,6 +90,7 @@ public class A3Application extends Application implements Observable{
      * to get the string.
      */
     public synchronized void busError(Module m, String s) {
+        Log.e(TAG, s);
         mModule = m;
         mErrorString = s;
         notifyObservers(ALLJOYN_ERROR_EVENT);
@@ -184,7 +185,8 @@ public class A3Application extends Application implements Observable{
         return clone;
     }
 
-    public boolean isGroupFound(String groupName){
+    public synchronized boolean isGroupFound(String groupName){
+        Log.i(TAG, "isGroupFound(" + groupName + "):"  + mGroups.contains(groupName));
         return mGroups.contains(groupName);
     }
 

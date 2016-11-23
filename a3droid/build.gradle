@@ -3,7 +3,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    buildToolsVersion '23.0.3'
 
     defaultConfig {
         minSdkVersion 18
@@ -39,7 +39,7 @@ dependencies {
     //library for events in android
     compile 'org.greenrobot:eventbus:3.0.0'
     //any external jar dependency
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     //for testing
     testCompile 'junit:junit:4.12'
 }
@@ -63,13 +63,15 @@ exportJar.dependsOn(deleteOldJar, build)
 // task to delete the old jar
 task deleteOldProjectJar(type: Delete) {
     delete '/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/A3Droid.jar'
+    delete '/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/A3Droid.jar'
 }
 
 // task to export contents as jar
 task exportJarToProject(type: Copy) {
     from('build/intermediates/bundles/release/')
     //into('C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs')
-    into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
+    //into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
+    into('/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/')
     include('classes.jar')
     // name the plugin
     rename('classes.jar','A3Droid.jar')

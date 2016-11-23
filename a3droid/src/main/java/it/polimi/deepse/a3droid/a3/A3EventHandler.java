@@ -58,10 +58,9 @@ public class A3EventHandler implements TimerInterface{
                 break;
             case SUPERVISOR_LEFT:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
-                if (channel.getGroupState() == A3GroupDescriptor.A3GroupState.ACTIVE) {
-                    channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
-                    handleSupervisorLeftEvent();
-                }
+                new Timer(this, WAIT_AND_HANDLE_SUPERVISOR_LEFT_EVENT,
+                        randomWait.next(WAIT_AND_HANDLE_SUPERVISOR_LEFT_FIXED_TIME, WAIT_AND_HANDLE_SUPERVISOR_LEFT_RANDOM_TIME)
+                ).start();
                 break;
             case SUPERVISOR_ELECTED:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
@@ -105,15 +104,21 @@ public class A3EventHandler implements TimerInterface{
     }
 
     private void handleSupervisorLeftEvent() {
-        channel.deactivateActiveRole();
-        channel.clearSupervisor();
-        new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
-                randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
-        ).start();
+        if(channel.getGroupState().equals(A3GroupDescriptor.A3GroupState.ACTIVE)) {
+            channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
+            channel.deactivateActiveRole();
+            channel.clearSupervisorId();
+            new Timer(this, WAIT_AND_QUERY_ROLE_EVENT,
+                    randomWait.next(WAIT_AND_QUERY_ROLE_FIXED_TIME_2, WAIT_AND_QUERY_ROLE_RANDOM_TIME)
+            ).start();
+        }
     }
 
     public void handleTimeEvent(int reason, Object object) {
         switch (reason) {
+            case WAIT_AND_HANDLE_SUPERVISOR_LEFT_EVENT:
+                handleSupervisorLeftEvent();
+                break;
             case WAIT_AND_QUERY_ROLE_EVENT:
                 channel.queryRole();
                 break;
@@ -124,7 +129,11 @@ public class A3EventHandler implements TimerInterface{
 
     private RandomWait randomWait = new RandomWait();
 
-    private static final int WAIT_AND_QUERY_ROLE_EVENT = 0;
+    private static final int WAIT_AND_HANDLE_SUPERVISOR_LEFT_EVENT = 0;
+    private static final int WAIT_AND_HANDLE_SUPERVISOR_LEFT_FIXED_TIME = 500;
+    private static final int WAIT_AND_HANDLE_SUPERVISOR_LEFT_RANDOM_TIME = 500;
+
+    private static final int WAIT_AND_QUERY_ROLE_EVENT = 1;
     /** Used as fixed time after a GROUP_JOINED event **/
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 3000;
     /** Used as fixed time part after a MEMBER_LEFT event **/

@@ -106,6 +106,7 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
 
     private void handleNewSupervisorNotification(A3Message message) {
         Log.i(TAG, "handleNewSupervisorNotification(" + message + ")");
+        channel.clearSupervisorQueryTimer();
         channel.setSupervisorId(message.senderAddress);
         A3GroupDescriptor groupDescriptor = null;
         try {
@@ -150,7 +151,6 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
 
     private void handleCurrentSupervisorReply(A3Message message){
         Log.i(TAG, "handleCurrentSupervisorReply(" + message + ")");
-        channel.clearSupervisorQueryTimer();
         handleNewSupervisorNotification(message);
     }
 

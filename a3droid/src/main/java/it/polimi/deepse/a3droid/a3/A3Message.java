@@ -95,6 +95,14 @@ public class A3Message {
 		this.bytes = extra;
 		this.addresses = addresses;
 	}
+
+	@Override
+	public String toString(){
+		return this.reason +
+				(this.object == null ? "" : " " + this.object.toString()) +
+				(this.senderAddress == null ? "" : " from " + this.senderAddress) +
+				(this.addresses == null ? " to all " : " to " + this.addresses);
+	}
 	
 	/*@Override
 	public String toString(){

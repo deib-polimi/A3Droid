@@ -39,7 +39,7 @@ import it.polimi.deepse.a3droid.pattern.TimerInterface;
  */
 public abstract class A3GroupChannel extends HandlerThread implements A3GroupChannelInterface, Observable, TimerInterface {
 
-    protected String TAG;
+    protected final String TAG;
 
     /**
      * The A3 class extending Android Application class with middleware specific behavior
@@ -283,7 +283,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     /**
      * Clears the information regarding the current supervisor ID
      */
-    protected void clearSupervisor() {
+    protected void clearSupervisorId() {
         supervisorId = null;
     }
 
@@ -512,19 +512,19 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      **/
     @Override
     public void receiveUnicast(A3Message message) {
-        Log.i(TAG, "UNICAST : " + message.object + " TO " + message.getAddresses());
+        Log.i(TAG, "UNICAST received: " + message);
         activeRole.handleMessage(message);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
-        Log.i(TAG, "MULTICAST : " + message.object + " TO " + message.getAddresses());
+        Log.i(TAG, "MULTICAST received: " + message);
         activeRole.handleMessage(message);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
-        Log.i(TAG, "BROADCAST : " + message.object);
+        Log.i(TAG, "BROADCAST received: " + message);
         activeRole.handleMessage(message);
     }
 
@@ -533,7 +533,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      **/
     @Override
     public void receiveControl(A3Message message) {
-        Log.i(TAG, "CONTROL : " + message.object + " TO " + message.getAddresses());
+        Log.i(TAG, "CONTROL received: " + message);
         Message msg = groupControl.obtainMessage();
         msg.obj = message;
         groupControl.sendMessage(msg);
@@ -797,8 +797,8 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      * @param message
      * @param type
      */
-    public void addOutboundItemSilently(A3Message message, int type) {
-        mOutbound.add(new A3MessageItem(message, type));
+    public void restoreOutboundItem(A3Message message, int type) {
+        mOutbound.add(0, new A3MessageItem(message, type));
     }
 
     /**

@@ -35,6 +35,7 @@ public class AlljoynSessionListener extends SessionListener{
     public void sessionLost(int sessionId, int reason) {
         Log.i(TAG, "AlljoynSessionListener.sessionLost(sessionId=" + sessionId + ",reason=" + reason + ")");
         a3Application.busError(A3Application.Module.USE, "The session has been lost");
+        a3Application.removeFoundGroup(channel.getGroupName());
         channel.setSessionId(-1);
         channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LOST, reason);
     }
