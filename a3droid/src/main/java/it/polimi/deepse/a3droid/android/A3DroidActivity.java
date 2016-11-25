@@ -36,19 +36,16 @@ public abstract class A3DroidActivity extends Activity{
 		EventBus.getDefault().unregister(this);
 	}
 
-	// This method will be called when a MessageEvent is posted
 	@Subscribe(threadMode = ThreadMode.MAIN)
 	public void onGroupEvent(A3GroupEvent event) {
 		handleGroupEvent(event);
 	}
 
-	// This method will be called when a MessageEvent is posted
 	@Subscribe(threadMode = ThreadMode.MAIN)
 	public void onUIEvent(A3UIEvent event) {
 		handleUIEvent(event);
 	}
 
-	// This method will be called when a MessageEvent is posted
 	@Subscribe(threadMode = ThreadMode.MAIN)
 	public void onErrorEvent(A3ErrorEvent event) {
 		handleErrorEvent(event);

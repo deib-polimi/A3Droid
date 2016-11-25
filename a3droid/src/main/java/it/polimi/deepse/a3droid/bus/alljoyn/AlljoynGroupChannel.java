@@ -2,6 +2,7 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import org.alljoyn.bus.BusAttachment;
 import org.alljoyn.bus.BusException;
@@ -63,8 +64,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
 
     @Override
     public void reconnect(){
-        disconnect();
-        connect();
+        super.reconnect();
     }
 
     @Override
@@ -130,7 +130,8 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      */
     public void handleError(Status status, int errorSide){
         assert (errorSide == AlljoynErrorHandler.CHANNEL ||
-                errorSide == AlljoynErrorHandler.SERVICE);
+                errorSide == AlljoynErrorHandler.SERVICE ||
+                errorSide == AlljoynErrorHandler.BUS);
         errorHandler.handleError(errorSide, status);
     }
 
@@ -189,9 +190,9 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         super.connect();
         initializeHandlers();
         if(application.isGroupFound(groupName))
-            joinGroup();
+            doJoinGroup();
         else
-            createGroup();
+            doCreateGroup();
     }
 
     /**
@@ -203,6 +204,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
                 !isOutboundEmpty()) {
             try {
                 synchronized (this) {
+                    Log.i(TAG, "waitBeforeDisconnection(): waiting for outbound to be clear");
                     this.wait();
                 }
             } catch (InterruptedException e) {
@@ -216,9 +218,10 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * Leaves a group and destroy it if hosting, them disconnects from the alljoyn bus.
      */
     private void doDisconnect(){
-        leaveGroup();
+        finalizeHandlers();
+        doLeaveGroup();
         if(hosting)
-            destroyGroup();
+            doDestroyGroup();
         super.disconnect();
     }
 
@@ -233,7 +236,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     }
 
     private void doJoinGroup(){
-        this.hosting = false;
         super.joinGroup();
     }
 
@@ -309,6 +311,10 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     private void initializeHandlers(){
         errorHandler = new AlljoynErrorHandler(this);
         eventHandler = new AlljoynEventHandler(application, this);
+    }
+
+    private void finalizeHandlers(){
+        eventHandler.quit();
     }
 
     /**

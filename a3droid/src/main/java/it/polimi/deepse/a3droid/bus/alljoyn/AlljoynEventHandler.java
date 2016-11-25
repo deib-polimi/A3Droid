@@ -1,7 +1,14 @@
 package it.polimi.deepse.a3droid.bus.alljoyn;
 
+import android.util.Log;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
+import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynDuplicatedSessionEvent;
 import it.polimi.deepse.a3droid.pattern.Timer;
 import it.polimi.deepse.a3droid.pattern.TimerInterface;
 import it.polimi.deepse.a3droid.utility.RandomWait;
@@ -12,20 +19,28 @@ import it.polimi.deepse.a3droid.utility.RandomWait;
  */
 public class AlljoynEventHandler implements TimerInterface{
 
+    private final String TAG;
     private A3Application application;
     private AlljoynGroupChannel channel;
     private RandomWait randomWait = new RandomWait();
 
     public AlljoynEventHandler(A3Application application, AlljoynGroupChannel channel){
+        TAG = "AlljoynEventHandler#" + channel.getGroupName();
         this.application = application;
         this.channel = channel;
+        EventBus.getDefault().register(this);
+    }
+
+    public void quit(){
+        EventBus.getDefault().unregister(this);
     }
 
     /**
      * The session with a service has been lost.
      */
     public enum AlljoynEvent {
-        SESSION_CREATED,
+        SESSION_BOUND,
+        SESSION_ADVERTISED,
         SESSION_DESTROYED,
         SESSION_JOINED,
         SESSION_LEFT,
@@ -34,9 +49,20 @@ public class AlljoynEventHandler implements TimerInterface{
         MEMBER_LEFT
     }
 
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    public void handleEvent(AlljoynDuplicatedSessionEvent event){
+        if(event.groupName.equals(channel.getGroupName()))
+            handleDuplicatedSessionEvent();
+    }
+
+    private void handleDuplicatedSessionEvent() {
+        Log.i(TAG, "handleDuplicatedSessionEvent()");
+        new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
+    }
+
     public void handleEvent(AlljoynEvent event, Object arg){
         switch (event){
-            case SESSION_CREATED:
+            case SESSION_BOUND:
                 channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_CREATED);
                 channel.setServiceState(AlljoynService.AlljoynServiceState.ADVERTISED);
                 break;

@@ -82,12 +82,16 @@ public abstract class A3Role implements Runnable {
 	 */
 	public abstract void onActivation();
 
+	public void onDeactivation(){}
+
 	public void setActive(boolean active) {
 		this.active = active;
 		if(active)
 			messageHandler = new RoleMessageHandler(this);
-		else if(messageHandler != null)
-				quitHandler();
+		else if(messageHandler != null) {
+			quitHandler();
+			onDeactivation();
+		}
 
 	}
 

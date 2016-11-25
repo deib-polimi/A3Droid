@@ -94,9 +94,24 @@ public class A3Node implements A3NodeInterface{
      * @return true if the node has connected to the group
      * @throws A3NoGroupDescriptionException
      */
-    public synchronized boolean connectAndWaitForActivation(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+    public boolean connectAndWaitForActivation(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
         boolean result = connect(groupName);
         A3GroupChannel channel = getChannel(groupName);
+        waitForState(channel, A3GroupDescriptor.A3GroupState.ACTIVE);
+        return result;
+    }
+
+    public boolean reconnect(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+        A3GroupChannel channel = getChannel(groupName);
+        disconnect(groupName);
+        waitForState(channel, A3GroupDescriptor.A3GroupState.IDLE);
+        boolean result = connect(groupName);
+        return result;
+    }
+
+    public boolean reconnectAndWaitForActivation(String groupName) throws A3NoGroupDescriptionException, A3ChannelNotFoundException {
+        A3GroupChannel channel = getChannel(groupName);
+        boolean result = reconnect(groupName);
         waitForState(channel, A3GroupDescriptor.A3GroupState.ACTIVE);
         return result;
     }
@@ -230,6 +245,7 @@ public class A3Node implements A3NodeInterface{
             channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e.getMessage());
         }
     }
 
@@ -239,7 +255,7 @@ public class A3Node implements A3NodeInterface{
             message.addresses = addresses;
             channel.addOutboundItem(message, A3GroupChannel.MULTICAST_MSG);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getMessage());
         }
     }
 
@@ -248,7 +264,7 @@ public class A3Node implements A3NodeInterface{
             A3GroupChannel channel = getChannel(groupName);
             channel.addOutboundItem(message, A3GroupChannel.BROADCAST_MSG);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getMessage());
         }
     }
 
@@ -258,7 +274,7 @@ public class A3Node implements A3NodeInterface{
             message.addresses = new String [] {channel.getSupervisorId()};
             channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getMessage());
         }
     }
 

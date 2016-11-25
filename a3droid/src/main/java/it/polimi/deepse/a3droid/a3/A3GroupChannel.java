@@ -126,6 +126,14 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
         clearObservers();
     }
 
+    public void reconnect(){
+        try {
+            node.reconnect(groupName);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+    }
+
     public void joinGroup() {
         notifyObservers(A3GroupChannel.JOIN_CHANNEL_EVENT);
     }
@@ -135,6 +143,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     }
 
     public void createGroup() {
+        Log.i(TAG, "createGroup()");
         notifyObservers(A3GroupChannel.START_SERVICE_EVENT);
     }
 
@@ -419,10 +428,8 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
 
     /**
      * @param nodesToTransfer
-     * @throws A3ChannelNotFoundException
      */
-    protected void notifySplitRandomly(int nodesToTransfer) throws
-            A3ChannelNotFoundException {
+    protected void notifySplitRandomly(int nodesToTransfer){
         ArrayList<String> selectedNodes = new ArrayList<>();
         int numberOfNodes = getGroupView().getNumberOfNodes();
         String[] splitView = getGroupView().toString()

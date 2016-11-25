@@ -63,15 +63,15 @@ exportJar.dependsOn(deleteOldJar, build)
 // task to delete the old jar
 task deleteOldProjectJar(type: Delete) {
     delete '/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/A3Droid.jar'
-    delete '/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/A3Droid.jar'
+    //delete '/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/A3Droid.jar'
 }
 
 // task to export contents as jar
 task exportJarToProject(type: Copy) {
     from('build/intermediates/bundles/release/')
     //into('C:/Users/saeed/AndroidStudioProjects/A3Droid_TestApp/a3Test_Greenhouse/libs')
-    //into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
-    into('/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/')
+    into('/home/seadev/workspace/android/StudioProjects/A3Test_Greenhouse/a3Test_Greenhouse/libs/')
+    //into('/home/danilo/workspace/android/projects/A3Droid_TestApp/a3Test_Greenhouse/libs/')
     include('classes.jar')
     // name the plugin
     rename('classes.jar','A3Droid.jar')

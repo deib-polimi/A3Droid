@@ -7,8 +7,11 @@ import android.provider.Settings;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
 import it.polimi.deepse.a3droid.pattern.Observable;
@@ -146,12 +149,9 @@ public class A3Application extends Application implements Observable{
      * simply the channel name, which is the final segment of the well-known
      * name.
      */
-    public synchronized void addFoundGroup(String groupName) {
-        Log.i(TAG, "addFoundGroup(" + groupName + ")");
-        removeFoundGroup(groupName);
-        mGroups.add(groupName);
-
-        Log.i(TAG, "addFoundGroup(): added " + groupName);
+    public synchronized void addFoundGroup(String groupName, String suffix) {
+        Log.i(TAG, "addFoundGroup(" + groupName + "," + suffix + ")");
+        mGroups.put(groupName, suffix);
     }
 
     /**
@@ -161,13 +161,9 @@ public class A3Application extends Application implements Observable{
      */
     public synchronized void removeFoundGroup(String groupName) {
         Log.i(TAG, "removeFoundGroup(" + groupName + ")");
-
-        for (Iterator<String> i = mGroups.iterator(); i.hasNext();) {
-            String string = i.next();
-            if (string.equals(groupName)) {
-                Log.i(TAG, "removeFoundGroup(): removed " + groupName);
-                i.remove();
-            }
+        if (mGroups.containsKey(groupName)) {
+            Log.i(TAG, "removeFoundGroup(): removed " + groupName);
+            mGroups.remove(groupName);
         }
     }
 
@@ -180,14 +176,19 @@ public class A3Application extends Application implements Observable{
     public synchronized List<String> getFoundGroups() {
         Log.i(TAG, "getFoundGroups()");
         List<String> clone = new ArrayList<>(mGroups.size());
-        for (String name : mGroups)
+        for (String name : mGroups.keySet())
             clone.add(name);
         return clone;
     }
 
     public synchronized boolean isGroupFound(String groupName){
-        Log.i(TAG, "isGroupFound(" + groupName + "):"  + mGroups.contains(groupName));
-        return mGroups.contains(groupName);
+        Log.i(TAG, "isGroupFound(" + groupName + ")");
+        return mGroups.containsKey(groupName);
+    }
+
+    public synchronized String getGroupSuffix(String groupName){
+        Log.i(TAG, "getGroupSuffix(" + groupName + "):");
+        return mGroups.containsKey(groupName) ? mGroups.get(groupName) : null;
     }
 
     /**
@@ -197,7 +198,7 @@ public class A3Application extends Application implements Observable{
      * "join channel" dialog, whereupon she will choose one.  This will
      * eventually result in a joinSession call out from the AllJoyn Service
      */
-    private List<String> mGroups = new ArrayList<>();
+    private Map<String, String> mGroups = new ConcurrentHashMap<>();
 
     public synchronized boolean isNodeCreated(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                                               ArrayList<String> roles){

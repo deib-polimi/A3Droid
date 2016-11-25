@@ -57,12 +57,14 @@ public class AlljoynErrorHandler{
     public void handleBusError(BusException ex){
         switch (channel.getBusState()){
             case DISCONNECTED:
+                Log.e(this.TAG, "Alljoyn bus error at DISCONNECTED state");
                 break;
             case CONNECTED:
-                //TODO: Handle message send error
+                Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
                 channel.handleError(new A3MessageDeliveryException(ex.getMessage()));
                 break;
             case DISCOVERING:
+                Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
                 break;
             default:
                 break;
@@ -72,10 +74,10 @@ public class AlljoynErrorHandler{
     public void handleChannelError(Status alljoynStatus){
         switch (channel.getChannelState()){
             case IDLE:
-                
+                Log.e(this.TAG, "Alljoyn service error at IDLE state");
                 break;
             case REGISTERED:
-                Log.i(TAG, "Alljoyn service error at REGISTERED state");
+                Log.e(TAG, "Alljoyn service error at REGISTERED state");
                 switch (alljoynStatus){
                     case ALLJOYN_JOINSESSION_REPLY_UNREACHABLE:
                     case ALLJOYN_JOINSESSION_REPLY_CONNECT_FAILED:
@@ -93,7 +95,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case JOINT:
-                Log.i(TAG, "Alljoyn service error at JOINT state");
+                Log.e(TAG, "Alljoyn service error at JOINT state");
                 break;
             default:
                 break;
@@ -103,10 +105,11 @@ public class AlljoynErrorHandler{
     public void handleServiceError(Status alljoynStatus){
         switch (channel.getServiceState()){
             case REGISTERED:
-                Log.i(TAG, "Alljoyn service error at REGISTERED state");
+                Log.e(TAG, "Alljoyn service error at REGISTERED state");
                 switch (alljoynStatus){
                     case DBUS_REQUEST_NAME_REPLY_EXISTS:
-                        channel.handleError(new A3GroupDuplicationException(alljoynStatus.toString()));
+                        channel.reconnect();
+                        //channel.handleError(new A3GroupDuplicationException(alljoynStatus.toString()));
                         break;
                     case BUS_NOT_CONNECTED:
                         if(serviceRetries.get(AlljoynService.AlljoynServiceState.REGISTERED) < MAX_SERVICE_RETRIES) {
@@ -117,11 +120,12 @@ public class AlljoynErrorHandler{
                             channel.handleError(new A3GroupCreationException(alljoynStatus.toString()));
                         break;
                     default:
+                        channel.handleError(new A3GroupCreationException(alljoynStatus.toString()));
                         break;
                 }
                 break;
             case NAMED:
-                Log.i(TAG, "Alljoyn service error at NAMED state");
+                Log.e(TAG, "Alljoyn service error at NAMED state");
                 switch (alljoynStatus){
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_BINDSESSIONPORT_REPLY_FAILED:
@@ -144,7 +148,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case BOUND:
-                Log.i(TAG, "Alljoyn service error at BOUND state");
+                Log.e(TAG, "Alljoyn service error at BOUND state");
                 switch (alljoynStatus){
                     case BUS_NOT_CONNECTED:
                     case ALLJOYN_ADVERTISENAME_REPLY_FAILED:
@@ -165,7 +169,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case ADVERTISED:
-                Log.i(TAG, "Alljoyn service error at ADVERTISED state");
+                Log.e(TAG, "Alljoyn service error at ADVERTISED state");
                 break;
             default:
                 break;
