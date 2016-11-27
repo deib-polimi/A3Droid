@@ -14,8 +14,9 @@ import it.polimi.deepse.a3droid.a3.A3Message;
  */
 class AlljoynService implements BusObject, AlljoynServiceInterface {
 
-    public AlljoynService(String groupName){
+    public AlljoynService(String groupName, String groupNameSuffix){
         setGroupName(groupName);
+        this.groupNameSuffix = groupNameSuffix;
     }
 
     //TODO: add group management methods
@@ -66,6 +67,12 @@ class AlljoynService implements BusObject, AlljoynServiceInterface {
     }
 
     protected String groupName;
+
+    public synchronized String getGroupNameSuffix() {
+        return groupNameSuffix;
+    }
+
+    private final String groupNameSuffix;
 
     public void setServiceSignalEmitterInterface(AlljoynServiceInterface serviceSignalEmitterInterface) {
         this.serviceSignalEmitterInterface = serviceSignalEmitterInterface;

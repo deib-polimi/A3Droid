@@ -767,7 +767,7 @@ public class AlljoynBus extends A3Bus {
      * name from an AllJoyn bus attachment.
      */
     private void doRequestName(AlljoynGroupChannel channel) {
-        Log.i(TAG, "doRequestName(" + channel.getGroupName() + ")");
+        Log.i(TAG, "doRequestName(" + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix() + ")");
 
         /*
          * In order to request a name, the bus attachment must at least be
@@ -776,8 +776,7 @@ public class AlljoynBus extends A3Bus {
         int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
         assert (stateRelation >= 0);
 
-        String wellKnownName = SERVICE_PATH + "." + channel.getGroupName();
-        //TODO: check the needed flags
+        String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
         Status status = channel.getBus().requestName(wellKnownName, BusAttachment.ALLJOYN_REQUESTNAME_FLAG_DO_NOT_QUEUE);
         if (status == Status.OK) {
             channel.setServiceState(AlljoynService.AlljoynServiceState.NAMED);
@@ -792,7 +791,7 @@ public class AlljoynBus extends A3Bus {
      * name from an AllJoyn bus attachment.
      */
     private void doReleaseName(AlljoynGroupChannel channel) {
-        Log.i(TAG, "doReleaseName(" + channel.getGroupName() + ")");
+        Log.i(TAG, "doReleaseName(" + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix() + ")");
 
         int stateRelation = channel.getServiceState().compareTo(AlljoynService.AlljoynServiceState.NAMED);
         if (stateRelation >= 0) {
@@ -814,7 +813,7 @@ public class AlljoynBus extends A3Bus {
              * change the name out from under us while we are running.
              */
             //TODO: Replace random
-            String wellKnownName = SERVICE_PATH + "." + channel.getGroupName();
+            String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
 
             /*
              * There's not a lot we can do if the bus attachment refuses to release
@@ -883,8 +882,7 @@ public class AlljoynBus extends A3Bus {
      * We depend on the user interface and model to work together to not
      * change the name out from under us while we are running.
      */
-        String wellKnownName = SERVICE_PATH + "." + channel.getGroupName()
-                + ".G" + channel.getBus().getGlobalGUIDString().substring(0, 6);
+        String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
         Status status = channel.getBus().advertiseName(wellKnownName, SessionOpts.TRANSPORT_UDP);
         if (status == Status.OK) {
             channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_BOUND, null);
@@ -907,8 +905,7 @@ public class AlljoynBus extends A3Bus {
              * We depend on the user interface and model to work together to not
              * change the name out from under us while we are running.
              */
-            //TODO: Add RANDOM
-            String wellKnownName = SERVICE_PATH + "." + channel.getGroupName();
+            String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
             Status status = channel.getBus().cancelAdvertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
 
             if (status != Status.OK) {
@@ -935,7 +932,7 @@ public class AlljoynBus extends A3Bus {
          * We depend on the user interface and model to work together to provide
          * a reasonable name.
          */
-        String wellKnownName = SERVICE_PATH + "." + channel.getGroupName();
+        String wellKnownName = SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix();
 
         /*
          * The random and unique channel identifier is provided by the bus
@@ -963,7 +960,7 @@ public class AlljoynBus extends A3Bus {
                 //TODO: Used by a follower to send signals to the bus
                 /** The Service proxy to communicate with. */
                 ProxyBusObject mProxyObj;
-                mProxyObj = channel.getBus().getProxyBusObject(SERVICE_PATH + "." + channel.getGroupName(), OBJECT_PATH,
+                mProxyObj = channel.getBus().getProxyBusObject(wellKnownName, OBJECT_PATH,
                         channel.getSessionId(), new Class<?>[]{AlljoynServiceInterface.class});
                 channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), true);
 

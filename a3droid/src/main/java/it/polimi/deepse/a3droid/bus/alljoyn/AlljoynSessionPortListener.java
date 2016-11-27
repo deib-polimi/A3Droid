@@ -56,7 +56,7 @@ public class AlljoynSessionPortListener extends SessionPortListener {
         //channel.setSessionId(sessionId);
 
         ProxyBusObject mProxyObj;
-        mProxyObj = channel.getBus().getProxyBusObject(AlljoynBus.SERVICE_PATH + "." + channel.getGroupName(), AlljoynBus.OBJECT_PATH,
+        mProxyObj = channel.getBus().getProxyBusObject(AlljoynBus.SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix(), AlljoynBus.OBJECT_PATH,
                 sessionId, new Class<?>[]{AlljoynServiceInterface.class});
         channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), false);
 

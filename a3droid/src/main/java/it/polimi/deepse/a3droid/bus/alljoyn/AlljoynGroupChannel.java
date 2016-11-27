@@ -23,6 +23,7 @@ import it.polimi.deepse.a3droid.a3.A3SupervisorRole;
 public class AlljoynGroupChannel extends A3GroupChannel {
 
     private boolean hosting = false;
+    private String groupNameSuffix;
     private AlljoynErrorHandler errorHandler;
     private AlljoynEventHandler eventHandler;
 
@@ -40,7 +41,8 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         super(application, node, groupName, descriptor, a3FollowerRole, a3SupervisorRole);
         assert(application != null);
         assert(descriptor != null);
-        setService(new AlljoynService(descriptor.getGroupName()));
+        setGroupNameSuffix(".G" + getBus().getGlobalGUIDString().substring(0, 6));
+        setService(new AlljoynService(groupName, getGroupNameSuffix()));
         start();
     }
 
@@ -189,9 +191,9 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     private void doConnect(){
         super.connect();
         initializeHandlers();
-        if(application.isGroupFound(groupName))
+        if(application.isGroupFound(groupName)) {
             doJoinGroup();
-        else
+        }else
             doCreateGroup();
     }
 
@@ -236,7 +238,13 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     }
 
     private void doJoinGroup(){
+        if(!hosting)
+            setGroupNameSuffix();
         super.joinGroup();
+    }
+
+    private void setGroupNameSuffix(){
+        setGroupNameSuffix(application.getGroupSuffix(groupName));
     }
 
     private void doLeaveGroup(){
@@ -253,24 +261,24 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * letter capitalized to conform with the DBus convention for signal
      * handler names.
      */
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveUnicast")
     public void ReceiveUnicast(A3Message message) throws BusException {
         if(isAddressed(message.addresses))
             receiveUnicast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveMultiCast")
     public void ReceiveMultiCast(A3Message message) throws BusException {
         if(isAddressed(message.addresses))
             receiveMulticast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveBroadcast")
     public void ReceiveBroadcast(A3Message message) throws BusException {
         receiveBroadcast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveControl")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveControl")
     public void ReceiveControl(A3Message message) throws BusException {
         if(message.addresses.length == 0 || isAddressed(message.addresses))
             receiveControl(message);
@@ -431,4 +439,11 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      */
     private AlljoynBus.BusState mBusState = AlljoynBus.BusState.DISCONNECTED;
 
+    protected void setGroupNameSuffix(String groupNameSuffix){
+        this.groupNameSuffix = groupNameSuffix;
+    }
+
+    public String getGroupNameSuffix() {
+        return groupNameSuffix;
+    }
 }

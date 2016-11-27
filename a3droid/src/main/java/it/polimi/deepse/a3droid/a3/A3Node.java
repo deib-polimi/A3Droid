@@ -333,7 +333,7 @@ public class A3Node implements A3NodeInterface{
                     return descriptor;
             }
         }
-        throw new A3NoGroupDescriptionException("NO GROUP WITH NAME " + groupName + ".");
+        throw new A3NoGroupDescriptionException("NO GROUP WITH NAME " + groupName);
     }
 
     /**
