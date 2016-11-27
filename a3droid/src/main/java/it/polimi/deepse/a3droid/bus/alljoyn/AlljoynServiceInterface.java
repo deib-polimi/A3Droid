@@ -10,7 +10,7 @@ import it.polimi.deepse.a3droid.a3.A3Message;
 /**
  * TODO: Describe
  */
-@BusInterface(name = AlljoynBus.SERVICE_PATH)
+@BusInterface(name = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface")
 public interface AlljoynServiceInterface{
 
     /*

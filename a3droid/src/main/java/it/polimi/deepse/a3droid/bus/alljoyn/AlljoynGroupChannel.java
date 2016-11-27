@@ -261,24 +261,24 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * letter capitalized to conform with the DBus convention for signal
      * handler names.
      */
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveUnicast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
     public void ReceiveUnicast(A3Message message) throws BusException {
         if(isAddressed(message.addresses))
             receiveUnicast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveMultiCast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
     public void ReceiveMultiCast(A3Message message) throws BusException {
         if(isAddressed(message.addresses))
             receiveMulticast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveBroadcast")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
     public void ReceiveBroadcast(A3Message message) throws BusException {
         receiveBroadcast(message);
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH, signal = "ReceiveControl")
+    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveControl")
     public void ReceiveControl(A3Message message) throws BusException {
         if(message.addresses.length == 0 || isAddressed(message.addresses))
             receiveControl(message);
