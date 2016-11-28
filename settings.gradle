@@ -1,4 +1,4 @@
 include ':a3droid'
-include ':alljoyn_java'
+//include ':alljoyn_java'
 
 
