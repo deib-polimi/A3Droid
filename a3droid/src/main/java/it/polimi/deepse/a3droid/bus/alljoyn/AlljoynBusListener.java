@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynDuplicatedSessionEvent;
+import it.polimi.deepse.a3droid.utility.SessionSuffix;
 
 /**
  * The BusListener is a class that listens to the AllJoyn bus for
