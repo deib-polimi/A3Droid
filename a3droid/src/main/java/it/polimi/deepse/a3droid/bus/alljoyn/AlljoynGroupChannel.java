@@ -120,6 +120,11 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         getServiceInterface().sendControl(message);
     }
 
+    @Override
+    public boolean untieSupervisorElection() {
+        return hosting;
+    }
+
     public void handleEvent(AlljoynEventHandler.AlljoynEvent event, Object arg){
         eventHandler.handleEvent(event, arg);
     }

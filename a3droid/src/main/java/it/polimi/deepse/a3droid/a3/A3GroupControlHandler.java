@@ -136,14 +136,17 @@ public class A3GroupControlHandler extends HandlerThread implements TimerInterfa
     }
 
     private void compareNewSupervisorFF(A3GroupDescriptor groupDescriptor, float supervisorFF) {
-        if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF) {
+        if (groupDescriptor.getSupervisorFitnessFunction() > supervisorFF &&
+                channel.hasSupervisorRole()) {
             channel.becomeSupervisor();
-        }
-        else{
+        }else if(groupDescriptor.getSupervisorFitnessFunction() == supervisorFF  &&
+                channel.hasSupervisorRole() &&
+                channel.untieSupervisorElection()) {
+                    channel.becomeSupervisor();
+        }else{
             if(channel.hasFollowerRole()) {
                 channel.becomeFollower();
-            }
-            else if(channel.isSupervisor()) {
+            }else if(channel.isSupervisor()) {
                 channel.deactivateSupervisor();
             }
         }

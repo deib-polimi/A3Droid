@@ -32,4 +32,6 @@ public interface A3GroupChannelInterface {
     void receiveBroadcast(A3Message message);
 
     void receiveControl(A3Message message);
+
+    boolean untieSupervisorElection();
 }

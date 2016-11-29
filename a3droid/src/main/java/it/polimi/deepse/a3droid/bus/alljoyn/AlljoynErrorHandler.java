@@ -86,9 +86,10 @@ public class AlljoynErrorHandler{
                         if(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED) < MAX_CHANNEL_RETRIES) {
                             waitToRetry(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED));
                             incChannelRetries(AlljoynBus.AlljoynChannelState.REGISTERED);
-                            channel.joinGroup();
-                        }else
+                            channel.reconnect();
+                        }else {
                             channel.handleError(new A3GroupJoinException(alljoynStatus.toString()));
+                        }
                         break;
                     default:
                         break;
@@ -108,14 +109,11 @@ public class AlljoynErrorHandler{
                 Log.e(TAG, "Alljoyn service error at REGISTERED state");
                 switch (alljoynStatus){
                     case DBUS_REQUEST_NAME_REPLY_EXISTS:
-                        channel.reconnect();
-                        //channel.handleError(new A3GroupDuplicationException(alljoynStatus.toString()));
-                        break;
                     case BUS_NOT_CONNECTED:
                         if(serviceRetries.get(AlljoynService.AlljoynServiceState.REGISTERED) < MAX_SERVICE_RETRIES) {
                             waitToRetry(serviceRetries.get(AlljoynService.AlljoynServiceState.REGISTERED));
                             incServiceRetries(AlljoynService.AlljoynServiceState.REGISTERED);
-                            channel.createGroup();
+                            channel.reconnect();
                         }else
                             channel.handleError(new A3GroupCreationException(alljoynStatus.toString()));
                         break;
@@ -199,7 +197,7 @@ public class AlljoynErrorHandler{
     private void waitToRetry(int retry){
         try {
             synchronized (this) {
-                this.wait(Fibonacci.fib(retry) * 250);//250, 500, 750, 1250...
+                this.wait(Fibonacci.fib(retry + 1) * 250);//250, 500, 750, 1250...
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

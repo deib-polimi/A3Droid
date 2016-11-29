@@ -59,11 +59,9 @@ public class AlljoynEventHandler implements TimerInterface{
 
     private void handleDuplicatedSessionEvent() {
         Log.i(TAG, "handleDuplicatedSessionEvent()");
-        if(channel.getChannelState().equals(AlljoynBus.AlljoynChannelState.JOINT)) {
-            channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
-            channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_DUPLICATED);
-            new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
-        }
+        channel.setChannelState(AlljoynBus.AlljoynChannelState.REGISTERED);
+        channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_DUPLICATED);
+        new Timer(this, WAIT_AND_RECONNECT_EVENT, randomWait.next(WAIT_AND_RECONNECT_FT, WAIT_AND_RECONNECT_RT)).start();
     }
 
     private void handleSessionLostEvent(){
