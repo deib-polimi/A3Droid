@@ -3,7 +3,6 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 import android.util.Log;
 
 import org.alljoyn.bus.BusListener;
-import org.alljoyn.bus.SessionOpts;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.regex.Matcher;
@@ -52,18 +51,18 @@ public class AlljoynBusListener extends BusListener {
         String name = removeUniqueSuffix(nameWithSuffix);
         String suffix = nameWithSuffix.replace(name, "");
         if(application.isGroupFound(name)){
-            if (isFoundSessionSuffixBigger(name, suffix))
-                dropFoundSession(name, suffix);
+            if (isFoundSessionSuffixSmaller(name, suffix))
+                createDuplicatedSessionEvent(name, suffix);
         }else
             application.addFoundGroup(name, suffix);
     }
 
-    private boolean isFoundSessionSuffixBigger(String name, String suffix){
+    private boolean isFoundSessionSuffixSmaller(String name, String suffix){
         A3Application application = (A3Application) alljoynBus.getApplication();
-        return application.getGroupSuffix(name).compareTo(suffix) > 0;
+        return application.getGroupSuffix(name).compareTo(suffix) < 0;
     }
 
-    private void dropFoundSession(String name, String suffix) {
+    private void createDuplicatedSessionEvent(String name, String suffix) {
         A3Application application = (A3Application) alljoynBus.getApplication();
         application.addFoundGroup(name, suffix);
         EventBus.getDefault().post(new AlljoynDuplicatedSessionEvent(name));

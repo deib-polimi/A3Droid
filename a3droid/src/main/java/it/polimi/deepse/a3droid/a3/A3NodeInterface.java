@@ -4,6 +4,7 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3SupervisorNotElectedException;
 
 public interface A3NodeInterface {
 
@@ -13,7 +14,7 @@ public interface A3NodeInterface {
 
     void sendBroadcast(A3Message message, String groupName);
 
-    void sendToSupervisor(A3Message message, String groupName);
+    void sendToSupervisor(A3Message message, String groupName) throws A3SupervisorNotElectedException;
 
     void stack(String parentGroupName, String childGroupName) throws A3NoGroupDescriptionException, A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException;
 
@@ -25,5 +26,9 @@ public interface A3NodeInterface {
 
     boolean isConnected(String groupName);
 
+    boolean isActive(String groupName);
+
     boolean isSupervisor(String groupName);
+
+    boolean waitForActivation(String groupName) throws A3ChannelNotFoundException;
 }

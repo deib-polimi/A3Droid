@@ -225,7 +225,7 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     protected void becomeSupervisor() {
         Log.i(TAG, "becomeSupervisor()");
         assert (hasSupervisorRole);
-        supervisorId = channelId;
+        setSupervisorId(channelId);
         if (hasFollowerRole)
             deactivateFollower();
         activateSupervisor();

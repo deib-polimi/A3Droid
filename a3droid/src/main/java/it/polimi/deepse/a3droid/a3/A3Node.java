@@ -10,6 +10,7 @@ import it.polimi.deepse.a3droid.a3.exceptions.A3ChannelNotFoundException;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationParameters;
 import it.polimi.deepse.a3droid.a3.exceptions.A3InvalidOperationRole;
 import it.polimi.deepse.a3droid.a3.exceptions.A3NoGroupDescriptionException;
+import it.polimi.deepse.a3droid.a3.exceptions.A3SupervisorNotElectedException;
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynGroupChannel;
 
 /**
@@ -268,12 +269,15 @@ public class A3Node implements A3NodeInterface{
         }
     }
 
-    public void sendToSupervisor(A3Message message, String groupName){
+    public void sendToSupervisor(A3Message message, String groupName) throws A3SupervisorNotElectedException {
         try {
             A3GroupChannel channel = getChannel(groupName);
-            message.addresses = new String [] {channel.getSupervisorId()};
-            channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
-        } catch (Exception e) {
+            if(channel.getSupervisorId() != null) {
+                message.addresses = new String [] {channel.getSupervisorId()};
+                channel.addOutboundItem(message, A3GroupChannel.UNICAST_MSG);
+            }else
+                throw new A3SupervisorNotElectedException("The supervisor has not yet been elected");
+        } catch (A3ChannelNotFoundException e) {
             Log.e(TAG, e.getMessage());
         }
     }
@@ -294,6 +298,24 @@ public class A3Node implements A3NodeInterface{
 
     }
 
+    /**
+     * Checks if the node instance is connected to a given group
+     * and that group is in ACTIVE state
+     * @see it.polimi.deepse.a3droid.a3.A3GroupDescriptor.A3GroupState
+     * @param groupName The name of the group to be checked
+     * @return true, if the node instance is connected to "groupName" and is in ACTIVE group state
+     */
+    public boolean isActive(String groupName) {
+        A3GroupChannel channel;
+        try {
+            channel = getChannel(groupName);
+            return channel.getGroupState().equals(A3GroupDescriptor.A3GroupState.ACTIVE);
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
+
     /**Determines if this node is the supervisor of the specified group.
      *
      * @param groupName The name of the group.
@@ -307,8 +329,8 @@ public class A3Node implements A3NodeInterface{
             return channel.isSupervisor();
         } catch (A3ChannelNotFoundException e) {
             Log.e(TAG, e.getMessage());
-        } finally {
             return false;
+        } finally {
         }
     }
 
@@ -388,6 +410,12 @@ public class A3Node implements A3NodeInterface{
      * I suppose that it can't change at runtime.
      */
     private final ArrayList<String> roles;
+
+    public boolean waitForActivation(String groupName) throws A3ChannelNotFoundException {
+        A3GroupChannel channel = getChannel(groupName);
+        waitForState(channel, A3GroupDescriptor.A3GroupState.ACTIVE);
+        return true;
+    }
 
     /**
      *

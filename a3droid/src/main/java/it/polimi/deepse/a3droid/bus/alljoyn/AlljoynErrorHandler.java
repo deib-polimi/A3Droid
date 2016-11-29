@@ -74,10 +74,10 @@ public class AlljoynErrorHandler{
     public void handleChannelError(Status alljoynStatus){
         switch (channel.getChannelState()){
             case IDLE:
-                Log.e(this.TAG, "Alljoyn service error at IDLE state");
+                Log.e(this.TAG, "Alljoyn channel error at IDLE state");
                 break;
             case REGISTERED:
-                Log.e(TAG, "Alljoyn service error at REGISTERED state");
+                Log.e(TAG, "Alljoyn channel error at REGISTERED state");
                 switch (alljoynStatus){
                     case ALLJOYN_JOINSESSION_REPLY_UNREACHABLE:
                     case ALLJOYN_JOINSESSION_REPLY_CONNECT_FAILED:
@@ -95,7 +95,7 @@ public class AlljoynErrorHandler{
                 }
                 break;
             case JOINT:
-                Log.e(TAG, "Alljoyn service error at JOINT state");
+                Log.e(TAG, "Alljoyn channel error at JOINT state");
                 break;
             default:
                 break;

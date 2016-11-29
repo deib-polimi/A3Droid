@@ -66,6 +66,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
 
     @Override
     public void reconnect(){
+        Log.i(TAG, "reconnect()");
         super.reconnect();
     }
 
@@ -301,7 +302,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * clients.  Pretty much all communiation with AllJoyn is going to go through
      * this obejct.
      */
-    private BusAttachment mBus  = new BusAttachment(AlljoynBus.SERVICE_PATH, BusAttachment.RemoteMessage.Receive);
+    private BusAttachment mBus = new BusAttachment(AlljoynBus.SERVICE_PATH, BusAttachment.RemoteMessage.Receive);
 
     /** Service interface used to create signals in the bus **/
     public AlljoynServiceInterface getServiceInterface() {

@@ -53,7 +53,7 @@ public abstract class A3Role implements Runnable {
 
 	private RoleMessageHandler messageHandler;
 	/**
-	 * Set this role as not active and the className of this role to its class canonical name.
+	 * Set this role as not active and the className ofA this role to its class canonical name.
 	 */
 	public A3Role(){
 		super();

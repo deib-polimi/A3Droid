@@ -13,6 +13,7 @@ public class A3GroupEvent {
         GROUP_CREATED,
         GROUP_DESTROYED,
         GROUP_LOST,
+        GROUP_DUPLICATED,
         GROUP_JOINED,
         GROUP_LEFT,
         GROUP_STATE_CHANGED,
