@@ -520,19 +520,24 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
     @Override
     public void receiveUnicast(A3Message message) {
         Log.i(TAG, "UNICAST received: " + message);
-        activeRole.handleMessage(message);
+        checkRoleActivationAndForwardMessage(message);
     }
 
     @Override
     public void receiveMulticast(A3Message message) {
         Log.i(TAG, "MULTICAST received: " + message);
-        activeRole.handleMessage(message);
+        checkRoleActivationAndForwardMessage(message);
     }
 
     @Override
     public void receiveBroadcast(A3Message message) {
         Log.i(TAG, "BROADCAST received: " + message);
-        activeRole.handleMessage(message);
+        checkRoleActivationAndForwardMessage(message);
+    }
+
+    private void checkRoleActivationAndForwardMessage(A3Message message){
+        if(activeRole != null)
+            activeRole.handleMessage(message);
     }
 
     /**
@@ -822,8 +827,8 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
         if(!this.groupState.equals(state))
             handleEvent(A3GroupEvent.A3GroupEventType.GROUP_STATE_CHANGED, state);
         this.groupState = state;
-        synchronized (node) {
-            node.notifyAll();
+        synchronized (this) {
+            this.notifyAll();
         }
     }
 

@@ -423,12 +423,12 @@ public class A3Node implements A3NodeInterface{
      * @param state
      */
     private void waitForState(A3GroupChannel channel, A3GroupDescriptor.A3GroupState state){
-        synchronized (this) {
+        synchronized (channel) {
             while (channel.getGroupState().compareTo(state) < 0) {
                 try {
-                    this.wait();
+                    channel.wait();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, e.getMessage());
                 }
             }
         }

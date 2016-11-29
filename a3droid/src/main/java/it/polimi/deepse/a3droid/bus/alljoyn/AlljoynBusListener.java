@@ -22,8 +22,6 @@ import it.polimi.deepse.a3droid.utility.SessionSuffix;
 public class AlljoynBusListener extends BusListener {
 
     private final String TAG = "a3droid.BusListener";
-    private final String UNIQUE_SUFFIX_PATTERN = "\\.G[A-Za-z0-9]+";
-    private final Pattern suffixPattern = Pattern.compile(UNIQUE_SUFFIX_PATTERN);
 
     private AlljoynBus alljoynBus;
 
@@ -65,7 +63,6 @@ public class AlljoynBusListener extends BusListener {
     }
 
     private void createDuplicatedSessionEvent(String name, String suffix) {
-        A3Application application = (A3Application) alljoynBus.getApplication();
         EventBus.getDefault().post(new AlljoynDuplicatedSessionEvent(name));
     }
 
