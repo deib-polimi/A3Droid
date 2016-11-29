@@ -8,9 +8,12 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
@@ -151,7 +154,10 @@ public class A3Application extends Application implements Observable{
      */
     public synchronized void addFoundGroup(String groupName, String suffix) {
         Log.i(TAG, "addFoundGroup(" + groupName + "," + suffix + ")");
-        mGroups.put(groupName, suffix);
+        if(!mGroups.containsKey(groupName))
+            mGroups.put(groupName, new TreeSet<String>());
+
+        mGroups.get(groupName).add(suffix);
     }
 
     /**
@@ -159,11 +165,13 @@ public class A3Application extends Application implements Observable{
      * know by construction that the advertised name will correspond to an chat
      * channel.
      */
-    public synchronized void removeFoundGroup(String groupName) {
+    public synchronized void removeFoundGroup(String groupName, String suffix) {
         Log.i(TAG, "removeFoundGroup(" + groupName + ")");
         if (mGroups.containsKey(groupName)) {
-            Log.i(TAG, "removeFoundGroup(): removed " + groupName);
-            mGroups.remove(groupName);
+            Log.i(TAG, "removeFoundGroup(): removed " + groupName + " with suffix " + suffix);
+            mGroups.get(groupName).remove(suffix);
+            if(mGroups.get(groupName).isEmpty())
+                mGroups.remove(groupName);
         }
     }
 
@@ -188,7 +196,7 @@ public class A3Application extends Application implements Observable{
 
     public synchronized String getGroupSuffix(String groupName){
         Log.i(TAG, "getGroupSuffix(" + groupName + "):");
-        return mGroups.containsKey(groupName) ? mGroups.get(groupName) : null;
+        return mGroups.containsKey(groupName) ? mGroups.get(groupName).iterator().next() : null;
     }
 
     /**
@@ -198,7 +206,7 @@ public class A3Application extends Application implements Observable{
      * "join channel" dialog, whereupon she will choose one.  This will
      * eventually result in a joinSession call out from the AllJoyn Service
      */
-    private Map<String, String> mGroups = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> mGroups = new ConcurrentHashMap<>();
 
     public synchronized boolean isNodeCreated(ArrayList<A3GroupDescriptor> a3GroupDescriptors,
                                               ArrayList<String> roles){

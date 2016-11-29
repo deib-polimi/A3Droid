@@ -3,6 +3,7 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 import android.util.Log;
 
 import org.alljoyn.bus.BusListener;
+import org.alljoyn.bus.SessionOpts;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.regex.Matcher;
@@ -47,14 +48,14 @@ public class AlljoynBusListener extends BusListener {
     public synchronized void foundAdvertisedName(String fullName, short transport, String namePrefix) {
         Log.i(TAG, "foundAdvertisedName(" + fullName + "," + transport + "," + namePrefix + ")");
         A3Application application = (A3Application) alljoynBus.getApplication();
-        String nameWithSuffix = removeServicePrefix(fullName);
-        String name = removeUniqueSuffix(nameWithSuffix);
+        String nameWithSuffix = SessionSuffix.removeServicePrefix(fullName);
+        String name = SessionSuffix.removeUniqueSuffix(nameWithSuffix);
         String suffix = nameWithSuffix.replace(name, "");
         if(application.isGroupFound(name)){
             if (isFoundSessionSuffixSmaller(name, suffix))
                 createDuplicatedSessionEvent(name, suffix);
-        }else
-            application.addFoundGroup(name, suffix);
+        }
+        application.addFoundGroup(name, suffix);
     }
 
     private boolean isFoundSessionSuffixSmaller(String name, String suffix){
@@ -64,21 +65,7 @@ public class AlljoynBusListener extends BusListener {
 
     private void createDuplicatedSessionEvent(String name, String suffix) {
         A3Application application = (A3Application) alljoynBus.getApplication();
-        application.addFoundGroup(name, suffix);
         EventBus.getDefault().post(new AlljoynDuplicatedSessionEvent(name));
-    }
-
-    private String removeServicePrefix(String nameWithPrefix){
-        return nameWithPrefix.replace(AlljoynBus.SERVICE_PATH + ".", "");
-    }
-
-    private String removeUniqueSuffix(String nameWithSuffix){
-        return nameWithSuffix.replaceFirst(UNIQUE_SUFFIX_PATTERN, "");
-    }
-
-    private String getUniqueSuffix(String nameWithSuffix){
-        Matcher m = suffixPattern.matcher(nameWithSuffix);
-        return m.group();
     }
 
     /**
@@ -97,11 +84,10 @@ public class AlljoynBusListener extends BusListener {
     public synchronized void lostAdvertisedName(String fullName, short transport, String namePrefix) {
         Log.i(TAG, "mBusListener.lostAdvertisedName(" + fullName + "," + transport + "," + namePrefix + ")");
         A3Application application = (A3Application) alljoynBus.getApplication();
-        String nameWithSuffix = removeServicePrefix(fullName);
-        String name = removeUniqueSuffix(nameWithSuffix);
+        String nameWithSuffix = SessionSuffix.removeServicePrefix(fullName);
+        String name = SessionSuffix.removeUniqueSuffix(nameWithSuffix);
         String suffix = nameWithSuffix.replace(name, "");
-        if(application.isGroupFound(name) && application.getGroupSuffix(name).equals(suffix))
-            application.removeFoundGroup(name);
+        application.removeFoundGroup(name, suffix);
     }
 
 
