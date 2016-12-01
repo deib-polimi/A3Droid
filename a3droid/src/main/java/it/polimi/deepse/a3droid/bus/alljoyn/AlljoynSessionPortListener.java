@@ -34,7 +34,7 @@ public class AlljoynSessionPortListener extends SessionPortListener {
                 /*
                  * Accept anyone who can get our contact port correct.
                  */
-        return sessionPort == AlljoynBus.CONTACT_PORT;
+        return sessionPort == AlljoynServiceInterface.CONTACT_PORT;
     }
 
     /**
@@ -56,7 +56,7 @@ public class AlljoynSessionPortListener extends SessionPortListener {
         //channel.setSessionId(sessionId);
 
         ProxyBusObject mProxyObj;
-        mProxyObj = channel.getBus().getProxyBusObject(AlljoynBus.SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix(), AlljoynBus.OBJECT_PATH,
+        mProxyObj = channel.getBus().getProxyBusObject(AlljoynServiceInterface.SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix(), AlljoynServiceInterface.OBJECT_PATH,
                 sessionId, new Class<?>[]{AlljoynServiceInterface.class});
         channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), false);
 

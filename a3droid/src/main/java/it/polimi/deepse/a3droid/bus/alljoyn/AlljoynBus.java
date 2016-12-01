@@ -11,22 +11,22 @@ import org.alljoyn.bus.BusException;
 import org.alljoyn.bus.Mutable;
 import org.alljoyn.bus.ProxyBusObject;
 import org.alljoyn.bus.SessionOpts;
-import org.alljoyn.bus.SessionPortListener;
-import org.alljoyn.bus.SignalEmitter;
 import org.alljoyn.bus.Status;
+import org.greenrobot.eventbus.EventBus;
 
-import java.util.logging.Level;
-
+import it.polimi.deepse.a3droid.a3.A3DiscoveryDescriptor;
 import it.polimi.deepse.a3droid.a3.A3GroupChannel;
 import it.polimi.deepse.a3droid.a3.A3Message;
-import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.a3.A3Bus;
 import it.polimi.deepse.a3droid.a3.A3MessageItem;
+import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynEvent;
 import it.polimi.deepse.a3droid.pattern.Observable;
 
 /**
- * TODO: Describe
+ * This class provides the methods to setup and joining an alljoyn session. It extends A3Bus,
+ * which in turn is an Android Service. Using Android service allows this class to remain
+ * alive while the FRONTEND
  */
 public class AlljoynBus extends A3Bus {
 
@@ -70,7 +70,7 @@ public class AlljoynBus extends A3Bus {
          * remote channel instances in the background while the rest of the app
          * is starting up.
          */
-        A3DiscoveryDescriptor discoveryDescriptor = new A3DiscoveryDescriptor();
+        A3DiscoveryDescriptor discoveryDescriptor = new A3DiscoveryDescriptor(this);
         mDiscoveryChannel = new AlljoynGroupChannel(
                 (A3Application) getApplication(),
                 null,
@@ -623,25 +623,6 @@ public class AlljoynBus extends A3Bus {
         mBackgroundHandler.exit();
     }
 
-    /**
-     * The well-known name prefix which all bus attachments hosting a channel
-     * will use.  The SERVICE_PATH and the channel name are composed to give
-     * the well-known name a hosting bus attachment will request and
-     * advertise.
-     */
-    public static final String SERVICE_PATH = "it.polimi.deepse.a3droid.bus.alljoyn";
-
-    /**
-     * The well-known session port used as the contact port for the chat service.
-     */
-    public static final short CONTACT_PORT = 27;
-
-    /**
-     * The object path used to identify the service "location" in the bus
-     * attachment.
-     */
-    public static final String OBJECT_PATH = "/A3GroupService";
-
     private static AlljoynGroupChannel mDiscoveryChannel;
 
     /**
@@ -661,7 +642,7 @@ public class AlljoynBus extends A3Bus {
      */
     private void doConnect(AlljoynGroupChannel channel) {
         Log.i(TAG, "doConnect(" + channel.getGroupName() + ")");
-        assert (channel.getBusState() == BusState.DISCONNECTED);
+        assert (channel.getBusState() == AlljoynGroupChannel.BusState.DISCONNECTED);
 
         BusAttachment mBus = channel.getBus();
         mBus.useOSLogging(true);
@@ -670,7 +651,7 @@ public class AlljoynBus extends A3Bus {
             mBus.registerBusListener(mBusListener);
         Status status = mBus.connect();
         if (status == Status.OK) {
-            channel.setBusState(BusState.CONNECTED);
+            channel.setBusState(AlljoynGroupChannel.BusState.CONNECTED);
         }else {
             application.busError(A3Application.Module.GENERAL, "Unable to joinGroup to the bus: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.BUS);
@@ -687,7 +668,7 @@ public class AlljoynBus extends A3Bus {
          * object path.  Our service is implemented by the AlljoynService
          * BusObject found at the "/a3GroupService" object path.
          */
-        Status status = channel.getBus().registerBusObject(channel.getService(), OBJECT_PATH);
+        Status status = channel.getBus().registerBusObject(channel.getService(), AlljoynServiceInterface.OBJECT_PATH);
         if (Status.OK == status) {
             channel.setServiceState(AlljoynService.AlljoynServiceState.REGISTERED);
         } else {
@@ -697,11 +678,11 @@ public class AlljoynBus extends A3Bus {
     }
 
     private void doAddChannel(AlljoynGroupChannel channel) {
-        int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
+        int stateRelation = channel.getBusState().compareTo(AlljoynGroupChannel.BusState.DISCONNECTED);
         assert (stateRelation > 0);
         Status status = channel.getBus().registerSignalHandlers(channel);
         if (status == Status.OK) {
-            channel.setChannelState(AlljoynChannelState.REGISTERED);
+            channel.setChannelState(AlljoynGroupChannel.AlljoynChannelState.REGISTERED);
         } else {
             application.busError(A3Application.Module.USE, "Unable to register channel signal handlers: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
@@ -709,10 +690,10 @@ public class AlljoynBus extends A3Bus {
     }
 
     private void doRemoveChannel(AlljoynGroupChannel channel) {
-        int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
+        int stateRelation = channel.getBusState().compareTo(AlljoynGroupChannel.BusState.DISCONNECTED);
         assert (stateRelation > 0);
         channel.getBus().unregisterSignalHandlers(channel);
-        channel.setChannelState(AlljoynChannelState.IDLE);
+        channel.setChannelState(AlljoynGroupChannel.AlljoynChannelState.IDLE);
     }
 
     /**
@@ -724,11 +705,11 @@ public class AlljoynBus extends A3Bus {
      */
     private boolean doDisconnect(AlljoynGroupChannel channel) {
         Log.i(TAG, "doDisonnect(" + channel.getGroupName() + ")");
-        assert (channel.getBusState() == BusState.CONNECTED);
+        assert (channel.getBusState() == AlljoynGroupChannel.BusState.CONNECTED);
         if(channel.getGroupName().equals(A3DiscoveryDescriptor.DISCOVERY_GROUP_NAME))
             channel.getBus().unregisterBusListener(mBusListener);
         channel.getBus().disconnect();
-        channel.setBusState(BusState.DISCONNECTED);
+        channel.setBusState(AlljoynGroupChannel.BusState.DISCONNECTED);
         return true;
     }
 
@@ -741,10 +722,10 @@ public class AlljoynBus extends A3Bus {
      */
     private void doStartDiscovery(AlljoynGroupChannel channel) {
         Log.i(TAG, "doStartDiscovery(" + channel.getGroupName() + ")");
-        assert (channel.getBusState() == BusState.CONNECTED);
-        Status status = channel.getBus().findAdvertisedName(SERVICE_PATH);
+        assert (channel.getBusState() == AlljoynGroupChannel.BusState.CONNECTED);
+        Status status = channel.getBus().findAdvertisedName(AlljoynServiceInterface.SERVICE_PATH);
         if (status == Status.OK) {
-            channel.setBusState(BusState.DISCOVERING);
+            channel.setBusState(AlljoynGroupChannel.BusState.DISCOVERING);
         } else {
             application.busError(A3Application.Module.USE, "Unable to start finding advertised names: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.CHANNEL);
@@ -757,9 +738,9 @@ public class AlljoynBus extends A3Bus {
      */
     private void doStopDiscovery(AlljoynGroupChannel channel) {
         Log.i(TAG, "doStopDiscovery(" + channel.getGroupName() + ")");
-        assert (channel.getBusState() == BusState.CONNECTED);
-        channel.getBus().cancelFindAdvertisedName(SERVICE_PATH);
-        channel.setBusState(BusState.CONNECTED);
+        assert (channel.getBusState() == AlljoynGroupChannel.BusState.CONNECTED);
+        channel.getBus().cancelFindAdvertisedName(AlljoynServiceInterface.SERVICE_PATH);
+        channel.setBusState(AlljoynGroupChannel.BusState.CONNECTED);
     }
 
     /**
@@ -773,10 +754,10 @@ public class AlljoynBus extends A3Bus {
          * In order to request a name, the bus attachment must at least be
          * connected.
          */
-        int stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
+        int stateRelation = channel.getBusState().compareTo(AlljoynGroupChannel.BusState.DISCONNECTED);
         assert (stateRelation >= 0);
 
-        String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
+        String wellKnownName = AlljoynServiceInterface.SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
         Status status = channel.getBus().requestName(wellKnownName, BusAttachment.ALLJOYN_REQUESTNAME_FLAG_DO_NOT_QUEUE);
         if (status == Status.OK) {
             channel.setServiceState(AlljoynService.AlljoynServiceState.NAMED);
@@ -799,7 +780,7 @@ public class AlljoynBus extends A3Bus {
              * In order to release a name, the bus attachment must at least be
              * connected.
              */
-            stateRelation = channel.getBusState().compareTo(BusState.DISCONNECTED);
+            stateRelation = channel.getBusState().compareTo(AlljoynGroupChannel.BusState.DISCONNECTED);
             assert (stateRelation >= 0);
 
             /*
@@ -812,8 +793,9 @@ public class AlljoynBus extends A3Bus {
              * We depend on the user interface and model to work together to not
              * change the name out from under us while we are running.
              */
-            //TODO: Replace random
-            String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
+            String wellKnownName = AlljoynServiceInterface.SERVICE_PATH + "."
+                    + channel.getService().getGroupName()
+                    + channel.getService().getGroupNameSuffix();
 
             /*
              * There's not a lot we can do if the bus attachment refuses to release
@@ -837,7 +819,7 @@ public class AlljoynBus extends A3Bus {
 
     private void proceedWithBindSession(final AlljoynGroupChannel channel){
         Log.i(TAG, "proceedWithBindSession(" + channel.getGroupName() + ")");
-        Mutable.ShortValue contactPort = new Mutable.ShortValue(CONTACT_PORT);
+        Mutable.ShortValue contactPort = new Mutable.ShortValue(AlljoynServiceInterface.CONTACT_PORT);
         SessionOpts sessionOpts = new SessionOpts(SessionOpts.TRAFFIC_MESSAGES, true, SessionOpts.PROXIMITY_ANY, SessionOpts.TRANSPORT_IP);
         Status status = channel.getBus().bindSessionPort(contactPort, sessionOpts, new AlljoynSessionPortListener(channel));
         if (status == Status.OK) {
@@ -856,11 +838,7 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doUnbindSession(" + channel.getGroupName() + ")");
         int stateRelation = channel.getServiceState().compareTo(AlljoynService.AlljoynServiceState.BOUND);
         if (stateRelation >= 0) {
-            /*
-             * There's not a lot we can do if the bus attachment refuses to unbind
-             * our port.
-             */
-            channel.getBus().unbindSessionPort(CONTACT_PORT);
+            channel.getBus().unbindSessionPort(AlljoynServiceInterface.CONTACT_PORT);
             channel.setServiceInterface(null, true);
             channel.setServiceState(AlljoynService.AlljoynServiceState.NAMED);
         }
@@ -878,14 +856,10 @@ public class AlljoynBus extends A3Bus {
 
     private void proceedWithAdvertise(AlljoynGroupChannel channel) {
         Log.i(TAG, "proceedWithAdvertise(" + channel.getGroupName() + ")");
-    /*
-     * We depend on the user interface and model to work together to not
-     * change the name out from under us while we are running.
-     */
-        String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
+        String wellKnownName = AlljoynServiceInterface.SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
         Status status = channel.getBus().advertiseName(wellKnownName, SessionOpts.TRANSPORT_UDP);
         if (status == Status.OK) {
-            channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_BOUND, null);
+            EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_BOUND, channel.getGroupName(), null));
         } else {
             application.busError(A3Application.Module.HOST, "Unable to advertise well-known name: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.SERVICE);
@@ -898,26 +872,15 @@ public class AlljoynBus extends A3Bus {
      */
     private void doCancelAdvertise(AlljoynGroupChannel channel) {
         Log.i(TAG, "doCancelAdvertise(" + channel.getGroupName() + ")");
-
         int stateRelation = channel.getServiceState().compareTo(AlljoynService.AlljoynServiceState.ADVERTISED);
         if (stateRelation >= 0) {
-            /*
-             * We depend on the user interface and model to work together to not
-             * change the name out from under us while we are running.
-             */
-            String wellKnownName = SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
+            String wellKnownName = AlljoynServiceInterface.SERVICE_PATH + "." + channel.getService().getGroupName() + channel.getService().getGroupNameSuffix();
             Status status = channel.getBus().cancelAdvertiseName(wellKnownName, SessionOpts.TRANSPORT_ANY);
-
             if (status != Status.OK) {
                 application.busError(A3Application.Module.HOST, "Unable to cancel advertisement of well-known name: (" + status + ")");
                 return;
             }
-
-            /*
-             * There's not a lot we can do if the bus attachment refuses to cancel
-             * our advertisement, so we don't bother to even get the status.
-             */
-            channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_DESTROYED, null);
+            EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_DESTROYED, channel.getGroupName(), null));
         }
     }
 
@@ -927,58 +890,51 @@ public class AlljoynBus extends A3Bus {
      */
     private void doJoinSession(final AlljoynGroupChannel channel) {
         Log.i(TAG, "doJoinSession(" + channel.getGroupName() + ")");
-
-        /*
-         * We depend on the user interface and model to work together to provide
-         * a reasonable name.
-         */
-        String wellKnownName = SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix();
-
-        /*
-         * The random and unique channel identifier is provided by the bus
-         */
+        String wellKnownName = AlljoynServiceInterface.SERVICE_PATH + "." + channel.getGroupName() + channel.getGroupNameSuffix();
         final String channelId = channel.getBus().getUniqueName();
         channel.setChannelId(channelId);
 
-
         if (channel.getSessionId() == -1) {
-
-            /*
-             * Since we can act as the host of a channel, we know what the other
-             * side is expecting to see.
-             */
-            short contactPort = CONTACT_PORT;
+            short contactPort = AlljoynServiceInterface.CONTACT_PORT;
             SessionOpts sessionOpts = new SessionOpts(SessionOpts.TRAFFIC_MESSAGES, true, SessionOpts.PROXIMITY_ANY, SessionOpts.TRANSPORT_IP);
             Mutable.IntegerValue sessionId = new Mutable.IntegerValue();
-
-
             Status status = channel.getBus().joinSession(wellKnownName, contactPort, sessionId, sessionOpts, new AlljoynSessionListener(application, channel));
 
             if (status == Status.OK) {
-                channel.setSessionId(sessionId.value);
                 Log.i(TAG, "doJoinSession(): use sessionId is " + sessionId.value);
-                //TODO: Used by a follower to send signals to the bus
-                /** The Service proxy to communicate with. */
-                ProxyBusObject mProxyObj;
-                mProxyObj = channel.getBus().getProxyBusObject(wellKnownName, OBJECT_PATH,
-                        channel.getSessionId(), new Class<?>[]{AlljoynServiceInterface.class});
-                channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), true);
-
-                //TODO: Original chat way of getting the service interface. But as a follower, channel.getService() won't be registered as object
-                //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
-                //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
-
+                channel.setSessionId(sessionId.value);
+                setupBusTimeout(channel);
+                setupServiceInterface(channel, wellKnownName);
                 postJoinWait(POS_CONNECTION_WAIT_TIME);
-                channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_JOINED, null);
-            } else {
-                application.busError(A3Application.Module.USE, "Unable to join chat session: (" + status + ")");
+                EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_JOINED, channel.getGroupName(), null));
+            } else
                 channel.handleError(status, AlljoynErrorHandler.CHANNEL);
-            }
         }
     }
 
-    /** Additional time to avoid alljoyn error **/
-    private static int POS_CONNECTION_WAIT_TIME = 1000;
+    private void setupBusTimeout(AlljoynGroupChannel channel){
+        assert channel != null;
+        assert channel.getBus() != null;
+        assert channel.getBus().isConnected();
+        Mutable.IntegerValue sessionId = new Mutable.IntegerValue(SESSION_TIMEOUT_SECONDS);
+        channel.getBus().setLinkTimeout(channel.getSessionId(), sessionId);
+    }
+
+    private void setupServiceInterface(AlljoynGroupChannel channel, String wellKnownName) {
+        //TODO: Used by a follower to send signals to the bus
+        /** The Service proxy to communicate with. */
+        ProxyBusObject mProxyObj;
+        mProxyObj = channel.getBus().getProxyBusObject(wellKnownName, AlljoynServiceInterface.OBJECT_PATH,
+                channel.getSessionId(), new Class<?>[]{AlljoynServiceInterface.class});
+        channel.setServiceInterface(mProxyObj.getInterface(AlljoynServiceInterface.class), true);
+        //TODO: Original chat app sample way of getting the service interface.
+        //TODO: But as a follower, channel.getService() won't be registered as object
+        //TODO: Try to use this method for the session host
+        //SignalEmitter emitter = new SignalEmitter(channel.getService(), mUseSessionId, SignalEmitter.GlobalBroadcast.Off);
+        //channel.setServiceSignalEmitterInterface(emitter.getInterface(AlljoynServiceInterface.class), true);
+    }
+
+    private static int SESSION_TIMEOUT_SECONDS = 20;
 
     /**
      * Gives time to the Alljoyn bus to be properly set before communication starts, avoiding an
@@ -994,6 +950,8 @@ public class AlljoynBus extends A3Bus {
         }
     }
 
+    private static int POS_CONNECTION_WAIT_TIME = 1000;
+
     /**
      * Implementation of the functionality related to joining an existing
      * remote session.
@@ -1002,7 +960,7 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doLeaveSession()");
         channel.getBus().leaveSession(channel.getSessionId());
         channel.setSessionId(-1);
-        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LEFT, null);
+        EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_LEFT, channel.getGroupName(), null));
     }
 
     /**
@@ -1015,7 +973,7 @@ public class AlljoynBus extends A3Bus {
         Log.i(TAG, "doSendMessages(" + channel.getGroupName() + ")");
 
         A3MessageItem messageItem;
-        while (channel.getChannelState().equals(AlljoynChannelState.JOINT)
+        while (channel.getChannelState().equals(AlljoynGroupChannel.AlljoynChannelState.JOINT)
                 && (messageItem = channel.getOutboundItem()) != null) {
             A3Message message = messageItem.getMessage();
             Log.i(TAG, "doSendMessages(): sending message \"" + message + "\"");
@@ -1065,59 +1023,4 @@ public class AlljoynBus extends A3Bus {
         }
     }
 
-    /**
-     * Enumeration of the states of the AllJoyn bus attachment.  This
-     * lets us make a note to ourselves regarding where we are in the process
-     * of preparing and tearing down the fundamental connection to the AllJoyn
-     * bus.
-     * <p/>
-     * This should really be a more protected think, but for the sample we want
-     * to show the user the states we are running through.  Because we are
-     * really making a data hiding exception, and because we trust ourselves,
-     * we don't go to any effort to prevent the UI from changing our state out
-     * from under us.
-     * <p/>
-     * There are separate variables describing the states of the client
-     * ("use") and service ("host") pieces.
-     */
-    public enum BusState {
-        DISCONNECTED, /**
-         * The bus attachment is not connected to the AllJoyn bus
-         */
-        CONNECTED, /**
-         * The  bus attachment is connected to the AllJoyn bus
-         */
-        DISCOVERING        /** The bus attachment is discovering remote attachments hosting chat channels */
-    }
-
-    /**
-     * Enumeration of the states of a hosted chat channel.  This lets us make a
-     * note to ourselves regarding where we are in the process of preparing
-     * and tearing down the AllJoyn pieces responsible for providing the chat
-     * service.  In order to be out of the IDLE state, the BusAttachment state
-     * must be at least CONNECTED.
-     */
-    public enum AlljoynChannelState {
-        IDLE, /**
-         * There is no used chat channel
-         */
-        REGISTERED, /**
-         * The channel has been registered to the bus
-         */
-        JOINT,            /** The session for the channel has been successfully joined */
-    }
-
-    public class A3DiscoveryDescriptor extends A3GroupDescriptor {
-
-        public static final String DISCOVERY_GROUP_NAME = "DISCOVERY";
-
-        public A3DiscoveryDescriptor() {
-            super(DISCOVERY_GROUP_NAME, null, null);
-        }
-
-        @Override
-        public int getSupervisorFitnessFunction() {
-            return 0;
-        }
-    }
 }

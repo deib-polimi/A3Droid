@@ -125,10 +125,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         return hosting;
     }
 
-    public void handleEvent(AlljoynEventHandler.AlljoynEvent event, Object arg){
-        eventHandler.handleEvent(event, arg);
-    }
-
     /**
      * Handles Alljoyn CHANNEL and SERVICE error events. If an A3Exception is trowed, it was not
      * possible to handle the error at Alljoyn layer and the A3Exception is passed to the A3 layer
@@ -208,7 +204,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * still JOINT
      */
     private void waitBeforeDisconnection(){
-        while(getChannelState() == AlljoynBus.AlljoynChannelState.JOINT &&
+        while(getChannelState() == AlljoynChannelState.JOINT &&
                 !isOutboundEmpty()) {
             try {
                 synchronized (this) {
@@ -249,49 +245,40 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         super.joinGroup();
     }
 
-    private void setGroupNameSuffix(){
-        setGroupNameSuffix(application.getGroupSuffix(groupName));
-    }
-
     private void doLeaveGroup(){
         super.leaveGroup();
     }
 
-
-    /**
-     * The signal handlers for messages received from the AllJoyn bus
-     *
-     * Since the messages sent on a channel will be sent using a bus
-     * signal, we need to provide a signal handler to receive those signals.
-     * This is it.  Note that the name of the signal handler has the first
-     * letter capitalized to conform with the DBus convention for signal
-     * handler names.
-     */
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
-    public void ReceiveUnicast(A3Message message) throws BusException {
-        if(isAddressed(message.addresses))
-            receiveUnicast(message);
+    private void setGroupNameSuffix(){
+        setGroupNameSuffix(application.getGroupSuffix(groupName));
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
-    public void ReceiveMultiCast(A3Message message) throws BusException {
-        if(isAddressed(message.addresses))
-            receiveMulticast(message);
+    protected void setGroupNameSuffix(String groupNameSuffix){
+        this.groupNameSuffix = groupNameSuffix;
     }
 
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
-    public void ReceiveBroadcast(A3Message message) throws BusException {
-        receiveBroadcast(message);
-    }
-
-    @BusSignalHandler(iface = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveControl")
-    public void ReceiveControl(A3Message message) throws BusException {
-        if(message.addresses.length == 0 || isAddressed(message.addresses))
-            receiveControl(message);
+    public String getGroupNameSuffix() {
+        return groupNameSuffix;
     }
 
     public boolean isHosting() {
         return hosting;
+    }
+
+    private void initializeHandlers(){
+        errorHandler = new AlljoynErrorHandler(this);
+        eventHandler = new AlljoynEventHandler(application, this);
+    }
+
+    private void finalizeHandlers(){
+        eventHandler.quit();
+    }
+
+    /**
+     * Get the state of the "use" channel.
+     */
+    public boolean isConnected() {
+        return getChannelState().equals(AlljoynChannelState.JOINT);
     }
 
     public BusAttachment getBus(){
@@ -307,7 +294,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * clients.  Pretty much all communiation with AllJoyn is going to go through
      * this obejct.
      */
-    private BusAttachment mBus = new BusAttachment(AlljoynBus.SERVICE_PATH, BusAttachment.RemoteMessage.Receive);
+    private BusAttachment mBus = new BusAttachment(AlljoynServiceInterface.SERVICE_PATH, BusAttachment.RemoteMessage.Receive);
 
     /** Service interface used to create signals in the bus **/
     public AlljoynServiceInterface getServiceInterface() {
@@ -320,15 +307,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         }else
             if(!hosting)
                 this.serviceInterface = serviceInterface;
-    }
-
-    private void initializeHandlers(){
-        errorHandler = new AlljoynErrorHandler(this);
-        eventHandler = new AlljoynEventHandler(application, this);
-    }
-
-    private void finalizeHandlers(){
-        eventHandler.quit();
     }
 
     /**
@@ -346,15 +324,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     }
 
     private AlljoynService service;
-
-    /** Utilitary methods **/
-    private boolean isAddressed(String[] addresses){
-        String channelId = getChannelId();
-        for(String address : addresses)
-            if(address.equals(channelId))
-                return true;
-        return false;
-    }
 
     /**
      * Set the status of the "host" channel.  The AllJoyn Service part of the
@@ -392,7 +361,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public void setChannelState(AlljoynBus.AlljoynChannelState state) {
+    public void setChannelState(AlljoynChannelState state) {
         mChannelState = state;
         notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
     }
@@ -406,15 +375,8 @@ public class AlljoynGroupChannel extends A3GroupChannel {
     /**
      * Get the state of the "use" channel.
      */
-    public synchronized AlljoynBus.AlljoynChannelState getChannelState() {
+    public synchronized AlljoynChannelState getChannelState() {
         return mChannelState;
-    }
-
-    /**
-     * Get the state of the "use" channel.
-     */
-    public boolean isConnected() {
-        return getChannelState().equals(AlljoynBus.AlljoynChannelState.JOINT);
     }
 
     /**
@@ -423,9 +385,26 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * this kind of detail probably isn't appropriate, but we want to do so for
      * this sample.
      */
-    private AlljoynBus.AlljoynChannelState mChannelState = AlljoynBus.AlljoynChannelState.IDLE;
+    private AlljoynChannelState mChannelState = AlljoynChannelState.IDLE;
 
-    public synchronized void setBusState(AlljoynBus.BusState state) {
+    /**
+     * Enumeration of the states of a hosted chat channel.  This lets us make a
+     * note to ourselves regarding where we are in the process of preparing
+     * and tearing down the AllJoyn pieces responsible for providing the chat
+     * service.  In order to be out of the IDLE state, the BusAttachment state
+     * must be at least CONNECTED.
+     */
+    public enum AlljoynChannelState {
+        IDLE, /**
+         * There is no used chat channel
+         */
+        REGISTERED, /**
+         * The channel has been registered to the bus
+         */
+        JOINT,            /** The session for the channel has been successfully joined */
+    }
+
+    public synchronized void setBusState(BusState state) {
         mBusState = state;
         notifyObservers(BUS_STATE_CHANGED_EVENT);
     }
@@ -436,20 +415,78 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      */
     public static final String BUS_STATE_CHANGED_EVENT = "BUS_STATE_CHANGED_EVENT";
 
-    public AlljoynBus.BusState getBusState() {
+    public BusState getBusState() {
         return mBusState;
     }
 
     /**
      * The state of the AllJoyn bus attachment.
      */
-    private AlljoynBus.BusState mBusState = AlljoynBus.BusState.DISCONNECTED;
+    private BusState mBusState = BusState.DISCONNECTED;
 
-    protected void setGroupNameSuffix(String groupNameSuffix){
-        this.groupNameSuffix = groupNameSuffix;
+    /**
+     * Enumeration of the states of the AllJoyn bus attachment.  This
+     * lets us make a note to ourselves regarding where we are in the process
+     * of preparing and tearing down the fundamental connection to the AllJoyn
+     * bus.
+     * <p/>
+     * This should really be a more protected think, but for the sample we want
+     * to show the user the states we are running through.  Because we are
+     * really making a data hiding exception, and because we trust ourselves,
+     * we don't go to any effort to prevent the UI from changing our state out
+     * from under us.
+     * <p/>
+     * There are separate variables describing the states of the client
+     * ("use") and service ("host") pieces.
+     */
+    public enum BusState {
+        DISCONNECTED, /**
+         * The bus attachment is not connected to the AllJoyn bus
+         */
+        CONNECTED, /**
+         * The  bus attachment is connected to the AllJoyn bus
+         */
+        DISCOVERING        /** The bus attachment is discovering remote attachments hosting chat channels */
     }
 
-    public String getGroupNameSuffix() {
-        return groupNameSuffix;
+    /**
+     * The signal handlers for messages received from the AllJoyn bus
+     *
+     * Since the messages sent on a channel will be sent using a bus
+     * signal, we need to provide a signal handler to receive those signals.
+     * This is it.  Note that the name of the signal handler has the first
+     * letter capitalized to conform with the DBus convention for signal
+     * handler names.
+     */
+    @BusSignalHandler(iface = AlljoynServiceInterface.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveUnicast")
+    public void ReceiveUnicast(A3Message message) throws BusException {
+        if(isAddressed(message.addresses))
+            receiveUnicast(message);
+    }
+
+    @BusSignalHandler(iface = AlljoynServiceInterface.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveMultiCast")
+    public void ReceiveMultiCast(A3Message message) throws BusException {
+        if(isAddressed(message.addresses))
+            receiveMulticast(message);
+    }
+
+    @BusSignalHandler(iface = AlljoynServiceInterface.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveBroadcast")
+    public void ReceiveBroadcast(A3Message message) throws BusException {
+        receiveBroadcast(message);
+    }
+
+    @BusSignalHandler(iface = AlljoynServiceInterface.SERVICE_PATH + ".AlljoynServiceInterface", signal = "ReceiveControl")
+    public void ReceiveControl(A3Message message) throws BusException {
+        if(message.addresses.length == 0 || isAddressed(message.addresses))
+            receiveControl(message);
+    }
+
+    /** Utilitary methods **/
+    private boolean isAddressed(String[] addresses){
+        String channelId = getChannelId();
+        for(String address : addresses)
+            if(address.equals(channelId))
+                return true;
+        return false;
     }
 }

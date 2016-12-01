@@ -23,7 +23,7 @@ public class AlljoynErrorHandler{
     protected final String TAG;
 
     private AlljoynGroupChannel channel;
-    private Map<AlljoynBus.AlljoynChannelState, Integer> channelRetries;
+    private Map<AlljoynGroupChannel.AlljoynChannelState, Integer> channelRetries;
     private Map<AlljoynService.AlljoynServiceState, Integer> serviceRetries;
     private static final int MAX_CHANNEL_RETRIES = 3;
     private static final int MAX_SERVICE_RETRIES = 3;
@@ -83,9 +83,9 @@ public class AlljoynErrorHandler{
                     case ALLJOYN_JOINSESSION_REPLY_CONNECT_FAILED:
                     case ALLJOYN_JOINSESSION_REPLY_FAILED:
                     case ALLJOYN_JOINSESSION_REPLY_ALREADY_JOINED:
-                        if(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED) < MAX_CHANNEL_RETRIES) {
-                            waitToRetry(channelRetries.get(AlljoynBus.AlljoynChannelState.REGISTERED));
-                            incChannelRetries(AlljoynBus.AlljoynChannelState.REGISTERED);
+                        if(channelRetries.get(AlljoynGroupChannel.AlljoynChannelState.REGISTERED) < MAX_CHANNEL_RETRIES) {
+                            waitToRetry(channelRetries.get(AlljoynGroupChannel.AlljoynChannelState.REGISTERED));
+                            incChannelRetries(AlljoynGroupChannel.AlljoynChannelState.REGISTERED);
                             channel.reconnect();
                         }else {
                             channel.handleError(new A3GroupJoinException(alljoynStatus.toString()));
@@ -174,7 +174,7 @@ public class AlljoynErrorHandler{
         }
     }
 
-    private void incChannelRetries(AlljoynBus.AlljoynChannelState state){
+    private void incChannelRetries(AlljoynGroupChannel.AlljoynChannelState state){
         assert ((channelRetries.get(state) + 1) < MAX_CHANNEL_RETRIES);
         channelRetries.put(state, channelRetries.get(state) + 1);
     }
@@ -185,7 +185,7 @@ public class AlljoynErrorHandler{
     }
 
     public void resetChannelRetry(){
-        for(AlljoynBus.AlljoynChannelState state : AlljoynBus.AlljoynChannelState.values())
+        for(AlljoynGroupChannel.AlljoynChannelState state : AlljoynGroupChannel.AlljoynChannelState.values())
             channelRetries.put(state, 0);
     }
 

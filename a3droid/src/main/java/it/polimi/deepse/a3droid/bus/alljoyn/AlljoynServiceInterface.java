@@ -10,18 +10,35 @@ import it.polimi.deepse.a3droid.a3.A3Message;
 /**
  * TODO: Describe
  */
-@BusInterface(name = AlljoynBus.SERVICE_PATH + ".AlljoynServiceInterface")
+@BusInterface(name = AlljoynServiceInterface.SERVICE_PATH + ".AlljoynServiceInterface")
 public interface AlljoynServiceInterface{
 
-    /*
-     * The BusMethod annotation signifies that this function should be used as part of the AllJoyn
-     * interface.  The runtime is smart enough to figure out what the input and output of the method,
-     * but to improve performance the signature representing an A3Message has been defined.
-     * All methods that use the BusMethod annotation can throw a BusException and should indicate
-     * this fact.
-     * Bus methods are called from nodes that have joined the service session and executed by the
-     * service implementation.
+    /**
+     * The well-known name prefix which all bus attachments hosting a channel
+     * will use.  The SERVICE_PATH and the channel name are composed to give
+     * the well-known name a hosting bus attachment will request and
+     * advertise.
      */
+    String SERVICE_PATH = "it.polimi.deepse.a3droid.bus.alljoyn";
+    /**
+     * The object path used to identify the service "location" in the bus
+     * attachment.
+     */
+    String OBJECT_PATH = "/A3GroupService";
+    /**
+     * The well-known session port used as the contact port for the chat service.
+     */
+    short CONTACT_PORT = 27;
+
+    /*
+         * The BusMethod annotation signifies that this function should be used as part of the AllJoyn
+         * interface.  The runtime is smart enough to figure out what the input and output of the method,
+         * but to improve performance the signature representing an A3Message has been defined.
+         * All methods that use the BusMethod annotation can throw a BusException and should indicate
+         * this fact.
+         * Bus methods are called from nodes that have joined the service session and executed by the
+         * service implementation.
+         */
     @BusMethod(signature = "(sisayas)", replySignature = "b")
     boolean sendUnicast(A3Message message) throws BusException;
 

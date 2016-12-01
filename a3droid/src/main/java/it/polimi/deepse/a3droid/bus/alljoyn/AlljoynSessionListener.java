@@ -3,8 +3,10 @@ package it.polimi.deepse.a3droid.bus.alljoyn;
 import android.util.Log;
 
 import org.alljoyn.bus.SessionListener;
+import org.greenrobot.eventbus.EventBus;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
+import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynEvent;
 
 /**
  * Class implementing Alljoyn SessionListener logic responsible for handling session events.
@@ -13,14 +15,13 @@ import it.polimi.deepse.a3droid.a3.A3Application;
 public class AlljoynSessionListener extends SessionListener{
 
     private static final String TAG = "a3droid.bus.AlljoynSL";
+    private A3Application a3Application = null;
+    private AlljoynGroupChannel channel = null;
 
     public AlljoynSessionListener(A3Application application, AlljoynGroupChannel channel){
         this.a3Application = application;
         this.channel = channel;
     }
-
-    A3Application a3Application = null;
-    AlljoynGroupChannel channel = null;
 
     /**
      * This method is called when the last remote participant in the
@@ -38,18 +39,18 @@ public class AlljoynSessionListener extends SessionListener{
         a3Application.removeFoundGroup(channel.getGroupName(), channel.getGroupNameSuffix());
 
         channel.setSessionId(-1);
-        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.SESSION_LOST, reason);
+        EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_LOST, channel.getGroupName(), reason));
     }
 
     @Override
     public void sessionMemberAdded(int sessionId, String uniqueName) {
         Log.i(TAG, "AlljoynSessionListener.sessionMemberAdded(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.MEMBER_JOINED, uniqueName);
+        EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.MEMBER_JOINED, channel.getGroupName(), uniqueName));
     }
 
     @Override
     public void sessionMemberRemoved(int sessionId, String uniqueName) {
         Log.i(TAG, "AlljoynSessionListener.sessionMemberRemoved(sessionId=" + sessionId + ",uniqueName=" + uniqueName + ")");
-        channel.handleEvent(AlljoynEventHandler.AlljoynEvent.MEMBER_LEFT, uniqueName);
+        EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.MEMBER_LEFT, channel.getGroupName(), uniqueName));
     }
 }

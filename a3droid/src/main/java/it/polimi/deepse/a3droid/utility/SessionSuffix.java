@@ -3,7 +3,7 @@ package it.polimi.deepse.a3droid.utility;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynBus;
+import it.polimi.deepse.a3droid.bus.alljoyn.AlljoynServiceInterface;
 
 /**
  * Created by danilo on 28/11/16.
@@ -15,7 +15,7 @@ public class SessionSuffix {
     private static final Pattern suffixPattern = Pattern.compile(UNIQUE_SUFFIX_PATTERN);
 
     public static String removeServicePrefix(String nameWithPrefix){
-        return nameWithPrefix.replace(AlljoynBus.SERVICE_PATH + ".", "");
+        return nameWithPrefix.replace(AlljoynServiceInterface.SERVICE_PATH + ".", "");
     }
 
     public static String removeUniqueSuffix(String nameWithSuffix){
