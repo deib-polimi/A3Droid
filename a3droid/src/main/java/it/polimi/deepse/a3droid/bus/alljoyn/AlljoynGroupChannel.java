@@ -160,6 +160,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
                         break;
                     case HANDLE_DISCONNECT_EVENT:
                         waitBeforeDisconnection();
+                        doDisconnect();
                         break;
                     case HANDLE_CREATE_GROUP_EVENT:
                         doCreateGroup();
@@ -215,7 +216,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
                 e.printStackTrace();
             }
         }
-        doDisconnect();
     }
 
     /**
@@ -223,6 +223,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      */
     private void doDisconnect(){
         doLeaveGroup();
+        waitBeforeDisconnection();
         if(hosting)
             doDestroyGroup();
         super.disconnect();

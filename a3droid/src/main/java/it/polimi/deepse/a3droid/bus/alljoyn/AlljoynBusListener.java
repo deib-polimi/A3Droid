@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
 import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynDuplicatedSessionEvent;
+import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynEvent;
 import it.polimi.deepse.a3droid.utility.SessionSuffix;
 
 /**
@@ -85,6 +86,8 @@ public class AlljoynBusListener extends BusListener {
         String nameWithSuffix = SessionSuffix.removeServicePrefix(fullName);
         String name = SessionSuffix.removeUniqueSuffix(nameWithSuffix);
         String suffix = nameWithSuffix.replace(name, "");
+        if(application.getGroupSuffix(name).equals(suffix))
+            EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_LOST, name, 0));
         application.removeFoundGroup(name, suffix);
     }
 

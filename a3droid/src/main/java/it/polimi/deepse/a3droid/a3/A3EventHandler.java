@@ -42,8 +42,7 @@ public class A3EventHandler implements TimerInterface{
                 break;
             case GROUP_LEFT:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
-                channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
-                channel.deactivateActiveRole();
+                handleGroupLeftEvent();
                 break;
             case GROUP_STATE_CHANGED:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event, obj));
@@ -103,6 +102,11 @@ public class A3EventHandler implements TimerInterface{
         }
     }
 
+    private void handleGroupLeftEvent() {
+        channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
+        channel.deactivateActiveRole();
+    }
+
     private void handleSupervisorLeftEvent() {
         if(channel.getGroupState().equals(A3GroupDescriptor.A3GroupState.ACTIVE)) {
             channel.setGroupState(A3GroupDescriptor.A3GroupState.ELECTION);
@@ -135,7 +139,7 @@ public class A3EventHandler implements TimerInterface{
 
     private static final int WAIT_AND_QUERY_ROLE_EVENT = 1;
     /** Used as fixed time after a GROUP_JOINED event **/
-    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 3000;
+    private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_1 = 2000;
     /** Used as fixed time part after a MEMBER_LEFT event **/
     private static final int WAIT_AND_QUERY_ROLE_FIXED_TIME_2 = 0;
     /** Used as random time part after a MEMBER_LEFT event **/
