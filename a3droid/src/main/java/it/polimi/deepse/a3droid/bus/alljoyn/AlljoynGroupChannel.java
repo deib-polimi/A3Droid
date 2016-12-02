@@ -222,11 +222,11 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * Leaves a group and destroy it if hosting, them disconnects from the alljoyn bus.
      */
     private void doDisconnect(){
-        finalizeHandlers();
         doLeaveGroup();
         if(hosting)
             doDestroyGroup();
         super.disconnect();
+        finalizeHandlers();
     }
 
     private void doCreateGroup(){

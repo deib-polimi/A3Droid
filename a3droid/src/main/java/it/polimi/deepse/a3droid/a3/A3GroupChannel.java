@@ -121,9 +121,9 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      */
     public void disconnect() {
         deactivateActiveRole();
-        quitHandlers();
         notifyObservers(A3GroupChannel.DISCONNECT_EVENT);
         clearObservers();
+        quitHandlers();
     }
 
     public void reconnect(){

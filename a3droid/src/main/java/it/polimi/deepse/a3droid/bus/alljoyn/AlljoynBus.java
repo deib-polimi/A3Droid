@@ -957,8 +957,9 @@ public class AlljoynBus extends A3Bus {
      * remote session.
      */
     private void doLeaveSession(AlljoynGroupChannel channel) {
-        Log.i(TAG, "doLeaveSession()");
+        Log.i(TAG, "doLeaveSession(" + channel.getGroupName() + ")");
         channel.getBus().leaveSession(channel.getSessionId());
+        postJoinWait(POS_CONNECTION_WAIT_TIME);
         channel.setSessionId(-1);
         EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_LEFT, channel.getGroupName(), null));
     }
