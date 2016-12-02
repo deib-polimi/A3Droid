@@ -958,8 +958,12 @@ public class AlljoynBus extends A3Bus {
      */
     private void doLeaveSession(AlljoynGroupChannel channel) {
         Log.i(TAG, "doLeaveSession(" + channel.getGroupName() + ")");
-        channel.getBus().leaveSession(channel.getSessionId());
-        postJoinWait(POS_CONNECTION_WAIT_TIME);
+        if(channel.isHosting()) {
+            channel.getBus().leaveHostedSession(channel.getSessionId());
+        }
+        else {
+            channel.getBus().leaveJoinedSession(channel.getSessionId());
+        }
         channel.setSessionId(-1);
         EventBus.getDefault().post(new AlljoynEvent(AlljoynEvent.AlljoynEventType.SESSION_LEFT, channel.getGroupName(), null));
     }
