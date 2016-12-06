@@ -819,11 +819,11 @@ public abstract class A3GroupChannel extends HandlerThread implements A3GroupCha
      */
     private List<A3MessageItem> mOutbound = new ArrayList<>();
 
-    public A3GroupDescriptor.A3GroupState getGroupState() {
+    public synchronized A3GroupDescriptor.A3GroupState getGroupState() {
         return groupState;
     }
 
-    public void setGroupState(A3GroupDescriptor.A3GroupState state) {
+    public synchronized void setGroupState(A3GroupDescriptor.A3GroupState state) {
         Log.i(TAG, "setGroupState(" + state + ")");
         if(!this.groupState.equals(state))
             handleEvent(A3GroupEvent.A3GroupEventType.GROUP_STATE_CHANGED, state);

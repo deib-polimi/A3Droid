@@ -7,6 +7,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import it.polimi.deepse.a3droid.a3.A3Application;
+import it.polimi.deepse.a3droid.a3.A3GroupDescriptor;
 import it.polimi.deepse.a3droid.a3.events.A3GroupEvent;
 import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynDuplicatedSessionEvent;
 import it.polimi.deepse.a3droid.bus.alljoyn.events.AlljoynEvent;
@@ -53,7 +54,8 @@ public class AlljoynEventHandler{
 
     private void handleSessionLostEvent(){
         Log.i(TAG, "handleSessionLostEvent()");
-        if(channel.getChannelState().equals(AlljoynGroupChannel.AlljoynChannelState.JOINT)) {
+        if(channel.getGroupState().equals(A3GroupDescriptor.A3GroupState.ELECTION) ||
+            channel.getGroupState().equals(A3GroupDescriptor.A3GroupState.ACTIVE)) {
             channel.setChannelState(AlljoynGroupChannel.AlljoynChannelState.REGISTERED);
             channel.handleEvent(A3GroupEvent.A3GroupEventType.GROUP_LOST);
             channel.reconnect();

@@ -362,7 +362,7 @@ public class AlljoynGroupChannel extends A3GroupChannel {
      * appliciation is expected to make this call to set the status to reflect
      * the status of the underlying AllJoyn session.
      */
-    public void setChannelState(AlljoynChannelState state) {
+    public synchronized void setChannelState(AlljoynChannelState state) {
         mChannelState = state;
         notifyObservers(CHANNEL_STATE_CHANGED_EVENT);
     }
