@@ -71,12 +71,8 @@ public class A3Node implements A3NodeInterface{
         if(this.isConnected(groupName))
             return true;
         A3GroupDescriptor descriptor = getGroupDescriptor(groupName);
-        if(descriptor != null) {
-            createChannelAndConnect(groupName, descriptor);
-            return true;
-        }else
-            throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
-
+        createChannelAndConnect(groupName, descriptor);
+        return true;
     }
 
     private void createChannelAndConnect(String groupName, A3GroupDescriptor descriptor){
@@ -149,6 +145,7 @@ public class A3Node implements A3NodeInterface{
         Log.i(TAG, "stack(" + parentGroupName + ", " + childGroupName + ")");
         validateGroupNameParameters(parentGroupName, childGroupName);
         validateOneSupervisorRole(parentGroupName, childGroupName);
+        validateGroupDescriptorsAndFollowerRole(parentGroupName);
         topologyControl.stack(parentGroupName, childGroupName);
     }
 
@@ -170,6 +167,7 @@ public class A3Node implements A3NodeInterface{
         A3InvalidOperationParameters, A3InvalidOperationRole, A3ChannelNotFoundException {
         validateGroupNameParameters(parentGroupName, childGroupName);
         validateOneSupervisorRole(parentGroupName, childGroupName);
+        validateGroupDescriptorsAndFollowerRole(parentGroupName);
         topologyControl.reverseStack(parentGroupName, childGroupName);
     }
 
@@ -190,6 +188,7 @@ public class A3Node implements A3NodeInterface{
             A3InvalidOperationRole, A3ChannelNotFoundException {
         validateGroupNameParameters(destinationGroupName, sourceGroupName);
         validateOneSupervisorRole(destinationGroupName, sourceGroupName);
+        validateGroupDescriptorsAndFollowerRole(destinationGroupName);
         topologyControl.merge(destinationGroupName, sourceGroupName);
     }
 
@@ -207,11 +206,11 @@ public class A3Node implements A3NodeInterface{
             A3InvalidOperationRole, A3InvalidOperationParameters, A3ChannelNotFoundException,
             A3NoGroupDescriptionException {
         Log.i(TAG, "split(" + groupName + ", " + nodesToTransfer + ")");
-        validateStackParameters(groupName, nodesToTransfer);
+        validateSplitParameters(groupName, nodesToTransfer);
         topologyControl.split(groupName, nodesToTransfer);
     }
 
-    private void validateStackParameters(String groupName, int nodesToTransfer) throws A3InvalidOperationParameters, A3ChannelNotFoundException {
+    private void validateSplitParameters(String groupName, int nodesToTransfer) throws A3InvalidOperationParameters, A3ChannelNotFoundException {
         validateGroupNameParameters(groupName);
         validateOneSupervisorRole(groupName);
         validatePositiveNumber(groupName, nodesToTransfer);
@@ -232,10 +231,21 @@ public class A3Node implements A3NodeInterface{
 
     private void validateOneSupervisorRole(String... groupNames) throws A3InvalidOperationParameters {
         for(String groupName : groupNames)
-            if(isSupervisor(groupName))
+            if(isConnected(groupName) && isSupervisor(groupName))
                 return;
 
         throw new A3InvalidOperationParameters("Operation requires one supervision role");
+    }
+
+    private void validateGroupDescriptorsAndFollowerRole(String... groupNames) throws A3InvalidOperationParameters {
+        for(String groupName : groupNames)
+            try {
+                hasGroupDescriptor(groupName);
+                if(!hasRole(getGroupDescriptor(groupName).getFollowerRoleId()))
+                    throw new A3InvalidOperationParameters("Operation requires the follower in group " + groupName);
+            } catch (A3NoGroupDescriptionException e) {
+                throw new A3InvalidOperationParameters("Operation requires the group description instance for the " + groupName + " group");
+            }
     }
 
     /** Communication methods **/
@@ -355,7 +365,20 @@ public class A3Node implements A3NodeInterface{
                     return descriptor;
             }
         }
-        throw new A3NoGroupDescriptionException("NO GROUP WITH NAME " + groupName);
+        throw new A3NoGroupDescriptionException("This node has no descriptor for the group " + groupName);
+    }
+
+    public boolean hasGroupDescriptor(String groupName){
+        try {
+            getGroupDescriptor(groupName);
+            return true;
+        } catch (A3NoGroupDescriptionException e) {
+            return false;
+        }
+    }
+
+    public boolean hasRole(String roleClass){
+        return getRole(roleClass, A3Role.class) != null;
     }
 
     /**

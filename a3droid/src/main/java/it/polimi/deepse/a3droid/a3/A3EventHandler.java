@@ -87,7 +87,7 @@ public class A3EventHandler implements TimerInterface{
                 break;
             case MERGE_FINISHED:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
-                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 break;
             case SPLIT_STARTED:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
@@ -95,7 +95,7 @@ public class A3EventHandler implements TimerInterface{
                 break;
             case SPLIT_FINISHED:
                 EventBus.getDefault().post(new A3GroupEvent(channel.getGroupName(), event));
-                channel.setGroupState(A3GroupDescriptor.A3GroupState.ACTIVE);
+                channel.setGroupState(A3GroupDescriptor.A3GroupState.IDLE);
                 break;
             default:
                 break;
