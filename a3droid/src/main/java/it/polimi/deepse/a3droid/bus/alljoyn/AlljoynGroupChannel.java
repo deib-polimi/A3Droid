@@ -66,8 +66,8 @@ public class AlljoynGroupChannel extends A3GroupChannel {
 
     @Override
     public void reconnect(){
-        Log.i(TAG, "reconnect()");
-        super.reconnect();
+        Message message = mHandler.obtainMessage(HANDLE_RECONNECT_EVENT);
+        mHandler.sendMessage(message);
     }
 
     @Override
@@ -162,6 +162,9 @@ public class AlljoynGroupChannel extends A3GroupChannel {
                         waitBeforeDisconnection();
                         doDisconnect();
                         break;
+                    case HANDLE_RECONNECT_EVENT:
+                        doReconnect();
+                        break;
                     case HANDLE_CREATE_GROUP_EVENT:
                         doCreateGroup();
                         break;
@@ -183,10 +186,11 @@ public class AlljoynGroupChannel extends A3GroupChannel {
 
     private static final int HANDLE_CONNECT_EVENT = 1;
     private static final int HANDLE_DISCONNECT_EVENT = 2;
-    private static final int HANDLE_CREATE_GROUP_EVENT = 3;
-    private static final int HANDLE_DESTROY_GROUP_EVENT = 4;
-    private static final int HANDLE_JOIN_GROUP_EVENT = 5;
-    private static final int HANDLE_LEAVE_GROUP_EVENT = 6;
+    private static final int HANDLE_RECONNECT_EVENT = 3;
+    private static final int HANDLE_CREATE_GROUP_EVENT = 4;
+    private static final int HANDLE_DESTROY_GROUP_EVENT = 5;
+    private static final int HANDLE_JOIN_GROUP_EVENT = 6;
+    private static final int HANDLE_LEAVE_GROUP_EVENT = 7;
 
     /**
      * Connects to the alljoyn bus and either joins a group or created if it hasn't been found.
@@ -218,9 +222,6 @@ public class AlljoynGroupChannel extends A3GroupChannel {
         }
     }
 
-    /**
-     * Leaves a group and destroy it if hosting, them disconnects from the alljoyn bus.
-     */
     private void doDisconnect(){
         doLeaveGroup();
         waitBeforeDisconnection();
@@ -228,6 +229,11 @@ public class AlljoynGroupChannel extends A3GroupChannel {
             doDestroyGroup();
         super.disconnect();
         finalizeHandlers();
+    }
+
+    private void doReconnect(){
+        Log.i(TAG, "doReconnect()");
+        super.reconnect();
     }
 
     private void doCreateGroup(){
