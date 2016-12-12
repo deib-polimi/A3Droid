@@ -58,9 +58,10 @@ public class AlljoynBusListener extends BusListener {
         application.addFoundGroup(name, suffix);
     }
 
-    private boolean isFoundSessionSuffixSmaller(String name, String suffix){
+    private boolean isFoundSessionSuffixSmaller(String foundGroupName, String foundGroupSuffix){
         A3Application application = (A3Application) alljoynBus.getApplication();
-        return application.getGroupSuffix(name).compareTo(suffix) < 0;
+        String currentSuffix = application.getGroupSuffix(foundGroupName);
+        return foundGroupSuffix.compareTo(currentSuffix) < 0;
     }
 
     private void createDuplicatedSessionEvent(String name, String suffix) {
