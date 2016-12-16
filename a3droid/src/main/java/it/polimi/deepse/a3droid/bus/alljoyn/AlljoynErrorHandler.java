@@ -23,15 +23,19 @@ public class AlljoynErrorHandler{
     protected final String TAG;
 
     private AlljoynGroupChannel channel;
+    private Map<AlljoynGroupChannel.BusState, Integer> busRetries;
     private Map<AlljoynGroupChannel.AlljoynChannelState, Integer> channelRetries;
     private Map<AlljoynService.AlljoynServiceState, Integer> serviceRetries;
-    private static final int MAX_CHANNEL_RETRIES = 3;
-    private static final int MAX_SERVICE_RETRIES = 3;
+    private static final int MAX_BUS_RETRIES = 5;
+    private static final int MAX_CHANNEL_RETRIES = 5;
+    private static final int MAX_SERVICE_RETRIES = 5;
 
 
     public AlljoynErrorHandler(AlljoynGroupChannel channel){
         TAG = "AlljoynErrorHandler";
         this.channel = channel;
+        busRetries = new HashMap<>();
+        resetBusRetry();
         channelRetries = new HashMap<>();
         resetChannelRetry();
         serviceRetries = new HashMap<>();
@@ -47,7 +51,10 @@ public class AlljoynErrorHandler{
                 handleServiceError((Status) arg);
                 break;
             case BUS:
-                handleBusError((BusException) arg);
+                if(arg instanceof BusException)
+                    handleBusError((BusException) arg);
+                else
+                    handleBusError((Status) arg);
                 break;
             default:
                 break;
@@ -62,6 +69,35 @@ public class AlljoynErrorHandler{
             case CONNECTED:
                 Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
                 channel.handleError(new A3MessageDeliveryException(ex.getMessage()));
+                break;
+            case DISCOVERING:
+                Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void handleBusError(Status alljoynStatus){
+        switch (channel.getBusState()){
+            case DISCONNECTED:
+                Log.e(this.TAG, "Alljoyn bus error at DISCONNECTED state");
+                switch (alljoynStatus) {
+                    case BUS_REPLY_IS_ERROR_MESSAGE:
+                        if (busRetries.get(AlljoynGroupChannel.BusState.DISCONNECTED) < MAX_BUS_RETRIES) {
+                            waitToRetry(busRetries.get(AlljoynGroupChannel.BusState.DISCONNECTED));
+                            incBusRetries(AlljoynGroupChannel.BusState.DISCONNECTED);
+                            channel.reconnect();
+                        } else {
+                            channel.handleError(new A3GroupJoinException(alljoynStatus.toString()));
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case CONNECTED:
+                Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
                 break;
             case DISCOVERING:
                 Log.e(this.TAG, "Alljoyn bus error at CONNECTED state");
@@ -174,6 +210,11 @@ public class AlljoynErrorHandler{
         }
     }
 
+    private void incBusRetries(AlljoynGroupChannel.BusState state){
+        assert ((busRetries.get(state) + 1) < MAX_BUS_RETRIES);
+        busRetries.put(state, busRetries.get(state) + 1);
+    }
+
     private void incChannelRetries(AlljoynGroupChannel.AlljoynChannelState state){
         assert ((channelRetries.get(state) + 1) < MAX_CHANNEL_RETRIES);
         channelRetries.put(state, channelRetries.get(state) + 1);
@@ -182,6 +223,11 @@ public class AlljoynErrorHandler{
     private void incServiceRetries(AlljoynService.AlljoynServiceState state){
         assert ((serviceRetries.get(state) + 1) < MAX_SERVICE_RETRIES);
         serviceRetries.put(state, serviceRetries.get(state) + 1);
+    }
+
+    public void resetBusRetry(){
+        for(AlljoynGroupChannel.BusState state : AlljoynGroupChannel.BusState.values())
+            busRetries.put(state, 0);
     }
 
     public void resetChannelRetry(){

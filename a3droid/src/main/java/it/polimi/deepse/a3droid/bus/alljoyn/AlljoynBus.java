@@ -653,7 +653,6 @@ public class AlljoynBus extends A3Bus {
         if (status == Status.OK) {
             channel.setBusState(AlljoynGroupChannel.BusState.CONNECTED);
         }else {
-            application.busError(A3Application.Module.GENERAL, "Unable to joinGroup to the bus: (" + status + ")");
             channel.handleError(status, AlljoynErrorHandler.BUS);
         }
     }
